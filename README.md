@@ -18,10 +18,16 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## Backend-for-Frontend proxy
+
+The server exposes the backend through the same-origin `/api/backend/[...path]` Route Handler. See the canonical [Frontend BFF proxy Wiki source](docs/wiki/frontend-bff-proxy.md) for runtime configuration, forwarding rules, security boundaries, validation commands, and troubleshooting.
+
 ## Validation and production
 
 ```sh
+npm run test
 npm run lint
-npm run build
-npm run start
+APP_ENV=local BACKEND_URL=http://127.0.0.1:18080 npm run build
+APP_ENV=local BACKEND_URL=http://127.0.0.1:18080 npm run start
+npm run smoke:bff
 ```
