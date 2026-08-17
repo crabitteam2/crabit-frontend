@@ -13,6 +13,7 @@ import {
 } from "./card-balance-scenario.mjs";
 
 const ACCOUNT_ID = "11111111-1111-4111-8111-111111111111";
+const ALPHA_ACCOUNT_ID = "abcdefab-cdef-4abc-8def-abcdefabcdef";
 const OTHER_ACCOUNT_ID = "22222222-2222-4222-8222-222222222222";
 const servers = [];
 
@@ -202,6 +203,70 @@ describe("card-balance scenario client", () => {
     });
   });
 
+  it("rejects a numeric string in a SUCCESS response instead of coercing it", async () => {
+    const apiBase = await startControlledServer((_request, response) => {
+      writeJson(response, 200, {
+        cardBalanceAccountId: ACCOUNT_ID,
+        steps: [{ type: "SUCCESS", balance: "100000" }],
+      });
+    });
+    const client = createCardBalanceScenarioClient({ apiBase });
+
+    await expect(client.get(ACCOUNT_ID)).rejects.toMatchObject({
+      name: CardBalanceScenarioProtocolError.name,
+      status: 200,
+    });
+  });
+
+  it("rejects a noncanonical uppercase account ID in a success response", async () => {
+    const apiBase = await startControlledServer((_request, response) => {
+      writeJson(response, 200, {
+        cardBalanceAccountId: ALPHA_ACCOUNT_ID.toUpperCase(),
+        steps: [],
+      });
+    });
+    const client = createCardBalanceScenarioClient({ apiBase });
+
+    await expect(client.get(ALPHA_ACCOUNT_ID)).rejects.toMatchObject({
+      name: CardBalanceScenarioProtocolError.name,
+      status: 200,
+    });
+  });
+
+  it("rejects an application/json lookalike media type", async () => {
+    const apiBase = await startControlledServer((_request, response) => {
+      writeJson(
+        response,
+        200,
+        { cardBalanceAccountId: ACCOUNT_ID, steps: [] },
+        "application/jsonp",
+      );
+    });
+    const client = createCardBalanceScenarioClient({ apiBase });
+
+    await expect(client.get(ACCOUNT_ID)).rejects.toMatchObject({
+      name: CardBalanceScenarioProtocolError.name,
+      status: 200,
+    });
+  });
+
+  it("accepts application/json with media type parameters", async () => {
+    const apiBase = await startControlledServer((_request, response) => {
+      writeJson(
+        response,
+        200,
+        { cardBalanceAccountId: ACCOUNT_ID, steps: [] },
+        "application/json; charset=utf-8",
+      );
+    });
+    const client = createCardBalanceScenarioClient({ apiBase });
+
+    await expect(client.get(ACCOUNT_ID)).resolves.toEqual({
+      cardBalanceAccountId: ACCOUNT_ID,
+      steps: [],
+    });
+  });
+
   it("validates the full success body without truncating a long scenario", async () => {
     const steps = buildPresetSteps("steady-success", { balance: 100_000, count: 40 });
     const apiBase = await startControlledServer((_request, response) => {
@@ -263,7 +328,7 @@ async function readJson(request) {
   return JSON.parse(Buffer.concat(chunks).toString("utf8"));
 }
 
-function writeJson(response, status, body) {
-  response.writeHead(status, { "Content-Type": "application/json" });
+function writeJson(response, status, body, contentType = "application/json") {
+  response.writeHead(status, { "Content-Type": contentType });
   response.end(JSON.stringify(body));
 }

@@ -220,7 +220,7 @@ async function readScenarioEnvelope(response, accountId, expectedStatus) {
   const diagnostic = formatDiagnostic(responseBody);
   if (
     response.status !== expectedStatus
-    || !response.headers.get("content-type")?.toLowerCase().startsWith("application/json")
+    || !hasJsonMediaType(response.headers.get("content-type"))
   ) {
     throw new CardBalanceScenarioProtocolError(response.status, diagnostic);
   }
@@ -234,30 +234,32 @@ async function readScenarioEnvelope(response, accountId, expectedStatus) {
 
   try {
     assertExactObject(value, ["cardBalanceAccountId", "steps"]);
-    const responseAccountId = normalizeCardBalanceAccountId(value.cardBalanceAccountId);
-    if (responseAccountId !== accountId) {
+    if (value.cardBalanceAccountId !== accountId) {
       throw new Error("Response account does not match the request.");
     }
     return {
-      cardBalanceAccountId: responseAccountId,
-      steps: validateSteps(value.steps, { allowEmpty: true }),
+      cardBalanceAccountId: accountId,
+      steps: validateSteps(value.steps, {
+        allowEmpty: true,
+        parseStepBalance: parseJsonBalance,
+      }),
     };
   } catch {
     throw new CardBalanceScenarioProtocolError(response.status, diagnostic);
   }
 }
 
-function validateSteps(value, { allowEmpty }) {
+function validateSteps(value, { allowEmpty, parseStepBalance = parseBalance }) {
   if (!Array.isArray(value) || (!allowEmpty && value.length === 0)) {
     throw new Error("Balance scenario steps must be a nonempty array.");
   }
-  return value.map(validateStep);
+  return value.map((step) => validateStep(step, parseStepBalance));
 }
 
-function validateStep(value) {
+function validateStep(value, parseStepBalance) {
   if (value?.type === "SUCCESS") {
     assertExactObject(value, ["type", "balance"]);
-    return { type: "SUCCESS", balance: parseBalance(value.balance, "SUCCESS balance") };
+    return { type: "SUCCESS", balance: parseStepBalance(value.balance, "SUCCESS balance") };
   }
   if (value?.type === "FAILURE") {
     assertExactObject(value, ["type"]);
@@ -287,6 +289,19 @@ function parseBalance(value, label) {
     throw new Error(`${label} must be an integer from 0 through ${Number.MAX_SAFE_INTEGER}.`);
   }
   return number;
+}
+
+function parseJsonBalance(value, label) {
+  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0) {
+    throw new Error(`${label} must be a JSON integer from 0 through ${Number.MAX_SAFE_INTEGER}.`);
+  }
+  return value;
+}
+
+function hasJsonMediaType(value) {
+  if (typeof value !== "string") return false;
+  const [mediaType] = value.split(";", 1);
+  return mediaType.trim().toLowerCase() === "application/json";
 }
 
 function requireBalance(value, label) {
