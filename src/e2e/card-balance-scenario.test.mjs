@@ -250,13 +250,16 @@ describe("card-balance scenario client", () => {
     });
   });
 
-  it("accepts application/json with media type parameters", async () => {
+  it.each([
+    "application/json; charset=utf-8",
+    'Application/JSON; charset="utf-8"; profile="https://example.test/a;b\\\"c"',
+  ])("accepts application/json with valid media type parameters: %s", async (contentType) => {
     const apiBase = await startControlledServer((_request, response) => {
       writeJson(
         response,
         200,
         { cardBalanceAccountId: ACCOUNT_ID, steps: [] },
-        "application/json; charset=utf-8",
+        contentType,
       );
     });
     const client = createCardBalanceScenarioClient({ apiBase });
@@ -264,6 +267,27 @@ describe("card-balance scenario client", () => {
     await expect(client.get(ACCOUNT_ID)).resolves.toEqual({
       cardBalanceAccountId: ACCOUNT_ID,
       steps: [],
+    });
+  });
+
+  it.each([
+    ["missing equals sign", "application/json; charset"],
+    ["empty parameter name", "application/json; =utf-8"],
+    ["unterminated quoted value", 'application/json; charset="unterminated'],
+  ])("rejects Content-Type with a %s", async (_case, contentType) => {
+    const apiBase = await startControlledServer((_request, response) => {
+      writeJson(
+        response,
+        200,
+        { cardBalanceAccountId: ACCOUNT_ID, steps: [] },
+        contentType,
+      );
+    });
+    const client = createCardBalanceScenarioClient({ apiBase });
+
+    await expect(client.get(ACCOUNT_ID)).rejects.toMatchObject({
+      name: CardBalanceScenarioProtocolError.name,
+      status: 200,
     });
   });
 

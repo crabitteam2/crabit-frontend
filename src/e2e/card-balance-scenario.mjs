@@ -1,5 +1,6 @@
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DECIMAL_INTEGER_PATTERN = /^(0|[1-9][0-9]*)$/;
+const HTTP_TOKEN_CHARACTER_PATTERN = /^[!#$%&'*+\-.^_`|~0-9A-Za-z]$/;
 const MAX_DIAGNOSTIC_LENGTH = 512;
 
 export class CardBalanceScenarioHttpError extends Error {
@@ -300,8 +301,88 @@ function parseJsonBalance(value, label) {
 
 function hasJsonMediaType(value) {
   if (typeof value !== "string") return false;
-  const [mediaType] = value.split(";", 1);
-  return mediaType.trim().toLowerCase() === "application/json";
+
+  let index = skipOptionalWhitespace(value, 0);
+  const typeStart = index;
+  index = readTokenEnd(value, index);
+  const type = value.slice(typeStart, index);
+  if (value[index] !== "/") return false;
+
+  index += 1;
+  const subtypeStart = index;
+  index = readTokenEnd(value, index);
+  const subtype = value.slice(subtypeStart, index);
+  if (type.toLowerCase() !== "application" || subtype.toLowerCase() !== "json") {
+    return false;
+  }
+
+  index = skipOptionalWhitespace(value, index);
+  while (index < value.length) {
+    if (value[index] !== ";") return false;
+    index = skipOptionalWhitespace(value, index + 1);
+
+    const parameterNameStart = index;
+    index = readTokenEnd(value, index);
+    if (index === parameterNameStart || value[index] !== "=") return false;
+
+    index += 1;
+    if (value[index] === '"') {
+      index = readQuotedStringEnd(value, index);
+      if (index === -1) return false;
+    } else {
+      const parameterValueStart = index;
+      index = readTokenEnd(value, index);
+      if (index === parameterValueStart) return false;
+    }
+    index = skipOptionalWhitespace(value, index);
+  }
+  return true;
+}
+
+function readTokenEnd(value, start) {
+  let index = start;
+  while (index < value.length && HTTP_TOKEN_CHARACTER_PATTERN.test(value[index])) {
+    index += 1;
+  }
+  return index;
+}
+
+function readQuotedStringEnd(value, start) {
+  let index = start + 1;
+  while (index < value.length) {
+    if (value[index] === '"') return index + 1;
+    if (value[index] === "\\") {
+      index += 1;
+      if (index >= value.length || !isQuotedPairCharacter(value.charCodeAt(index))) {
+        return -1;
+      }
+    } else if (!isQuotedTextCharacter(value.charCodeAt(index))) {
+      return -1;
+    }
+    index += 1;
+  }
+  return -1;
+}
+
+function skipOptionalWhitespace(value, start) {
+  let index = start;
+  while (value[index] === " " || value[index] === "\t") index += 1;
+  return index;
+}
+
+function isQuotedTextCharacter(code) {
+  return code === 0x09
+    || code === 0x20
+    || code === 0x21
+    || (code >= 0x23 && code <= 0x5b)
+    || (code >= 0x5d && code <= 0x7e)
+    || (code >= 0x80 && code <= 0xff);
+}
+
+function isQuotedPairCharacter(code) {
+  return code === 0x09
+    || (code >= 0x20 && code <= 0x7e)
+    || (code >= 0x80 && code <= 0xff);
 }
 
 function requireBalance(value, label) {
