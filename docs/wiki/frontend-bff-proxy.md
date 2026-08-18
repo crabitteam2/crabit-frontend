@@ -2,7 +2,11 @@
 
 The frontend exposes a same-origin Backend-for-Frontend (BFF) route at `/api/backend/[...path]`. Browser code calls that route instead of learning the backend origin. The Route Handler validates server runtime configuration, applies a narrow forwarding policy, and returns the backend status and body without interpreting application payloads.
 
-This Markdown file is the canonical repository source for the BFF Wiki page. Its presence does not mean a GitHub Wiki page has been published or synchronized.
+This Markdown file is the canonical editable source for the dedicated
+[Frontend-BFF-Proxy Wiki page](https://github.com/crabitteam2/crabit-frontend/wiki/Frontend-BFF-Proxy).
+Use the [repository documentation map](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/home.md)
+to find related guides. The Wiki is a reader-facing mirror; this file's presence does not prove that
+the page has been published or synchronized.
 
 ## Request flow
 
@@ -83,14 +87,13 @@ Generated failures use `application/json`, `Cache-Control: no-store`, and exactl
 
 Generated responses and logs must not contain environment values, backend or target URLs, credentials, parser errors, upstream exception text, or stack traces.
 
-## Install, validate, and run
+## Validate and operate
+
+Installation, general test, lint, build, and start commands are maintained in the
+[frontend README](https://github.com/crabitteam2/crabit-frontend/blob/main/README.md) instead of being
+duplicated here. After a production build, run the BFF-specific smoke check:
 
 ```sh
-npm ci
-npm run test
-npm run lint
-APP_ENV=local BACKEND_URL=http://127.0.0.1:18080 npm run build
-APP_ENV=local BACKEND_URL=http://127.0.0.1:18080 npm run start
 npm run smoke:bff
 ```
 
