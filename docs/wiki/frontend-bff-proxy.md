@@ -1,33 +1,34 @@
-# Frontend BFF proxy
+# 프론트엔드 BFF 프록시
 
-The frontend exposes a same-origin Backend-for-Frontend (BFF) route at `/api/backend/[...path]`. Browser code calls that route instead of learning the backend origin. The Route Handler validates server runtime configuration, applies a narrow forwarding policy, and returns the backend status and body without interpreting application payloads.
+프론트엔드는 `/api/backend/[...path]`에 동일 출처 Backend-for-Frontend(BFF) 경로를 제공합니다. 브라우저 코드는 백엔드 오리진을 직접 알 필요 없이 이 경로를 호출합니다. Route Handler는 서버 런타임 설정을 검증하고 제한된 전달 정책을 적용한 뒤, 애플리케이션 페이로드를 해석하지 않고 백엔드 상태와 본문을 반환합니다.
 
-This Markdown file is the canonical editable source for the dedicated
-[Frontend-BFF-Proxy Wiki page](https://github.com/crabitteam2/crabit-frontend/wiki/Frontend-BFF-Proxy).
-Use the [repository documentation map](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/home.md)
-to find related guides. The Wiki is a reader-facing mirror; this file's presence does not prove that
-the page has been published or synchronized.
+이 Markdown 파일은 전용
+[Frontend-BFF-Proxy Wiki 페이지](https://github.com/crabitteam2/crabit-frontend/wiki/Frontend-BFF-Proxy)를
+편집할 때 사용하는 기준 원본입니다. 관련 가이드는
+[저장소 문서 지도](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/home.md)에서
+찾을 수 있습니다. Wiki는 독자용 미러입니다. 이 파일이 있다고 해서 해당 페이지의 게시 또는
+동기화가 완료된 것은 아닙니다.
 
-## Request flow
+## 요청 흐름
 
 ```text
 Browser -> /api/backend/<path> -> Next.js Route Handler -> configured backend
 ```
 
-`APP_ENV`, `BACKEND_URL`, constructed backend targets, and validation details stay on the server. Client Components must not import `src/config/env.ts`.
+`APP_ENV`, `BACKEND_URL`, 조합된 백엔드 대상, 검증 세부 정보는 서버에만 남습니다. Client Components에서 `src/config/env.ts`를 import하면 안 됩니다.
 
-## Runtime configuration
+## 런타임 설정
 
-Both variables are required and case-sensitive. They are independent of `NODE_ENV`.
+두 변수는 모두 필수이며 대소문자를 구분합니다. `NODE_ENV`와는 독립적으로 동작합니다.
 
-| Variable | Allowed values |
+| 변수 | 허용 값 |
 | --- | --- |
-| `APP_ENV` | Exactly `local`, `e2e`, `staging`, or `prod` |
-| `BACKEND_URL` | An absolute backend origin with an optional port and only the root path |
+| `APP_ENV` | 정확히 `local`, `e2e`, `staging`, `prod` 중 하나 |
+| `BACKEND_URL` | 선택적인 포트를 포함할 수 있고 경로는 루트만 허용하는 절대 백엔드 오리진 |
 
-`BACKEND_URL` must not contain credentials, whitespace, a query, a fragment, or a non-root path. `local` and `e2e` allow HTTP or HTTPS. `staging` and `prod` require HTTPS.
+`BACKEND_URL`에는 자격 증명, 공백, 쿼리, 프래그먼트 또는 루트가 아닌 경로를 넣을 수 없습니다. `local`과 `e2e`에서는 HTTP와 HTTPS를 모두 허용합니다. `staging`과 `prod`에서는 HTTPS가 필수입니다.
 
-Safe examples:
+안전한 예시:
 
 ```sh
 APP_ENV=local BACKEND_URL=http://127.0.0.1:8080 npm run dev
@@ -36,25 +37,25 @@ APP_ENV=staging BACKEND_URL=https://backend.staging.example npm run start
 APP_ENV=prod BACKEND_URL=https://backend.example:8443 npm run start
 ```
 
-Do not use values such as `http://user:password@backend.example`, `https://backend.example/api`, or `https://backend.example?tenant=crabit`.
+`http://user:password@backend.example`, `https://backend.example/api`, `https://backend.example?tenant=crabit` 같은 값은 사용하지 마세요.
 
-## Forwarding contract
+## 전달 계약
 
-The route requires at least one path segment after `/api/backend/`.
+경로의 `/api/backend/` 뒤에는 세그먼트가 하나 이상 있어야 합니다.
 
-| Method | Behavior |
+| 메서드 | 동작 |
 | --- | --- |
-| `GET` | Forwarded without a request body |
-| `POST`, `PUT`, `PATCH`, `DELETE` | Forwarded with the incoming body bytes, including an empty body |
-| `HEAD`, `OPTIONS` | Rejected with `405`; the backend is not contacted |
+| `GET` | 요청 본문 없이 전달 |
+| `POST`, `PUT`, `PATCH`, `DELETE` | 빈 본문을 포함해 들어온 본문 바이트 그대로 전달 |
+| `HEAD`, `OPTIONS` | `405`로 거부하며 백엔드에는 요청하지 않음 |
 
-Each decoded path segment is validated and encoded independently. Empty segments, dot segments, decoded slashes, backslashes, and NUL characters are rejected. Query ordering, repeated keys, blank values, percent-encoding, and percent-hex case are preserved from the incoming request target.
+각 경로 세그먼트는 디코딩한 뒤 검증하고 독립적으로 인코딩합니다. 빈 세그먼트, 점 세그먼트, 디코딩된 슬래시, 백슬래시, NUL 문자는 거부합니다. 쿼리 순서, 중복 키, 빈 값, 퍼센트 인코딩, 퍼센트 헥스 표기의 대소문자는 들어온 요청 대상 그대로 보존합니다.
 
-The BFF does not parse JSON, merge-patch, text, or binary bodies and does not enforce application-specific media types.
+BFF는 JSON, merge-patch, 텍스트, 바이너리 본문을 파싱하지 않으며 애플리케이션별 미디어 타입도 강제하지 않습니다.
 
-### Request headers
+### 요청 헤더
 
-Only these incoming values may be copied to the backend:
+들어온 값 중 다음 헤더만 백엔드로 복사할 수 있습니다.
 
 - `Accept`
 - `Accept-Language`
@@ -62,47 +63,47 @@ Only these incoming values may be copied to the backend:
 - `Idempotency-Key`
 - `If-Match`
 
-`Authorization`, `Cookie`, `Proxy-Authorization`, browser `Host`, framing fields, forwarding fields, and hop-by-hop fields are never copied. A field named by the incoming `Connection` header is also removed even when it appears in the allowlist. The HTTP transport may generate its own framing or connection headers; it never reuses the stripped browser value.
+`Authorization`, `Cookie`, `Proxy-Authorization`, 브라우저의 `Host`, 메시지 프레이밍 필드, 전달 필드, 홉 단위 필드는 절대 복사하지 않습니다. 들어온 `Connection` 헤더가 이름으로 지정한 필드는 허용 목록에 있어도 제거합니다. HTTP 전송 계층은 자체 프레이밍 헤더나 연결 헤더를 만들 수 있지만, 제거한 브라우저 값은 다시 사용하지 않습니다.
 
-The BFF is public and injects no server credential. It does not make an authenticated backend operation usable by itself. Persona cookies, bearer-token selection, or another credential policy require a separate approved contract.
+BFF는 공개 엔드포인트이며 서버 자격 증명을 주입하지 않습니다. 따라서 BFF만으로 인증이 필요한 백엔드 작업을 사용할 수 있게 되지는 않습니다. 페르소나 쿠키, bearer-token 선택 또는 다른 자격 증명 정책을 도입하려면 별도로 승인된 계약이 필요합니다.
 
-### Backend execution and response
+### 백엔드 호출과 응답
 
-Backend requests use a 10-second deadline, `redirect: manual`, and `cache: no-store`. Redirects are never followed.
+백엔드 요청에는 10초 제한 시간과 `redirect: manual`, `cache: no-store` 설정을 적용합니다. 리디렉션은 따라가지 않습니다.
 
-The backend status and response bytes are preserved. Only `Content-Type`, `WWW-Authenticate`, and `Idempotency-Replayed` may be copied back, unless an upstream `Connection` header names one of them. `Set-Cookie`, `Location`, `Content-Length`, `Content-Encoding`, backend cache metadata, hop-by-hop fields, and all other backend headers are stripped. Every BFF response sets `Cache-Control: no-store`.
+백엔드 상태와 응답 바이트는 그대로 보존합니다. 다만 업스트림 `Connection` 헤더가 해당 헤더 중 하나를 지정하지 않았을 때만 `Content-Type`, `WWW-Authenticate`, `Idempotency-Replayed`를 응답에 복사할 수 있습니다. `Set-Cookie`, `Location`, `Content-Length`, `Content-Encoding`, 백엔드 캐시 메타데이터, 홉 단위 필드와 그 밖의 모든 백엔드 헤더는 제거합니다. 모든 BFF 응답에는 `Cache-Control: no-store`를 설정합니다.
 
-Statuses that prohibit response bodies are returned with a null body. Backend `4xx` and `5xx` responses are ordinary backend responses and are not rewritten.
+응답 본문을 허용하지 않는 상태는 null 본문으로 반환합니다. 백엔드의 `4xx`, `5xx` 응답은 일반적인 백엔드 응답이며 다시 작성하지 않습니다.
 
-## BFF-generated failures
+## BFF가 생성하는 오류
 
-Generated failures use `application/json`, `Cache-Control: no-store`, and exactly `code` plus `message`.
+BFF가 생성한 오류는 `application/json`, `Cache-Control: no-store`를 사용하며 정확히 `code`와 `message`만 포함합니다.
 
-| Status | Code | Message | Typical cause |
+| 상태 | 코드 | 메시지 | 대표 원인 |
 | --- | --- | --- | --- |
-| `400` | `BFF_INVALID_REQUEST` | `BFF request is invalid` | Unsafe path/target or unreadable request body |
-| `405` | `BFF_METHOD_NOT_ALLOWED` | `HTTP method is not allowed` | Explicit `HEAD` or `OPTIONS` request |
-| `500` | `BFF_CONFIGURATION_ERROR` | `BFF configuration is invalid` | Invalid `APP_ENV` or `BACKEND_URL` |
-| `502` | `BFF_UPSTREAM_UNAVAILABLE` | `Backend service is unavailable` | Network failure or 10-second timeout |
+| `400` | `BFF_INVALID_REQUEST` | `BFF request is invalid` | 안전하지 않은 경로/대상 또는 읽을 수 없는 요청 본문 |
+| `405` | `BFF_METHOD_NOT_ALLOWED` | `HTTP method is not allowed` | 명시적인 `HEAD` 또는 `OPTIONS` 요청 |
+| `500` | `BFF_CONFIGURATION_ERROR` | `BFF configuration is invalid` | 유효하지 않은 `APP_ENV` 또는 `BACKEND_URL` |
+| `502` | `BFF_UPSTREAM_UNAVAILABLE` | `Backend service is unavailable` | 네트워크 실패 또는 10초 타임아웃 |
 
-Generated responses and logs must not contain environment values, backend or target URLs, credentials, parser errors, upstream exception text, or stack traces.
+BFF가 생성한 응답과 로그에는 환경 변수 값, 백엔드 또는 대상 URL, 자격 증명, 파서 오류, 업스트림 예외 텍스트, 스택 트레이스를 포함하면 안 됩니다.
 
-## Validate and operate
+## 검증과 운영
 
-Installation, general test, lint, build, and start commands are maintained in the
-[frontend README](https://github.com/crabitteam2/crabit-frontend/blob/main/README.md) instead of being
-duplicated here. After a production build, run the BFF-specific smoke check:
+설치와 일반 test, lint, build, start 명령은 이 문서에 중복해서 적지 않고
+[프론트엔드 README](https://github.com/crabitteam2/crabit-frontend/blob/main/README.md)에서 관리합니다.
+프로덕션 build를 마친 뒤 BFF 전용 smoke 검사를 실행하세요.
 
 ```sh
 npm run smoke:bff
 ```
 
-Run the smoke command after the production build. It starts a controlled local upstream and the built Next.js server, checks representative forwarding, stripping, redirect, rejection, and byte-preservation behavior, and stops both processes. It does not claim a real Spring backend success-path test.
+smoke 명령은 프로덕션 build 다음에 실행합니다. 이 명령은 제어된 로컬 업스트림과 빌드된 Next.js 서버를 시작하고, 대표적인 전달, 제거, 리디렉션, 거부, 바이트 보존 동작을 검사한 뒤 두 프로세스를 모두 종료합니다. 실제 Spring 백엔드의 성공 경로를 검증한 것으로 간주하지 않습니다.
 
-## Troubleshooting and security rules
+## 문제 해결 및 보안 원칙
 
-- A `500 BFF_CONFIGURATION_ERROR` means configuration was rejected. Check the exact `APP_ENV` spelling, URL scheme, root-only path, and absence of whitespace, credentials, query, or fragment. The response intentionally omits the rejected value.
-- A `502 BFF_UPSTREAM_UNAVAILABLE` means the backend could not complete within the deadline. Check backend reachability and DNS from the Next.js server environment.
-- A backend authentication response is expected when an operation requires credentials; browser `Authorization` and `Cookie` values are intentionally not forwarded.
-- A redirect reaches the browser as its original status and body without `Location`; the BFF will not follow it.
-- Never rename these variables with a `NEXT_PUBLIC_` prefix, expose the configured origin in a browser payload, add credential forwarding, or loosen the header/path policy without a new contract review.
+- `500 BFF_CONFIGURATION_ERROR`는 설정이 거부됐다는 뜻입니다. `APP_ENV`의 정확한 철자, URL 스킴, 루트 전용 경로, 공백·자격 증명·쿼리·프래그먼트가 없는지 확인하세요. 응답에서는 거부된 값을 의도적으로 제외합니다.
+- `502 BFF_UPSTREAM_UNAVAILABLE`는 백엔드가 제한 시간 안에 요청을 완료하지 못했다는 뜻입니다. Next.js 서버 환경에서 백엔드에 연결할 수 있는지와 DNS를 확인하세요.
+- 작업에 자격 증명이 필요하면 백엔드 인증 응답이 오는 것이 정상입니다. 브라우저의 `Authorization`, `Cookie` 값은 의도적으로 전달하지 않습니다.
+- 리디렉션은 `Location` 없이 원래 상태와 본문 그대로 브라우저에 도달하며 BFF는 이를 따라가지 않습니다.
+- 이 변수들에 `NEXT_PUBLIC_` 접두사를 붙이거나, 설정된 오리진을 브라우저 페이로드에 노출하거나, 자격 증명 전달을 추가하거나, 새 계약 검토 없이 헤더·경로 정책을 완화하면 안 됩니다.
