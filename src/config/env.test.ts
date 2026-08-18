@@ -5,23 +5,31 @@ vi.mock("server-only", () => ({}));
 import {
   BffConfigurationError,
   readBffEnvironment,
-  type AppEnvironment,
 } from "./env";
 
 describe("readBffEnvironment", () => {
-  it.each<AppEnvironment>(["local", "e2e", "staging", "prod"])(
-    "accepts the documented %s APP_ENV value",
-    (appEnv) => {
+  it.each([
+    ["local", "e2e"],
+    ["local", "demo"],
+    ["local", "prod"],
+    ["e2e", "e2e"],
+    ["staging", "e2e"],
+    ["prod", "demo"],
+  ] as const)(
+    "accepts the documented %s/%s profile pair",
+    (appEnv, backendProfile) => {
       const backendUrl = appEnv === "local" || appEnv === "e2e"
         ? "http://127.0.0.1:18080"
         : "https://backend.example:8443";
 
       const environment = readBffEnvironment({
         APP_ENV: appEnv,
+        BACKEND_PROFILE: backendProfile,
         BACKEND_URL: backendUrl,
       });
 
       expect(environment.appEnv).toBe(appEnv);
+      expect(environment.backendProfile).toBe(backendProfile);
       expect(environment.backendUrl.href).toBe(`${backendUrl}/`);
     },
   );
@@ -37,9 +45,21 @@ describe("readBffEnvironment", () => {
   ])("rejects an APP_ENV outside the exact enum: %j", (appEnv) => {
     expectConfigurationFailure({
       APP_ENV: appEnv,
+      BACKEND_PROFILE: "e2e",
       BACKEND_URL: "http://127.0.0.1:18080",
     });
   });
+
+  it.each([undefined, "", " ", "E2E", "production"])(
+    "rejects an unknown BACKEND_PROFILE: %j",
+    (backendProfile) => {
+      expectConfigurationFailure({
+        APP_ENV: "local",
+        BACKEND_PROFILE: backendProfile,
+        BACKEND_URL: "http://127.0.0.1:18080",
+      });
+    },
+  );
 
   it.each([
     undefined,
@@ -58,7 +78,11 @@ describe("readBffEnvironment", () => {
     "http://backend.example ",
     "http://backend.example\n",
   ])("rejects an unsafe BACKEND_URL: %j", (backendUrl) => {
-    expectConfigurationFailure({ APP_ENV: "local", BACKEND_URL: backendUrl });
+    expectConfigurationFailure({
+      APP_ENV: "local",
+      BACKEND_PROFILE: "prod",
+      BACKEND_URL: backendUrl,
+    });
   });
 
   it.each(["local", "e2e"] as const)(
@@ -67,6 +91,7 @@ describe("readBffEnvironment", () => {
       expect(
         readBffEnvironment({
           APP_ENV: appEnv,
+          BACKEND_PROFILE: "e2e",
           BACKEND_URL: "http://backend.example:8080/",
         }).backendUrl.href,
       ).toBe("http://backend.example:8080/");
@@ -78,6 +103,7 @@ describe("readBffEnvironment", () => {
     (appEnv) => {
       expectConfigurationFailure({
         APP_ENV: appEnv,
+        BACKEND_PROFILE: appEnv === "staging" ? "e2e" : "demo",
         BACKEND_URL: "http://backend.example",
       });
     },
@@ -86,6 +112,7 @@ describe("readBffEnvironment", () => {
   it("is independent from NODE_ENV", () => {
     const environment = readBffEnvironment({
       APP_ENV: "e2e",
+      BACKEND_PROFILE: "e2e",
       BACKEND_URL: "http://backend.example",
       NODE_ENV: "production",
     });
@@ -97,12 +124,17 @@ describe("readBffEnvironment", () => {
     const secret = "http://secret-user:secret-password@secret.example/private";
 
     try {
-      readBffEnvironment({ APP_ENV: "production", BACKEND_URL: secret });
+      readBffEnvironment({
+        APP_ENV: "production",
+        BACKEND_PROFILE: "prod",
+        BACKEND_URL: secret,
+      });
       throw new Error("Expected configuration validation to fail");
     } catch (error) {
       expect(error).toBeInstanceOf(BffConfigurationError);
       expect(String(error)).toBe("BffConfigurationError: BFF configuration is invalid");
       expect(String(error)).not.toContain("APP_ENV");
+      expect(String(error)).not.toContain("BACKEND_PROFILE");
       expect(String(error)).not.toContain("BACKEND_URL");
       expect(String(error)).not.toContain(secret);
     }
