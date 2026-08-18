@@ -1,0 +1,1558 @@
+openapi: 3.1.0
+info:
+  title: Crabit API
+  version: 0.0.1
+  description: |
+    Owner-facing Card Balance Account and Wish operations plus academy-facing
+    Shared Card reads. Resource ownership and current social visibility are
+    hidden with resource-specific 404 responses. All timestamps are RFC 3339
+    UTC Z values, all KRW values are bounded integer won, and all error bodies
+    use the common ErrorEnvelope.
+servers:
+  - url: /
+tags:
+  - name: Card Balance Accounts
+  - name: Wishes
+  - name: Shared Cards
+paths:
+  /v1/me/card-balance-accounts:
+    get:
+      tags: [Card Balance Accounts]
+      operationId: listMyCardBalanceAccounts
+      summary: List the authenticated student's Card Balance Accounts
+      description: UNKNOWN balances remain null rather than being fabricated as zero.
+      security: [{SeedBearer: []}]
+      responses:
+        '200':
+          description: Visible Card Balance Accounts.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CardBalanceAccountPage'}
+              examples:
+                unknown-balance: {$ref: '#/components/examples/UnknownBalancePage'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/card-balance-accounts/{cardBalanceAccountId}/balance-refreshes:
+    parameters: [{$ref: '#/components/parameters/CardBalanceAccountId'}]
+    post:
+      tags: [Card Balance Accounts]
+      operationId: refreshCardBalance
+      summary: Refresh the current card balance
+      description: Bodyless USER_REQUESTED lookup. This operation is deliberately not idempotency-keyed.
+      security: [{SeedBearer: []}]
+      responses:
+        '200':
+          description: A successful current balance observation.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/BalanceRefreshResult'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/CardBalanceAccountNotFound'}
+        '503': {$ref: '#/components/responses/BalanceSyncFailed'}
+  /v1/card-balance-accounts/{cardBalanceAccountId}/card-balance-changes:
+    parameters: [{$ref: '#/components/parameters/CardBalanceAccountId'}]
+    get:
+      tags: [Card Balance Accounts]
+      operationId: listCardBalanceChanges
+      summary: List successful and failed card-balance observations
+      description: Ordered by occurredAt DESC then observationId DESC using an opaque cursor.
+      security: [{SeedBearer: []}]
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Card balance observation history.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CardBalanceChangePage'}
+        '400': {$ref: '#/components/responses/MalformedRequest'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/CardBalanceAccountNotFound'}
+  /v1/card-balance-accounts/{cardBalanceAccountId}/fund-movements:
+    parameters: [{$ref: '#/components/parameters/CardBalanceAccountId'}]
+    get:
+      tags: [Card Balance Accounts]
+      operationId: listAccountFundMovements
+      summary: List account-level fund movements
+      description: Ordered by occurredAt DESC then eventId DESC. Corrections are compensating ordinary immutable events.
+      security: [{SeedBearer: []}]
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Account fund movement history.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/AccountFundMovementPage'}
+        '400': {$ref: '#/components/responses/MalformedRequest'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/CardBalanceAccountNotFound'}
+  /v1/card-balance-accounts/{cardBalanceAccountId}/wishes:
+    parameters: [{$ref: '#/components/parameters/CardBalanceAccountId'}]
+    get:
+      tags: [Wishes]
+      operationId: listWishes
+      summary: List non-deleted Wishes owned by the account
+      description: Ordered by createdAt DESC then id DESC using an opaque cursor.
+      security: [{SeedBearer: []}]
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: state
+          in: query
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: array
+            uniqueItems: true
+            items: {$ref: '#/components/schemas/WishState'}
+      responses:
+        '200':
+          description: A page of non-deleted Wishes.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/WishPage'}
+              examples:
+                empty-page: {$ref: '#/components/examples/EmptyWishPage'}
+        '400': {$ref: '#/components/responses/MalformedRequest'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/CardBalanceAccountNotFound'}
+    post:
+      tags: [Wishes]
+      operationId: createWish
+      summary: Create a private zero-funded Wish
+      description: Creates amount 0, state IN_PROGRESS, and visibility PRIVATE even when balance knowledge is UNKNOWN.
+      security: [{SeedBearer: []}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CreateWishRequest'}
+            examples:
+              purpose-ascii-boundaries: {$ref: '#/components/examples/PurposeAsciiBoundaries'}
+              purpose-decomposed-nfc: {$ref: '#/components/examples/PurposeDecomposedNfc'}
+              purpose-nbsp-boundaries: {$ref: '#/components/examples/PurposeNbspBoundaries'}
+      responses:
+        '201':
+          description: Wish created; identical replay returns the original status and body.
+          headers:
+            Idempotency-Replayed: {$ref: '#/components/headers/IdempotencyReplayed'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/WishMutationResult'}
+              examples:
+                wish-created-private-zero: {$ref: '#/components/examples/WishCreatedPrivateZero'}
+        '400': {$ref: '#/components/responses/MalformedOrIdempotencyRequired'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/CardBalanceAccountNotFound'}
+        '409': {$ref: '#/components/responses/IdempotencyConflict'}
+        '422': {$ref: '#/components/responses/InvalidAmountOrPurpose'}
+  /v1/card-balance-accounts/{cardBalanceAccountId}/wishes/{wishId}:
+    parameters:
+      - $ref: '#/components/parameters/CardBalanceAccountId'
+      - $ref: '#/components/parameters/WishId'
+    get:
+      tags: [Wishes]
+      operationId: getWish
+      summary: Get an owned non-deleted Wish
+      security: [{SeedBearer: []}]
+      responses:
+        '200':
+          description: The Wish.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Wish'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/WishOrAccountNotFound'}
+    patch:
+      tags: [Wishes]
+      operationId: patchWish
+      summary: Atomically merge-patch mutable Wish fields
+      description: Omission preserves a field; targetDate null clears it. Completed Wishes may change visibility only; an open mismatch permits only visibility narrowing.
+      security: [{SeedBearer: []}]
+      requestBody:
+        required: true
+        content:
+          application/merge-patch+json:
+            schema: {$ref: '#/components/schemas/WishMergePatch'}
+      responses:
+        '200':
+          description: The atomically updated Wish.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/WishMutationResult'}
+        '400': {$ref: '#/components/responses/MalformedRequest'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/WishOrAccountNotFound'}
+        '409': {$ref: '#/components/responses/PatchConflict'}
+        '415': {$ref: '#/components/responses/UnsupportedMediaType'}
+        '422': {$ref: '#/components/responses/InvalidAmountPurposeOrVersion'}
+    delete:
+      tags: [Wishes]
+      operationId: deleteWish
+      summary: Tombstone a Wish
+      description: Returns a final mutation result; all later reads are hidden as WISH_NOT_FOUND.
+      security: [{SeedBearer: []}]
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '200': {$ref: '#/components/responses/WishMutationSuccess'}
+        '400': {$ref: '#/components/responses/DeletePreconditionRequired'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/WishOrAccountNotFound'}
+        '409': {$ref: '#/components/responses/DeleteConflict'}
+        '422': {$ref: '#/components/responses/InvalidIfMatchVersion'}
+  /v1/card-balance-accounts/{cardBalanceAccountId}/wishes/{wishId}/deposits:
+    parameters:
+      - $ref: '#/components/parameters/CardBalanceAccountId'
+      - $ref: '#/components/parameters/WishId'
+    post:
+      tags: [Wishes]
+      operationId: depositToWish
+      summary: Deposit Card Balance Account funds into one Wish
+      description: Performs PRE_DEPOSIT lookup internally. Provider failure leaves the Wish unchanged; a persisted mismatch observation locks and rejects only this deposit.
+      security: [{SeedBearer: []}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WishAmountCommand'}
+      responses:
+        '200': {$ref: '#/components/responses/WishMutationSuccess'}
+        '400': {$ref: '#/components/responses/MalformedOrIdempotencyRequired'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/WishOrAccountNotFound'}
+        '409': {$ref: '#/components/responses/DepositConflict'}
+        '422': {$ref: '#/components/responses/InvalidAmountOrVersion'}
+        '503': {$ref: '#/components/responses/BalanceSyncFailed'}
+  /v1/card-balance-accounts/{cardBalanceAccountId}/wishes/{wishId}/withdrawals:
+    parameters:
+      - $ref: '#/components/parameters/CardBalanceAccountId'
+      - $ref: '#/components/parameters/WishId'
+    post:
+      tags: [Wishes]
+      operationId: withdrawFromWish
+      summary: Withdraw funds from one Wish
+      security: [{SeedBearer: []}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WishAmountCommand'}
+      responses:
+        '200': {$ref: '#/components/responses/WishMutationSuccess'}
+        '400': {$ref: '#/components/responses/MalformedOrIdempotencyRequired'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/WishOrAccountNotFound'}
+        '409': {$ref: '#/components/responses/WithdrawalConflict'}
+        '422': {$ref: '#/components/responses/InvalidAmountOrVersion'}
+  /v1/card-balance-accounts/{cardBalanceAccountId}/transfers:
+    parameters: [{$ref: '#/components/parameters/CardBalanceAccountId'}]
+    post:
+      tags: [Wishes]
+      operationId: transferWishFunds
+      summary: Atomically transfer funds between two Wishes in one account
+      security: [{SeedBearer: []}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WishTransferRequest'}
+      responses:
+        '200':
+          description: Atomic transfer completed; identical replay returns the original status and body.
+          headers:
+            Idempotency-Replayed: {$ref: '#/components/headers/IdempotencyReplayed'}
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/WishTransferResult'}
+        '400': {$ref: '#/components/responses/MalformedOrIdempotencyRequired'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/WishOrAccountNotFound'}
+        '409': {$ref: '#/components/responses/TransferConflict'}
+        '422': {$ref: '#/components/responses/InvalidTransferAmountOrVersion'}
+  /v1/card-balance-accounts/{cardBalanceAccountId}/wishes/{wishId}/completion:
+    parameters:
+      - $ref: '#/components/parameters/CardBalanceAccountId'
+      - $ref: '#/components/parameters/WishId'
+    post:
+      tags: [Wishes]
+      operationId: completeWish
+      summary: Complete an amount-reached Wish
+      security: [{SeedBearer: []}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WishVersionCommand'}
+      responses:
+        '200': {$ref: '#/components/responses/WishMutationSuccess'}
+        '400': {$ref: '#/components/responses/MalformedOrIdempotencyRequired'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/WishOrAccountNotFound'}
+        '409': {$ref: '#/components/responses/StateMutationConflict'}
+        '422': {$ref: '#/components/responses/InvalidVersion'}
+  /v1/card-balance-accounts/{cardBalanceAccountId}/wishes/{wishId}/abandonment:
+    parameters:
+      - $ref: '#/components/parameters/CardBalanceAccountId'
+      - $ref: '#/components/parameters/WishId'
+    post:
+      tags: [Wishes]
+      operationId: abandonWish
+      summary: Abandon a Wish and make it permanently private
+      security: [{SeedBearer: []}]
+      parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WishVersionCommand'}
+      responses:
+        '200': {$ref: '#/components/responses/WishMutationSuccess'}
+        '400': {$ref: '#/components/responses/MalformedOrIdempotencyRequired'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/WishOrAccountNotFound'}
+        '409': {$ref: '#/components/responses/StateMutationConflict'}
+        '422': {$ref: '#/components/responses/InvalidVersion'}
+  /v1/card-balance-accounts/{cardBalanceAccountId}/wishes/{wishId}/fund-movements:
+    parameters:
+      - $ref: '#/components/parameters/CardBalanceAccountId'
+      - $ref: '#/components/parameters/WishId'
+    get:
+      tags: [Wishes]
+      operationId: listWishFundMovements
+      summary: List immutable fund movements projected for one Wish
+      description: Ordered by occurredAt DESC then eventId DESC using an opaque cursor.
+      security: [{SeedBearer: []}]
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Wish fund movement history.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/WishFundMovementPage'}
+        '400': {$ref: '#/components/responses/MalformedRequest'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/WishOrAccountNotFound'}
+  /v1/academies/{academyId}/shared-cards:
+    parameters: [{$ref: '#/components/parameters/AcademyId'}]
+    get:
+      tags: [Shared Cards]
+      operationId: listAcademySharedCards
+      summary: List currently visible Shared Cards in an academy
+      description: >-
+        Re-evaluates membership, friendship, and bilateral blocking on every read;
+        excludes the owner; PRIVATE Wishes create no card. Provisional ordering:
+        contentUpdatedAt DESC, then sharedCardId DESC. No sort parameter is currently
+        supported. Under this temporary policy, only content or publication changes
+        reorder cards. Friend-priority and embedding-based recommendation ordering
+        remain open for a future contract and are not active in this version.
+      security: [{SeedBearer: []}]
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Currently visible progress and completion cards.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SharedCardPage'}
+              examples:
+                progress-adjustment-false-page: {$ref: '#/components/examples/SharedProgressAdjustmentFalsePage'}
+                progress-adjustment-true-page: {$ref: '#/components/examples/SharedProgressAdjustmentTruePage'}
+                completion-page: {$ref: '#/components/examples/SharedCompletionPage'}
+        '400': {$ref: '#/components/responses/MalformedRequest'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/AcademyNotFound'}
+  /v1/academies/{academyId}/shared-cards/{cardId}:
+    parameters:
+      - $ref: '#/components/parameters/AcademyId'
+      - $ref: '#/components/parameters/SharedCardId'
+    get:
+      tags: [Shared Cards]
+      operationId: getAcademySharedCard
+      summary: Get one currently visible Shared Card
+      description: The owner may read their own currently public card; every other absence or visibility failure is hidden.
+      security: [{SeedBearer: []}]
+      responses:
+        '200':
+          description: One currently visible Shared Card.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SharedCard'}
+              examples:
+                progress-adjustment-false: {$ref: '#/components/examples/SharedProgressAdjustmentFalse'}
+                progress-adjustment-true: {$ref: '#/components/examples/SharedProgressAdjustmentTrue'}
+                completion: {$ref: '#/components/examples/SharedCompletion'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/SharedCardOrAcademyNotFound'}
+components:
+  securitySchemes:
+    SeedBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque-seed-token
+      description: Opaque deterministic principal token. A known Seed token identifies either a student or an authenticated non-student staff principal. Token issuance and refresh are outside this contract.
+  parameters:
+    CardBalanceAccountId:
+      name: cardBalanceAccountId
+      in: path
+      required: true
+      schema: {$ref: '#/components/schemas/Uuid'}
+    WishId:
+      name: wishId
+      in: path
+      required: true
+      schema: {$ref: '#/components/schemas/Uuid'}
+    AcademyId:
+      name: academyId
+      in: path
+      required: true
+      schema: {$ref: '#/components/schemas/Uuid'}
+    SharedCardId:
+      name: cardId
+      in: path
+      required: true
+      schema: {$ref: '#/components/schemas/Uuid'}
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque cursor tied to the endpoint's fixed ordering.
+      schema: {$ref: '#/components/schemas/Cursor'}
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema: {type: integer, minimum: 1, maximum: 100, default: 20}
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Permanent per-student namespace; reuse is valid only for the same operation, target, and canonical request.
+      schema: {type: string, minLength: 1, maxLength: 200}
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: Exact non-negative integer Wish version for bodyless DELETE concurrency. A missing or non-integer value remains 400; a decoded negative value returns 422 INVALID_VERSION; a stale non-negative value returns 409 VERSION_CONFLICT.
+      schema: {$ref: '#/components/schemas/WishVersion'}
+  headers:
+    IdempotencyReplayed:
+      description: True only when the original status and body are replayed for an identical request.
+      schema: {type: boolean}
+  responses:
+    WishMutationSuccess:
+      description: Wish mutation completed; identical replay returns the original status and body.
+      headers:
+        Idempotency-Replayed: {$ref: '#/components/headers/IdempotencyReplayed'}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/WishMutationResult'}
+    MalformedRequest:
+      description: MALFORMED_REQUEST — malformed JSON, path, query, cursor, or required concurrency structure, including a missing or non-integer required version.
+      x-error-codes: [MALFORMED_REQUEST]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    MalformedOrIdempotencyRequired:
+      description: MALFORMED_REQUEST, including a missing or non-integer required version, or IDEMPOTENCY_KEY_REQUIRED.
+      x-error-codes: [MALFORMED_REQUEST, IDEMPOTENCY_KEY_REQUIRED]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    DeletePreconditionRequired:
+      description: MALFORMED_REQUEST, EXPECTED_VERSION_REQUIRED, or IDEMPOTENCY_KEY_REQUIRED.
+      x-error-codes: [MALFORMED_REQUEST, EXPECTED_VERSION_REQUIRED, IDEMPOTENCY_KEY_REQUIRED]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    AuthRequired:
+      description: AUTH_REQUIRED — missing or invalid bearer token.
+      x-error-codes: [AUTH_REQUIRED]
+      headers:
+        WWW-Authenticate:
+          required: true
+          schema: {type: string, const: Bearer}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    Forbidden:
+      description: FORBIDDEN — the authenticated principal is not a student.
+      x-error-codes: [FORBIDDEN]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    CardBalanceAccountNotFound:
+      description: CARD_BALANCE_ACCOUNT_NOT_FOUND — absent or non-owned account is hidden.
+      x-error-codes: [CARD_BALANCE_ACCOUNT_NOT_FOUND]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    WishOrAccountNotFound:
+      description: CARD_BALANCE_ACCOUNT_NOT_FOUND or WISH_NOT_FOUND — absence, non-ownership, deletion, or hidden state.
+      x-error-codes: [CARD_BALANCE_ACCOUNT_NOT_FOUND, WISH_NOT_FOUND]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    AcademyNotFound:
+      description: ACADEMY_NOT_FOUND — absent or currently invisible academy is hidden.
+      x-error-codes: [ACADEMY_NOT_FOUND]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    SharedCardOrAcademyNotFound:
+      description: ACADEMY_NOT_FOUND or SHARED_CARD_NOT_FOUND — absence or current visibility failure is hidden.
+      x-error-codes: [ACADEMY_NOT_FOUND, SHARED_CARD_NOT_FOUND]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    IdempotencyConflict:
+      description: IDEMPOTENCY_KEY_REUSED.
+      x-error-codes: [IDEMPOTENCY_KEY_REUSED]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    PatchConflict:
+      description: VERSION_CONFLICT, INVALID_STATE_TRANSITION, or BALANCE_MISMATCH_LOCKED.
+      x-error-codes: [VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    DeleteConflict:
+      description: VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, or IDEMPOTENCY_KEY_REUSED.
+      x-error-codes: [VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, IDEMPOTENCY_KEY_REUSED]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    DepositConflict:
+      description: VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, INSUFFICIENT_AVAILABLE_BALANCE, TARGET_AMOUNT_EXCEEDED, or IDEMPOTENCY_KEY_REUSED.
+      x-error-codes: [VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, INSUFFICIENT_AVAILABLE_BALANCE, TARGET_AMOUNT_EXCEEDED, IDEMPOTENCY_KEY_REUSED]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          examples:
+            balance-mismatch-locked: {$ref: '#/components/examples/BalanceMismatchLocked'}
+    WithdrawalConflict:
+      description: VERSION_CONFLICT, INVALID_STATE_TRANSITION, INSUFFICIENT_WISH_AMOUNT, or IDEMPOTENCY_KEY_REUSED.
+      x-error-codes: [VERSION_CONFLICT, INVALID_STATE_TRANSITION, INSUFFICIENT_WISH_AMOUNT, IDEMPOTENCY_KEY_REUSED]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    TransferConflict:
+      description: VERSION_CONFLICT, INVALID_STATE_TRANSITION, CROSS_ACCOUNT_TRANSFER_FORBIDDEN, INSUFFICIENT_WISH_AMOUNT, TARGET_AMOUNT_EXCEEDED, BALANCE_MISMATCH_LOCKED, or IDEMPOTENCY_KEY_REUSED.
+      x-error-codes: [VERSION_CONFLICT, INVALID_STATE_TRANSITION, CROSS_ACCOUNT_TRANSFER_FORBIDDEN, INSUFFICIENT_WISH_AMOUNT, TARGET_AMOUNT_EXCEEDED, BALANCE_MISMATCH_LOCKED, IDEMPOTENCY_KEY_REUSED]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    StateMutationConflict:
+      description: VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, or IDEMPOTENCY_KEY_REUSED.
+      x-error-codes: [VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, IDEMPOTENCY_KEY_REUSED]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    UnsupportedMediaType:
+      description: UNSUPPORTED_MEDIA_TYPE — PATCH requires application/merge-patch+json.
+      x-error-codes: [UNSUPPORTED_MEDIA_TYPE]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    InvalidAmount:
+      description: INVALID_AMOUNT — decoded integer amount is non-positive or out of range.
+      x-error-codes: [INVALID_AMOUNT]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    InvalidAmountOrPurpose:
+      description: INVALID_AMOUNT or INVALID_PURPOSE — an independently decoded field violates its constraint.
+      x-error-codes: [INVALID_AMOUNT, INVALID_PURPOSE]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          examples:
+            purpose-empty-after-boundary-removal: {$ref: '#/components/examples/InvalidPurposeEmptyAfterBoundaries'}
+            purpose-prohibited-unicode-categories: {$ref: '#/components/examples/InvalidPurposeUnicodeCategories'}
+    InvalidAmountPurposeOrVersion:
+      description: INVALID_AMOUNT, INVALID_PURPOSE, or INVALID_VERSION — an independently decoded field violates its constraint.
+      x-error-codes: [INVALID_AMOUNT, INVALID_PURPOSE, INVALID_VERSION]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          examples:
+            purpose-empty-after-boundary-removal: {$ref: '#/components/examples/InvalidPurposeEmptyAfterBoundaries'}
+            purpose-prohibited-unicode-categories: {$ref: '#/components/examples/InvalidPurposeUnicodeCategories'}
+            invalid-expected-version: {$ref: '#/components/examples/InvalidExpectedVersion'}
+    InvalidAmountOrVersion:
+      description: INVALID_AMOUNT or INVALID_VERSION — an independently decoded amount or expectedVersion violates its constraint.
+      x-error-codes: [INVALID_AMOUNT, INVALID_VERSION]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          examples:
+            invalid-expected-version: {$ref: '#/components/examples/InvalidExpectedVersion'}
+    InvalidTransferAmountOrVersion:
+      description: INVALID_AMOUNT or INVALID_VERSION — an independently decoded amount or source/destination version violates its constraint.
+      x-error-codes: [INVALID_AMOUNT, INVALID_VERSION]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          examples:
+            invalid-source-expected-version: {$ref: '#/components/examples/InvalidSourceExpectedVersion'}
+            invalid-destination-expected-version: {$ref: '#/components/examples/InvalidDestinationExpectedVersion'}
+    InvalidVersion:
+      description: INVALID_VERSION — a decoded negative expectedVersion violates the non-negative version constraint.
+      x-error-codes: [INVALID_VERSION]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          examples:
+            invalid-expected-version: {$ref: '#/components/examples/InvalidExpectedVersion'}
+    InvalidIfMatchVersion:
+      description: INVALID_VERSION — a decoded negative If-Match value violates the non-negative version constraint.
+      x-error-codes: [INVALID_VERSION]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          examples:
+            invalid-if-match-version: {$ref: '#/components/examples/InvalidIfMatchVersion'}
+    BalanceSyncFailed:
+      description: BALANCE_SYNC_FAILED — retryable external balance query failure; the failed observation is persisted without mutating the Wish.
+      x-error-codes: [BALANCE_SYNC_FAILED]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          examples:
+            balance-sync-failed: {$ref: '#/components/examples/BalanceSyncFailed'}
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+    UtcInstant:
+      type: string
+      format: date-time
+      pattern: 'Z$'
+      description: RFC 3339 UTC instant whose wire representation ends in Z.
+    UtcDate:
+      type: string
+      format: date
+    Cursor:
+      type: string
+      minLength: 1
+    KrwSigned:
+      type: integer
+      format: int64
+      minimum: -9007199254740991
+      maximum: 9007199254740991
+      description: Fractional KRW is never accepted.
+    KrwNonNegative:
+      type: integer
+      format: int64
+      minimum: 0
+      maximum: 9007199254740991
+    KrwPositive:
+      type: integer
+      format: int64
+      minimum: 1
+      maximum: 9007199254740991
+    WishVersion:
+      type: integer
+      format: int64
+      minimum: 0
+      description: A missing or non-integer required request version remains 400 MALFORMED_REQUEST; a decoded negative version returns 422 INVALID_VERSION; a stale non-negative version returns 409 VERSION_CONFLICT.
+    Purpose:
+      type: string
+      minLength: 1
+      maxLength: 200
+      pattern: '^(?!\p{Zs})(?!.*\p{Zs}$)(?!.*[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]).+$'
+      description: NFC-normalized, boundary-space-free Unicode text containing 1 through 200 code points. Cc, Cf, Zl, and Zp characters are forbidden; internal Space_Separator characters are preserved.
+    PurposeInput:
+      type: string
+      description: |-
+        Purpose request normalization is ordered as follows.
+        1. Decode the request value as a string.
+        2. Reject any decoded input containing Unicode general-category Cc, Cf, Zl, or Zp anywhere with 422 INVALID_PURPOSE.
+        3. Repeatedly remove every leading and trailing Unicode Space_Separator code point (general category Zs), including ASCII SPACE and NBSP U+00A0; preserve internal spaces.
+        4. Normalize the boundary-trimmed value to Unicode NFC.
+        5. Count Unicode code points after NFC normalization. Persist and return values containing 1 through 200 Unicode code points; otherwise return 422 INVALID_PURPOSE.
+    WishState:
+      type: string
+      enum: [IN_PROGRESS, AMOUNT_REACHED, COMPLETED, ABANDONED]
+    WishVisibility:
+      type: string
+      enum: [PRIVATE, FRIENDS, ACADEMY]
+    BalanceLookupMethod:
+      type: string
+      enum: [USER_REQUESTED, PRE_DEPOSIT, AUTO_DAILY]
+    LedgerEventType:
+      type: string
+      enum: [CARD_BALANCE_CHANGE, WISH_DEPOSIT, WISH_WITHDRAWAL, WISH_TRANSFER, WISH_COMPLETION_RETURN, WISH_ABANDONMENT_RETURN, WISH_DELETION_RETURN]
+    BalanceAdjustmentStatus:
+      type: string
+      enum: [OPEN, RESOLVED]
+      description: Internal account adjustment-state vocabulary used only in owner error details, never in Shared Card projections.
+    ErrorCode:
+      type: string
+      enum:
+        - MALFORMED_REQUEST
+        - EXPECTED_VERSION_REQUIRED
+        - IDEMPOTENCY_KEY_REQUIRED
+        - AUTH_REQUIRED
+        - FORBIDDEN
+        - CARD_BALANCE_ACCOUNT_NOT_FOUND
+        - WISH_NOT_FOUND
+        - ACADEMY_NOT_FOUND
+        - SHARED_CARD_NOT_FOUND
+        - VERSION_CONFLICT
+        - INVALID_STATE_TRANSITION
+        - BALANCE_MISMATCH_LOCKED
+        - INSUFFICIENT_AVAILABLE_BALANCE
+        - INSUFFICIENT_WISH_AMOUNT
+        - TARGET_AMOUNT_EXCEEDED
+        - CROSS_ACCOUNT_TRANSFER_FORBIDDEN
+        - IDEMPOTENCY_KEY_REUSED
+        - UNSUPPORTED_MEDIA_TYPE
+        - INVALID_AMOUNT
+        - INVALID_PURPOSE
+        - INVALID_VERSION
+        - BALANCE_SYNC_FAILED
+    FieldError:
+      type: object
+      additionalProperties: false
+      required: [field, message]
+      properties:
+        field: {type: string, minLength: 1, description: "Name of the invalid request field, parameter, or header associated with this validation failure."}
+        message: {type: string, minLength: 1, description: "Human-readable explanation of the field-specific failure."}
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          description: "Structured error payload shared by every declared non-success JSON response."
+          type: object
+          additionalProperties: false
+          required: [code, message, retryable, traceId, fieldErrors, details]
+          allOf:
+            - if:
+                properties:
+                  code: {const: BALANCE_SYNC_FAILED}
+              then:
+                properties:
+                  retryable: {const: true}
+              else:
+                properties:
+                  retryable: {const: false}
+          properties:
+            code: {$ref: '#/components/schemas/ErrorCode', description: "Stable machine-readable ErrorCode; clients should branch on this value rather than message text."}
+            message: {type: string, minLength: 1, description: "Human-readable explanation of this occurrence; it is not the stable machine decision key."}
+            retryable:
+              type: boolean
+              description: True only for BALANCE_SYNC_FAILED; false for every defined client, authorization, not-found, validation, and state-conflict error.
+            traceId: {type: string, minLength: 1, description: "Opaque server correlation identifier for diagnostics and support; it has no domain meaning."}
+            fieldErrors:
+              description: "Field-specific validation failures; empty when the error is not attributable to individual request fields."
+              type: array
+              items: {$ref: '#/components/schemas/FieldError'}
+            details:
+              description: "Extensible code-specific metadata object; empty when no details apply, and clients must ignore unrecognized keys."
+              type: object
+              additionalProperties: true
+    CardBalanceAccount:
+      oneOf:
+        - $ref: '#/components/schemas/UnknownCardBalanceAccount'
+        - $ref: '#/components/schemas/KnownCardBalanceAccount'
+      discriminator:
+        propertyName: balanceKnowledge
+        mapping:
+          UNKNOWN: '#/components/schemas/UnknownCardBalanceAccount'
+          KNOWN: '#/components/schemas/KnownCardBalanceAccount'
+    UnknownCardBalanceAccount:
+      type: object
+      additionalProperties: false
+      required: [cardBalanceAccountId, academyId, balanceKnowledge, actualCardBalance, ledgerAvailableBalance, displayAvailableBalance, unresolvedShortage, lastRefreshStatus, lastRefreshedAt]
+      properties:
+        cardBalanceAccountId: {$ref: '#/components/schemas/Uuid', description: "Stable UUID of the student's Card Balance Account."}
+        academyId: {$ref: '#/components/schemas/Uuid', description: "UUID of the academy to which this Card Balance Account belongs."}
+        balanceKnowledge: {type: string, const: UNKNOWN, description: "UNKNOWN means no successful external balance observation exists; null balance values must never be interpreted as zero."}
+        actualCardBalance: {type: 'null', description: "Always null because no successful external balance observation exists; null means unknown, not zero KRW."}
+        ledgerAvailableBalance: {type: 'null', description: "Always null until actual card balance is known; the service must not calculate it from a fabricated zero."}
+        displayAvailableBalance: {type: 'null', description: "Always null until actual card balance is known; the UI must not display it as zero KRW."}
+        unresolvedShortage: {type: 'null', description: "Always null until actual card balance is known; unknown shortage is not the same as no shortage."}
+        lastRefreshStatus:
+          description: "FAILED when the latest lookup attempt failed before any successful observation; null when no lookup attempt has been recorded."
+          type: [string, 'null']
+          enum: [FAILED, null]
+        lastRefreshedAt:
+          description: "Always null because no successful observation exists; failed-attempt time is represented in observation history instead."
+          type: ['null']
+    KnownCardBalanceAccount:
+      type: object
+      additionalProperties: false
+      required: [cardBalanceAccountId, academyId, balanceKnowledge, actualCardBalance, ledgerAvailableBalance, displayAvailableBalance, unresolvedShortage, lastRefreshStatus, lastRefreshedAt]
+      properties:
+        cardBalanceAccountId: {$ref: '#/components/schemas/Uuid', description: "Stable UUID of the student's Card Balance Account."}
+        academyId: {$ref: '#/components/schemas/Uuid', description: "UUID of the academy to which this Card Balance Account belongs."}
+        balanceKnowledge: {type: string, const: KNOWN, description: "KNOWN means at least one successful external balance observation supplies the returned balance values."}
+        actualCardBalance: {$ref: '#/components/schemas/KrwNonNegative', description: "Non-negative integer KRW observed by the most recent successful external card-balance lookup."}
+        ledgerAvailableBalance: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW equal to actualCardBalance minus the total held by active Wishes; a negative value is preserved."}
+        displayAvailableBalance: {$ref: '#/components/schemas/KrwNonNegative', description: "Non-negative integer KRW equal to max(0, ledgerAvailableBalance) for display."}
+        unresolvedShortage: {$ref: '#/components/schemas/KrwNonNegative', description: "Non-negative integer KRW equal to max(0, -ledgerAvailableBalance); zero means no unresolved shortage."}
+        lastRefreshStatus: {type: string, enum: [SUCCESS, FAILED], description: "Outcome of the most recent lookup attempt; FAILED may coexist with amounts preserved from an earlier successful observation."}
+        lastRefreshedAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant of the successful observation backing the returned amounts; retained when a later lookup fails."}
+    CardBalanceAccountPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          description: "Card Balance Accounts visible to the authenticated student in this page."
+          type: array
+          items: {$ref: '#/components/schemas/CardBalanceAccount'}
+        nextCursor:
+          description: "Opaque cursor for the next account page; null when no further page exists."
+          type: [string, 'null']
+          minLength: 1
+    BalanceRefreshResult:
+      type: object
+      additionalProperties: false
+      required: [observationId, lookupMethod, observedAt, account]
+      properties:
+        observationId: {$ref: '#/components/schemas/Uuid', description: "UUID of the newly persisted successful balance observation."}
+        lookupMethod:
+          description: "Always USER_REQUESTED because this public bodyless operation performs a user-requested lookup and does not accept a client-selected method."
+          type: string
+          const: USER_REQUESTED
+        observedAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which this external balance lookup attempt was made."}
+        account: {$ref: '#/components/schemas/KnownCardBalanceAccount', description: "Updated KNOWN Card Balance Account snapshot derived from this successful observation."}
+    CardBalanceChange:
+      oneOf:
+        - $ref: '#/components/schemas/SuccessfulCardBalanceChange'
+        - $ref: '#/components/schemas/FailedCardBalanceObservation'
+      discriminator:
+        propertyName: outcome
+        mapping:
+          SUCCESS: '#/components/schemas/SuccessfulCardBalanceChange'
+          FAILED: '#/components/schemas/FailedCardBalanceObservation'
+    SuccessfulCardBalanceChange:
+      type: object
+      additionalProperties: false
+      required: [observationId, outcome, lookupMethod, occurredAt, actualCardBalanceDelta, actualCardBalanceAfter]
+      properties:
+        observationId: {$ref: '#/components/schemas/Uuid', description: "UUID of this successful balance observation."}
+        outcome: {type: string, const: SUCCESS, description: "SUCCESS discriminator identifying the successful observation variant."}
+        lookupMethod: {$ref: '#/components/schemas/BalanceLookupMethod', description: "Trigger for this lookup: USER_REQUESTED, PRE_DEPOSIT, or AUTO_DAILY."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which the successful external lookup attempt was made."}
+        actualCardBalanceDelta: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW change from the previous successful observed balance, or from zero for the first successful observation."}
+        actualCardBalanceAfter: {$ref: '#/components/schemas/KrwNonNegative', description: "Non-negative integer KRW observed by this successful lookup."}
+    FailedCardBalanceObservation:
+      type: object
+      additionalProperties: false
+      required: [observationId, outcome, lookupMethod, occurredAt, failureCode]
+      properties:
+        observationId: {$ref: '#/components/schemas/Uuid', description: "UUID of this failed balance observation."}
+        outcome: {type: string, const: FAILED, description: "FAILED discriminator identifying the failed observation variant."}
+        lookupMethod: {$ref: '#/components/schemas/BalanceLookupMethod', description: "Trigger for this failed lookup: USER_REQUESTED, PRE_DEPOSIT, or AUTO_DAILY."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which the failed external lookup attempt was made."}
+        failureCode: {type: string, const: BALANCE_SYNC_FAILED, description: "Always BALANCE_SYNC_FAILED; no balance delta or replacement balance is produced by this observation."}
+    CardBalanceChangePage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          description: "Successful and failed card-balance observations in occurredAt descending, observationId descending order."
+          type: array
+          items: {$ref: '#/components/schemas/CardBalanceChange'}
+        nextCursor: {type: [string, 'null'], minLength: 1, description: "Opaque cursor for the next observation-history page; null when no further page exists."}
+    Wish:
+      type: object
+      additionalProperties: false
+      required: [id, cardBalanceAccountId, purpose, targetAmount, amount, targetDate, state, visibility, createdAt, updatedAt, completedAt, actualDurationSeconds, version]
+      properties:
+        id: {$ref: '#/components/schemas/Uuid', description: "Stable UUID of this Wish."}
+        cardBalanceAccountId: {$ref: '#/components/schemas/Uuid', description: "UUID of the owner Card Balance Account to which this Wish is permanently attached."}
+        purpose: {$ref: '#/components/schemas/Purpose', description: "NFC-normalized, boundary-space-free purpose text persisted for this Wish."}
+        targetAmount: {$ref: '#/components/schemas/KrwPositive', description: "Positive integer KRW goal for this Wish."}
+        amount: {$ref: '#/components/schemas/KrwNonNegative', description: "Non-negative integer KRW currently allocated to this Wish; it is distinct from actual card balance and never exceeds targetAmount."}
+        targetDate:
+          type: [string, 'null']
+          format: date
+          description: Optional calendar date that may be in the past, present, or future.
+        state: {$ref: '#/components/schemas/WishState', description: "Lifecycle state: IN_PROGRESS below target, AMOUNT_REACHED at target before explicit completion, COMPLETED after completion, or ABANDONED after abandonment."}
+        visibility: {$ref: '#/components/schemas/WishVisibility', description: "Requested publication scope PRIVATE, FRIENDS, or ACADEMY; current relationship and blocking checks may further hide any Shared Card."}
+        createdAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which the Wish was created."}
+        updatedAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant of the most recent successful Wish content or lifecycle mutation."}
+        completedAt: {type: [string, 'null'], format: date-time, pattern: 'Z$', description: "RFC 3339 UTC Z instant of explicit completion for a COMPLETED Wish; null for every other state."}
+        actualDurationSeconds:
+          type: [integer, 'null']
+          format: int64
+          minimum: 0
+          description: For completed Wishes, the elapsed whole seconds from createdAt through completedAt; null otherwise.
+        version: {$ref: '#/components/schemas/WishVersion', description: "Non-negative optimistic concurrency version of this snapshot; successful state-changing mutations advance it and idempotent replay returns the original value."}
+    WishPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          description: "Non-deleted owned Wishes in createdAt descending, id descending order."
+          type: array
+          items: {$ref: '#/components/schemas/Wish'}
+        nextCursor: {type: [string, 'null'], minLength: 1, description: "Opaque cursor for the next Wish page; null when no further page exists."}
+    CreateWishRequest:
+      type: object
+      additionalProperties: false
+      required: [purpose, targetAmount]
+      properties:
+        purpose: {$ref: '#/components/schemas/PurposeInput'}
+        targetAmount: {$ref: '#/components/schemas/KrwPositive'}
+        targetDate: {type: [string, 'null'], format: date}
+    WishMergePatch:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion]
+      properties:
+        expectedVersion: {$ref: '#/components/schemas/WishVersion'}
+        purpose: {$ref: '#/components/schemas/PurposeInput'}
+        targetAmount: {$ref: '#/components/schemas/KrwPositive'}
+        targetDate: {type: [string, 'null'], format: date}
+        visibility: {$ref: '#/components/schemas/WishVisibility'}
+      anyOf:
+        - required: [purpose]
+        - required: [targetAmount]
+        - required: [targetDate]
+        - required: [visibility]
+    WishAmountCommand:
+      type: object
+      additionalProperties: false
+      required: [amount, expectedVersion]
+      properties:
+        amount: {$ref: '#/components/schemas/KrwPositive'}
+        expectedVersion: {$ref: '#/components/schemas/WishVersion'}
+    WishVersionCommand:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion]
+      properties:
+        expectedVersion: {$ref: '#/components/schemas/WishVersion'}
+    WishTransferRequest:
+      type: object
+      additionalProperties: false
+      required: [sourceWishId, destinationWishId, amount, sourceExpectedVersion, destinationExpectedVersion]
+      properties:
+        sourceWishId: {$ref: '#/components/schemas/Uuid'}
+        destinationWishId: {$ref: '#/components/schemas/Uuid'}
+        amount: {$ref: '#/components/schemas/KrwPositive'}
+        sourceExpectedVersion: {$ref: '#/components/schemas/WishVersion'}
+        destinationExpectedVersion: {$ref: '#/components/schemas/WishVersion'}
+    WishMutationResult:
+      type: object
+      additionalProperties: false
+      required: [wish, eventId]
+      properties:
+        wish: {$ref: '#/components/schemas/Wish', description: "Authoritative Wish snapshot after the mutation, or the original snapshot returned by an identical idempotent replay."}
+        eventId: {type: [string, 'null'], format: uuid, description: "UUID of the immutable ledger event created by the mutation; null when the mutation moves no funds and therefore creates no ledger event."}
+    WishTransferResult:
+      type: object
+      additionalProperties: false
+      required: [sourceWish, destinationWish, eventId, occurredAt]
+      properties:
+        sourceWish: {$ref: '#/components/schemas/Wish', description: "Authoritative source Wish snapshot after the atomic transfer."}
+        destinationWish: {$ref: '#/components/schemas/Wish', description: "Authoritative destination Wish snapshot after the atomic transfer."}
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the single immutable ledger event containing both transfer effects."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant shared by the source and destination effects of the transfer."}
+    AccountFundMovement:
+      oneOf:
+        - $ref: '#/components/schemas/AccountWishDeposit'
+        - $ref: '#/components/schemas/AccountWishWithdrawal'
+        - $ref: '#/components/schemas/AccountWishTransfer'
+        - $ref: '#/components/schemas/AccountWishCompletionReturn'
+        - $ref: '#/components/schemas/AccountWishAbandonmentReturn'
+        - $ref: '#/components/schemas/AccountWishDeletionReturn'
+      discriminator:
+        propertyName: eventType
+    AccountWishDeposit:
+      type: object
+      additionalProperties: false
+      required: [eventId, eventType, wishId, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter]
+      properties:
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the corresponding Wish movement projection."}
+        eventType: {type: string, const: WISH_DEPOSIT, description: "Always WISH_DEPOSIT, identifying funds allocated from account availability to one Wish."}
+        wishId: {$ref: '#/components/schemas/Uuid', description: "UUID of the Wish that received the deposited funds."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which the immutable deposit event occurred."}
+        accountAvailableBalanceDelta: {$ref: '#/components/schemas/KrwSigned', description: "Negative integer KRW change to ledger-available account balance caused by this deposit."}
+        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW ledger-available account balance immediately after the deposit."}
+    AccountWishWithdrawal:
+      type: object
+      additionalProperties: false
+      required: [eventId, eventType, wishId, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter]
+      properties:
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the corresponding Wish movement projection."}
+        eventType: {type: string, const: WISH_WITHDRAWAL, description: "Always WISH_WITHDRAWAL, identifying funds returned from one Wish to account availability."}
+        wishId: {$ref: '#/components/schemas/Uuid', description: "UUID of the Wish from which funds were withdrawn."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which the immutable withdrawal event occurred."}
+        accountAvailableBalanceDelta: {$ref: '#/components/schemas/KrwSigned', description: "Positive integer KRW change to ledger-available account balance caused by this withdrawal."}
+        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW ledger-available account balance immediately after the withdrawal."}
+    AccountWishTransfer:
+      type: object
+      additionalProperties: false
+      required: [eventId, eventType, sourceWishId, destinationWishId, amount, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter]
+      properties:
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the single immutable ledger event shared by the source and destination Wish projections."}
+        eventType: {type: string, const: WISH_TRANSFER, description: "Always WISH_TRANSFER, identifying an atomic transfer between two Wishes in the same account."}
+        sourceWishId: {$ref: '#/components/schemas/Uuid', description: "UUID of the Wish from which the transfer amount was removed."}
+        destinationWishId: {$ref: '#/components/schemas/Uuid', description: "UUID of the Wish to which the transfer amount was added."}
+        amount: {$ref: '#/components/schemas/KrwPositive', description: "Positive integer KRW moved atomically from the source Wish to the destination Wish."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant shared by both effects of the immutable transfer event."}
+        accountAvailableBalanceDelta: {type: integer, const: 0, description: "Always zero because a same-account Wish transfer does not change account-level availability."}
+        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW ledger-available account balance after the transfer, unchanged by the transfer itself."}
+    AccountWishCompletionReturn:
+      type: object
+      additionalProperties: false
+      required: [eventId, eventType, wishId, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter]
+      properties:
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the completed Wish's movement projection."}
+        eventType: {type: string, const: WISH_COMPLETION_RETURN, description: "Always WISH_COMPLETION_RETURN, identifying funds returned when a reached Wish is explicitly completed."}
+        wishId: {$ref: '#/components/schemas/Uuid', description: "UUID of the Wish completed by this return event."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which completion returned the remaining Wish funds."}
+        accountAvailableBalanceDelta: {$ref: '#/components/schemas/KrwSigned', description: "Positive integer KRW returned from the completed Wish to account availability."}
+        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW ledger-available account balance immediately after the completion return."}
+    AccountWishAbandonmentReturn:
+      type: object
+      additionalProperties: false
+      required: [eventId, eventType, wishId, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter]
+      properties:
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the abandoned Wish's movement projection."}
+        eventType: {type: string, const: WISH_ABANDONMENT_RETURN, description: "Always WISH_ABANDONMENT_RETURN, identifying nonzero funds returned when a Wish is abandoned."}
+        wishId: {$ref: '#/components/schemas/Uuid', description: "UUID of the Wish abandoned by this return event."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which abandonment returned the remaining Wish funds."}
+        accountAvailableBalanceDelta: {$ref: '#/components/schemas/KrwSigned', description: "Positive integer KRW returned from the abandoned Wish to account availability."}
+        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW ledger-available account balance immediately after the abandonment return."}
+    AccountWishDeletionReturn:
+      type: object
+      additionalProperties: false
+      required: [eventId, eventType, wishId, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter]
+      properties:
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the deleted Wish's movement projection."}
+        eventType: {type: string, const: WISH_DELETION_RETURN, description: "Always WISH_DELETION_RETURN, identifying nonzero funds returned when a Wish is tombstoned."}
+        wishId: {$ref: '#/components/schemas/Uuid', description: "UUID of the Wish tombstoned by this return event."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which deletion returned the remaining Wish funds."}
+        accountAvailableBalanceDelta: {$ref: '#/components/schemas/KrwSigned', description: "Positive integer KRW returned from the deleted Wish to account availability."}
+        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW ledger-available account balance immediately after the deletion return."}
+    AccountFundMovementPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          description: "Immutable account-level fund movements in occurredAt descending, eventId descending order."
+          type: array
+          items: {$ref: '#/components/schemas/AccountFundMovement'}
+        nextCursor: {type: [string, 'null'], minLength: 1, description: "Opaque cursor for the next account-movement page; null when no further page exists."}
+    WishFundMovement:
+      oneOf:
+        - $ref: '#/components/schemas/WishDepositMovement'
+        - $ref: '#/components/schemas/WishWithdrawalMovement'
+        - $ref: '#/components/schemas/WishTransferMovement'
+        - $ref: '#/components/schemas/WishCompletionReturnMovement'
+        - $ref: '#/components/schemas/WishAbandonmentReturnMovement'
+        - $ref: '#/components/schemas/WishDeletionReturnMovement'
+      discriminator:
+        propertyName: eventType
+    WishDepositMovement:
+      type: object
+      additionalProperties: false
+      required: [eventId, eventType, occurredAt, wishAmountDelta, wishAmountAfter]
+      properties:
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the account-level deposit projection."}
+        eventType: {type: string, const: WISH_DEPOSIT, description: "Always WISH_DEPOSIT, identifying funds added to this Wish."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which the deposit event occurred."}
+        wishAmountDelta: {$ref: '#/components/schemas/KrwSigned', description: "Positive integer KRW added to this Wish."}
+        wishAmountAfter: {$ref: '#/components/schemas/KrwNonNegative', description: "Non-negative integer KRW held by this Wish immediately after the deposit."}
+    WishWithdrawalMovement:
+      type: object
+      additionalProperties: false
+      required: [eventId, eventType, occurredAt, wishAmountDelta, wishAmountAfter]
+      properties:
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the account-level withdrawal projection."}
+        eventType: {type: string, const: WISH_WITHDRAWAL, description: "Always WISH_WITHDRAWAL, identifying funds removed from this Wish."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which the withdrawal event occurred."}
+        wishAmountDelta: {$ref: '#/components/schemas/KrwSigned', description: "Negative integer KRW removed from this Wish."}
+        wishAmountAfter: {$ref: '#/components/schemas/KrwNonNegative', description: "Non-negative integer KRW held by this Wish immediately after the withdrawal."}
+    WishTransferMovement:
+      type: object
+      additionalProperties: false
+      required: [eventId, eventType, occurredAt, direction, counterpartyWishId, wishAmountDelta, wishAmountAfter]
+      properties:
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the single immutable ledger event shared by both Wish transfer projections."}
+        eventType: {type: string, const: WISH_TRANSFER, description: "Always WISH_TRANSFER, identifying one side of an atomic same-account Wish transfer."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant shared by both Wish effects of the transfer."}
+        direction: {type: string, enum: [SOURCE, DESTINATION], description: "SOURCE when this Wish sent funds and DESTINATION when this Wish received funds."}
+        counterpartyWishId: {$ref: '#/components/schemas/Uuid', description: "UUID of the other Wish participating in the transfer."}
+        wishAmountDelta: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW effect on this Wish: negative for SOURCE and positive for DESTINATION."}
+        wishAmountAfter: {$ref: '#/components/schemas/KrwNonNegative', description: "Non-negative integer KRW held by this Wish immediately after the transfer."}
+    WishCompletionReturnMovement:
+      type: object
+      additionalProperties: false
+      required: [eventId, eventType, occurredAt, wishAmountDelta, wishAmountAfter]
+      properties:
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the account-level completion-return projection."}
+        eventType: {type: string, const: WISH_COMPLETION_RETURN, description: "Always WISH_COMPLETION_RETURN, identifying funds removed from this Wish during explicit completion."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which completion returned the Wish funds."}
+        wishAmountDelta: {$ref: '#/components/schemas/KrwSigned', description: "Negative integer KRW returned from this Wish to account availability."}
+        wishAmountAfter: {$ref: '#/components/schemas/KrwNonNegative', description: "Always zero KRW after explicit completion."}
+    WishAbandonmentReturnMovement:
+      type: object
+      additionalProperties: false
+      required: [eventId, eventType, occurredAt, wishAmountDelta, wishAmountAfter]
+      properties:
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the account-level abandonment-return projection."}
+        eventType: {type: string, const: WISH_ABANDONMENT_RETURN, description: "Always WISH_ABANDONMENT_RETURN, identifying nonzero funds removed when this Wish was abandoned."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which abandonment returned the Wish funds."}
+        wishAmountDelta: {$ref: '#/components/schemas/KrwSigned', description: "Negative integer KRW returned from this Wish to account availability."}
+        wishAmountAfter: {$ref: '#/components/schemas/KrwNonNegative', description: "Always zero KRW after abandonment."}
+    WishDeletionReturnMovement:
+      type: object
+      additionalProperties: false
+      required: [eventId, eventType, occurredAt, wishAmountDelta, wishAmountAfter]
+      properties:
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the account-level deletion-return projection."}
+        eventType: {type: string, const: WISH_DELETION_RETURN, description: "Always WISH_DELETION_RETURN, identifying nonzero funds removed when this Wish was tombstoned."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which deletion returned the Wish funds."}
+        wishAmountDelta: {$ref: '#/components/schemas/KrwSigned', description: "Negative integer KRW returned from this Wish to account availability."}
+        wishAmountAfter: {$ref: '#/components/schemas/KrwNonNegative', description: "Always zero KRW after tombstone deletion."}
+    WishFundMovementPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          description: "Immutable fund movements projected for this Wish in occurredAt descending, eventId descending order."
+          type: array
+          items: {$ref: '#/components/schemas/WishFundMovement'}
+        nextCursor: {type: [string, 'null'], minLength: 1, description: "Opaque cursor for the next Wish-movement page; null when no further page exists."}
+    SharedCard:
+      oneOf:
+        - $ref: '#/components/schemas/ProgressSharedCard'
+        - $ref: '#/components/schemas/CompletionSharedCard'
+      discriminator:
+        propertyName: kind
+        mapping:
+          PROGRESS: '#/components/schemas/ProgressSharedCard'
+          COMPLETION: '#/components/schemas/CompletionSharedCard'
+    ProgressSharedCard:
+      type: object
+      additionalProperties: false
+      required: [sharedCardId, kind, ownerNickname, purpose, targetAmount, progressPercent, balanceAdjustmentInProgress, contentUpdatedAt]
+      properties:
+        sharedCardId: {$ref: '#/components/schemas/Uuid', description: "Stable UUID of this privacy-safe Shared Card projection; it does not expose the underlying Wish or account identifier."}
+        kind: {type: string, const: PROGRESS, description: "PROGRESS discriminator identifying a currently published non-completed Wish card."}
+        ownerNickname: {type: string, minLength: 1, description: "Owner's display nickname; no owner identifier, student identifier, account data, or physical-card data is exposed."}
+        purpose: {$ref: '#/components/schemas/Purpose', description: "Published NFC-normalized Wish purpose."}
+        targetAmount: {$ref: '#/components/schemas/KrwPositive', description: "Published positive integer KRW target amount; the owner's exact current Wish amount is not exposed."}
+        progressPercent:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Floor integer division; unreached progress is capped at 99 and only a reached target emits 100.
+        balanceAdjustmentInProgress:
+          type: boolean
+          description: True iff the owning Card Balance Account has an OPEN BalanceAdjustmentCase at response read time; absent and RESOLVED-only histories emit false. This value is not persisted on SharedCard and does not update contentUpdatedAt or ordering.
+        contentUpdatedAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant of the latest content or publication change used by provisional ordering; read-time relationship checks and balanceAdjustmentInProgress do not change it."}
+    CompletionSharedCard:
+      type: object
+      additionalProperties: false
+      required: [sharedCardId, kind, ownerNickname, purpose, targetAmount, progressPercent, targetDate, createdAt, completedAt, actualDurationSeconds, contentUpdatedAt]
+      properties:
+        sharedCardId: {$ref: '#/components/schemas/Uuid', description: "Stable UUID of this privacy-safe Shared Card projection; it does not expose the underlying Wish or account identifier."}
+        kind: {type: string, const: COMPLETION, description: "COMPLETION discriminator identifying an explicitly completed published Wish card."}
+        ownerNickname: {type: string, minLength: 1, description: "Owner's display nickname; no owner identifier, student identifier, account data, or physical-card data is exposed."}
+        purpose: {$ref: '#/components/schemas/Purpose', description: "Published NFC-normalized Wish purpose."}
+        targetAmount: {$ref: '#/components/schemas/KrwPositive', description: "Published positive integer KRW target amount; the owner's exact historical Wish balance is not exposed."}
+        progressPercent: {type: integer, const: 100, description: "Always 100 for the completed-card variant."}
+        targetDate: {type: [string, 'null'], format: date, description: "Optional owner-supplied target calendar date; null when the completed Wish had no target date."}
+        createdAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which the underlying Wish was created."}
+        completedAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which the owner explicitly completed the Wish."}
+        actualDurationSeconds: {type: integer, format: int64, minimum: 0, description: "Non-negative elapsed whole seconds from createdAt through completedAt."}
+        contentUpdatedAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant of the latest content or publication change used by provisional ordering."}
+    SharedCardPage:
+      type: object
+      additionalProperties: false
+      required: [items, nextCursor]
+      properties:
+        items:
+          description: "Currently visible progress and completion cards in provisional contentUpdatedAt descending, sharedCardId descending order."
+          type: array
+          items: {$ref: '#/components/schemas/SharedCard'}
+        nextCursor: {type: [string, 'null'], minLength: 1, description: "Opaque cursor for the next Shared Card page; null when no further page exists."}
+  examples:
+    UnknownBalancePage:
+      summary: unknown-balance
+      x-schema-ref: '#/components/schemas/CardBalanceAccountPage'
+      value:
+        items:
+          - cardBalanceAccountId: 09551375-f69a-4e69-8587-a0d590cbf092
+            academyId: a12c54ad-c8a2-4102-a03b-28fe4a0daaa7
+            balanceKnowledge: UNKNOWN
+            actualCardBalance: null
+            ledgerAvailableBalance: null
+            displayAvailableBalance: null
+            unresolvedShortage: null
+            lastRefreshStatus: null
+            lastRefreshedAt: null
+        nextCursor: null
+    FailedRefreshKnownBalance:
+      summary: failed-refresh-known-balance
+      description: A failed later refresh preserves every amount from the last successful observation.
+      x-schema-ref: '#/components/schemas/KnownCardBalanceAccount'
+      value:
+        cardBalanceAccountId: 09551375-f69a-4e69-8587-a0d590cbf092
+        academyId: a12c54ad-c8a2-4102-a03b-28fe4a0daaa7
+        balanceKnowledge: KNOWN
+        actualCardBalance: 250000
+        ledgerAvailableBalance: 150000
+        displayAvailableBalance: 150000
+        unresolvedShortage: 0
+        lastRefreshStatus: FAILED
+        lastRefreshedAt: '2026-08-16T02:00:00Z'
+    EmptyWishPage:
+      summary: empty-page
+      x-schema-ref: '#/components/schemas/WishPage'
+      value:
+        items: []
+        nextCursor: null
+    WishCreatedPrivateZero:
+      summary: wish-created-private-zero
+      x-schema-ref: '#/components/schemas/WishMutationResult'
+      value:
+        wish:
+          id: 341ab749-bbab-4b08-9334-0e4b12347b48
+          cardBalanceAccountId: 09551375-f69a-4e69-8587-a0d590cbf092
+          purpose: 새 노트북
+          targetAmount: 1500000
+          amount: 0
+          targetDate: '2026-12-31'
+          state: IN_PROGRESS
+          visibility: PRIVATE
+          createdAt: '2026-08-16T02:10:00Z'
+          updatedAt: '2026-08-16T02:10:00Z'
+          completedAt: null
+          actualDurationSeconds: null
+          version: 0
+        eventId: null
+    IdempotentReplay:
+      summary: idempotent-replay
+      description: The original success body is returned with Idempotency-Replayed true.
+      x-schema-ref: '#/components/schemas/WishMutationResult'
+      x-response-headers:
+        Idempotency-Replayed: true
+      value:
+        wish:
+          id: 341ab749-bbab-4b08-9334-0e4b12347b48
+          cardBalanceAccountId: 09551375-f69a-4e69-8587-a0d590cbf092
+          purpose: 새 노트북
+          targetAmount: 1500000
+          amount: 200000
+          targetDate: '2026-12-31'
+          state: IN_PROGRESS
+          visibility: PRIVATE
+          createdAt: '2026-08-16T02:10:00Z'
+          updatedAt: '2026-08-16T02:20:00Z'
+          completedAt: null
+          actualDurationSeconds: null
+          version: 1
+        eventId: c88a568c-38a8-4767-a88a-caf3dad22976
+    BalanceSyncFailed:
+      summary: balance-sync-failed
+      x-schema-ref: '#/components/schemas/ErrorEnvelope'
+      value:
+        error:
+          code: BALANCE_SYNC_FAILED
+          message: Card balance could not be refreshed.
+          retryable: true
+          traceId: tr_01J5G1W1M9QH7QVCATBMRXJRGC
+          fieldErrors: []
+          details: {}
+    BalanceMismatchLocked:
+      summary: balance-mismatch-locked
+      x-schema-ref: '#/components/schemas/ErrorEnvelope'
+      value:
+        error:
+          code: BALANCE_MISMATCH_LOCKED
+          message: The account balance must be reconciled before this operation.
+          retryable: false
+          traceId: tr_01J5G1W1M9QH7QVCATBMRXJRGD
+          fieldErrors: []
+          details:
+            adjustmentStatus: OPEN
+    DeletedWishHidden:
+      summary: deleted-wish-hidden
+      x-schema-ref: '#/components/schemas/ErrorEnvelope'
+      value:
+        error:
+          code: WISH_NOT_FOUND
+          message: Wish not found.
+          retryable: false
+          traceId: tr_01J5G1W1M9QH7QVCATBMRXJRGE
+          fieldErrors: []
+          details: {}
+    CardBalanceChangeExample:
+      summary: card-balance-change
+      x-schema-ref: '#/components/schemas/SuccessfulCardBalanceChange'
+      value:
+        observationId: 6df5b01a-446e-4684-b201-bdb099fca0de
+        outcome: SUCCESS
+        lookupMethod: USER_REQUESTED
+        occurredAt: '2026-08-16T03:00:00Z'
+        actualCardBalanceDelta: -5000
+        actualCardBalanceAfter: 245000
+    AccountFundMovementExample:
+      summary: account-fund-movement
+      x-schema-ref: '#/components/schemas/AccountWishDeposit'
+      value:
+        eventId: a1516b68-c31b-49c5-ab0c-b66a2f5fde6e
+        eventType: WISH_DEPOSIT
+        wishId: 341ab749-bbab-4b08-9334-0e4b12347b48
+        occurredAt: '2026-08-16T03:05:00Z'
+        accountAvailableBalanceDelta: -50000
+        accountAvailableBalanceAfter: 100000
+    WishFundMovementExample:
+      summary: wish-fund-movement
+      x-schema-ref: '#/components/schemas/WishDepositMovement'
+      value:
+        eventId: a1516b68-c31b-49c5-ab0c-b66a2f5fde6e
+        eventType: WISH_DEPOSIT
+        occurredAt: '2026-08-16T03:05:00Z'
+        wishAmountDelta: 50000
+        wishAmountAfter: 250000
+    PurposeAsciiBoundaries:
+      summary: purpose-ascii-boundaries
+      description: ASCII boundary spaces are accepted and removed before the normalized Purpose is persisted and returned.
+      x-schema-ref: '#/components/schemas/CreateWishRequest'
+      x-normalized-purpose: 새 노트북
+      value:
+        purpose: '  새 노트북  '
+        targetAmount: 1500000
+    PurposeDecomposedNfc:
+      summary: purpose-decomposed-nfc
+      description: Decomposed Unicode input is accepted and returned in NFC form.
+      x-schema-ref: '#/components/schemas/CreateWishRequest'
+      x-normalized-purpose: "Caf\u00E9"
+      value:
+        purpose: "Cafe\u0301"
+        targetAmount: 1500000
+    PurposeNbspBoundaries:
+      summary: purpose-nbsp-boundaries
+      description: NBSP boundary characters are removed while the internal ASCII space is preserved.
+      x-schema-ref: '#/components/schemas/CreateWishRequest'
+      x-normalized-purpose: 비상금 계획
+      value:
+        purpose: "\u00A0비상금 계획\u00A0"
+        targetAmount: 1500000
+    InvalidPurposeEmptyAfterBoundaries:
+      summary: purpose-empty-after-boundary-removal
+      description: A Purpose that becomes empty after Unicode Space_Separator boundary removal is invalid.
+      x-schema-ref: '#/components/schemas/ErrorEnvelope'
+      x-request-purpose: " \u00A0 "
+      value:
+        error:
+          code: INVALID_PURPOSE
+          message: Purpose must contain between 1 and 200 Unicode code points after normalization.
+          retryable: false
+          traceId: tr_01J5G1W1M9QH7QVCATBMRXJRGF
+          fieldErrors:
+            - field: purpose
+              message: Purpose is empty after boundary-space removal.
+          details: {}
+    InvalidPurposeUnicodeCategories:
+      summary: purpose-prohibited-unicode-categories
+      description: Cc controls including newlines, Cf format characters, Zl line separators, and Zp paragraph separators are invalid anywhere in Purpose input.
+      x-schema-ref: '#/components/schemas/ErrorEnvelope'
+      x-rejected-unicode-categories: [Cc, Cf, Zl, Zp]
+      x-request-purpose-by-category:
+        Cc: "계획\n메모"
+        Cf: "계획\u200B메모"
+        Zl: "계획\u2028메모"
+        Zp: "계획\u2029메모"
+      value:
+        error:
+          code: INVALID_PURPOSE
+          message: Purpose contains a prohibited Unicode character.
+          retryable: false
+          traceId: tr_01J5G1W1M9QH7QVCATBMRXJRGG
+          fieldErrors:
+            - field: purpose
+              message: Purpose must not contain Cc, Cf, Zl, or Zp characters.
+          details: {}
+    InvalidExpectedVersion:
+      summary: invalid-expected-version
+      description: A decoded negative expectedVersion returns 422 INVALID_VERSION.
+      x-schema-ref: '#/components/schemas/ErrorEnvelope'
+      x-request-value: -1
+      value:
+        error:
+          code: INVALID_VERSION
+          message: expectedVersion must be non-negative.
+          retryable: false
+          traceId: tr_01J5G1W1M9QH7QVCATBMRXJRGH
+          fieldErrors:
+            - field: expectedVersion
+              message: Version must be non-negative.
+          details: {}
+    InvalidSourceExpectedVersion:
+      summary: invalid-source-expected-version
+      description: A decoded negative sourceExpectedVersion returns 422 INVALID_VERSION.
+      x-schema-ref: '#/components/schemas/ErrorEnvelope'
+      x-request-value: -1
+      value:
+        error:
+          code: INVALID_VERSION
+          message: sourceExpectedVersion must be non-negative.
+          retryable: false
+          traceId: tr_01J5G1W1M9QH7QVCATBMRXJRGJ
+          fieldErrors:
+            - field: sourceExpectedVersion
+              message: Version must be non-negative.
+          details: {}
+    InvalidDestinationExpectedVersion:
+      summary: invalid-destination-expected-version
+      description: A decoded negative destinationExpectedVersion returns 422 INVALID_VERSION.
+      x-schema-ref: '#/components/schemas/ErrorEnvelope'
+      x-request-value: -1
+      value:
+        error:
+          code: INVALID_VERSION
+          message: destinationExpectedVersion must be non-negative.
+          retryable: false
+          traceId: tr_01J5G1W1M9QH7QVCATBMRXJRGK
+          fieldErrors:
+            - field: destinationExpectedVersion
+              message: Version must be non-negative.
+          details: {}
+    InvalidIfMatchVersion:
+      summary: invalid-if-match-version
+      description: A decoded negative If-Match header returns 422 INVALID_VERSION.
+      x-schema-ref: '#/components/schemas/ErrorEnvelope'
+      x-request-value: -1
+      value:
+        error:
+          code: INVALID_VERSION
+          message: If-Match must be non-negative.
+          retryable: false
+          traceId: tr_01J5G1W1M9QH7QVCATBMRXJRGM
+          fieldErrors:
+            - field: If-Match
+              message: Version must be non-negative.
+          details: {}
+    SharedProgressAdjustmentFalse:
+      summary: shared-progress-adjustment-false
+      x-schema-ref: '#/components/schemas/ProgressSharedCard'
+      value:
+        sharedCardId: 5d0a53d2-7b2d-4a6a-aefa-3c3bbca881b6
+        kind: PROGRESS
+        ownerNickname: rabbit
+        purpose: 새 노트북
+        targetAmount: 1500000
+        progressPercent: 40
+        balanceAdjustmentInProgress: false
+        contentUpdatedAt: '2026-08-16T04:00:00Z'
+    SharedProgressAdjustmentTrue:
+      summary: shared-progress-adjustment-true
+      description: The owning account has an OPEN BalanceAdjustmentCase at this read time.
+      x-schema-ref: '#/components/schemas/ProgressSharedCard'
+      value:
+        sharedCardId: 8c40641a-9128-48bb-8b7d-2a19e8810630
+        kind: PROGRESS
+        ownerNickname: bunny
+        purpose: 자전거
+        targetAmount: 600000
+        progressPercent: 73
+        balanceAdjustmentInProgress: true
+        contentUpdatedAt: '2026-08-16T04:05:00Z'
+    SharedCompletion:
+      summary: shared-completion-without-adjustment-field
+      x-schema-ref: '#/components/schemas/CompletionSharedCard'
+      value:
+        sharedCardId: e7086916-04e5-4193-a61c-f32b12dc5438
+        kind: COMPLETION
+        ownerNickname: rabbit
+        purpose: 수료 선물
+        targetAmount: 300000
+        progressPercent: 100
+        targetDate: '2026-08-10'
+        createdAt: '2026-07-01T00:00:00Z'
+        completedAt: '2026-08-15T03:00:00Z'
+        actualDurationSeconds: 3898800
+        contentUpdatedAt: '2026-08-15T03:00:00Z'
+    SharedProgressAdjustmentFalsePage:
+      summary: shared-progress-adjustment-false-page
+      x-schema-ref: '#/components/schemas/SharedCardPage'
+      value:
+        items:
+          - sharedCardId: 5d0a53d2-7b2d-4a6a-aefa-3c3bbca881b6
+            kind: PROGRESS
+            ownerNickname: rabbit
+            purpose: 새 노트북
+            targetAmount: 1500000
+            progressPercent: 40
+            balanceAdjustmentInProgress: false
+            contentUpdatedAt: '2026-08-16T04:00:00Z'
+        nextCursor: null
+    SharedProgressAdjustmentTruePage:
+      summary: shared-progress-adjustment-true-page
+      x-schema-ref: '#/components/schemas/SharedCardPage'
+      value:
+        items:
+          - sharedCardId: 8c40641a-9128-48bb-8b7d-2a19e8810630
+            kind: PROGRESS
+            ownerNickname: bunny
+            purpose: 자전거
+            targetAmount: 600000
+            progressPercent: 73
+            balanceAdjustmentInProgress: true
+            contentUpdatedAt: '2026-08-16T04:05:00Z'
+        nextCursor: null
+    SharedCompletionPage:
+      summary: shared-completion-page
+      x-schema-ref: '#/components/schemas/SharedCardPage'
+      value:
+        items:
+          - sharedCardId: e7086916-04e5-4193-a61c-f32b12dc5438
+            kind: COMPLETION
+            ownerNickname: rabbit
+            purpose: 수료 선물
+            targetAmount: 300000
+            progressPercent: 100
+            targetDate: '2026-08-10'
+            createdAt: '2026-07-01T00:00:00Z'
+            completedAt: '2026-08-15T03:00:00Z'
+            actualDurationSeconds: 3898800
+            contentUpdatedAt: '2026-08-15T03:00:00Z'
+        nextCursor: null
