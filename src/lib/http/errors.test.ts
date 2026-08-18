@@ -45,6 +45,23 @@ describe("frontend HTTP error normalization", () => {
   });
 
   it.each([
+    "application/json; charset=utf-8",
+    'Application/JSON; charset="utf-8"; profile="https://example.test/a;b\\\"c"',
+  ])("accepts normalized errors with valid media type parameters: %s", async (contentType) => {
+    const response = jsonResponse(404, {
+      code: "BFF_NOT_FOUND",
+      message: "BFF route is not found",
+    }, contentType);
+
+    await expect(normalizeErrorResponse(response)).resolves.toEqual({
+      kind: "bff",
+      status: 404,
+      code: "BFF_NOT_FOUND",
+      message: "BFF route is not found",
+    });
+  });
+
+  it.each([
     new Response("<html>upstream detail</html>", {
       status: 502,
       headers: { "Content-Type": "text/html" },
@@ -53,6 +70,18 @@ describe("frontend HTTP error normalization", () => {
       status: 500,
       headers: { "Content-Type": "application/json" },
     }),
+    jsonResponse(404, {
+      code: "BFF_NOT_FOUND",
+      message: "BFF route is not found",
+    }, "application/json; charset"),
+    jsonResponse(404, {
+      code: "BFF_NOT_FOUND",
+      message: "BFF route is not found",
+    }, "application/json; =utf-8"),
+    jsonResponse(404, {
+      code: "BFF_NOT_FOUND",
+      message: "BFF route is not found",
+    }, 'application/json; charset="unterminated'),
     jsonResponse(500, { code: "UNKNOWN_CODE", message: "unsafe", extra: "secret" }),
     jsonResponse(400, {
       error: {
@@ -89,9 +118,13 @@ describe("frontend HTTP error normalization", () => {
   });
 });
 
-function jsonResponse(status: number, value: unknown) {
+function jsonResponse(
+  status: number,
+  value: unknown,
+  contentType = "application/json; charset=utf-8",
+) {
   return new Response(JSON.stringify(value), {
     status,
-    headers: { "Content-Type": "application/json; charset=utf-8" },
+    headers: { "Content-Type": contentType },
   });
 }

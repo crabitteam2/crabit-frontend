@@ -9,6 +9,7 @@ import {
   type PersonaTokenConfiguration,
 } from "../../config/persona-tokens";
 import type { PersonaNamespace } from "../../config/profile-policy";
+import { isJsonMediaType } from "../http/media-type";
 import {
   serializePersonaCookie,
   serializePersonaCookieDeletion,
@@ -81,11 +82,6 @@ export async function handlePersonaRoute(
 
 function defaultLoadTokens(environment: BffEnvironment) {
   return readPersonaTokenConfiguration(environment.backendProfile);
-}
-
-function isJsonMediaType(value: string | null) {
-  return value !== null
-    && value.split(";", 1)[0].trim().toLowerCase() === "application/json";
 }
 
 function isPersonaSelection(value: unknown): value is { readonly persona: import("./persona").Persona } {

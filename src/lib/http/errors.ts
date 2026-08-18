@@ -1,4 +1,5 @@
 import type { components } from "./generated/crabit-backend";
+import { isJsonMediaType } from "./media-type";
 
 export type FrontendErrorKind = "backend" | "bff" | "network" | "malformed";
 export type BackendErrorCode = components["schemas"]["ErrorCode"];
@@ -55,7 +56,7 @@ export type BffErrorCode = (typeof BFF_ERROR_CODES)[number];
 const BFF_ERROR_CODE_SET = new Set<string>(BFF_ERROR_CODES);
 
 export async function normalizeErrorResponse(response: Response): Promise<FrontendHttpError> {
-  if (!isJsonContentType(response.headers.get("content-type"))) {
+  if (!isJsonMediaType(response.headers.get("content-type"))) {
     return malformedError(response.status);
   }
 
@@ -174,9 +175,4 @@ function isFieldErrors(
     && isNonemptyString(item.field)
     && isNonemptyString(item.message)
   ));
-}
-
-function isJsonContentType(value: string | null) {
-  return value !== null
-    && value.split(";", 1)[0].trim().toLowerCase() === "application/json";
 }

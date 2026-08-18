@@ -33,6 +33,9 @@ describe("/api/e2e/persona", () => {
   it.each([
     { contentType: undefined, body: JSON.stringify({ persona: "owner" }) },
     { contentType: "text/plain", body: JSON.stringify({ persona: "owner" }) },
+    { contentType: "application/json; charset", body: JSON.stringify({ persona: "owner" }) },
+    { contentType: "application/json; =utf-8", body: JSON.stringify({ persona: "owner" }) },
+    { contentType: 'application/json; charset="unterminated', body: JSON.stringify({ persona: "owner" }) },
     { contentType: "application/json", body: "{" },
     { contentType: "application/json", body: "null" },
     { contentType: "application/json", body: "[]" },
@@ -53,6 +56,23 @@ describe("/api/e2e/persona", () => {
       message: "Persona selection is invalid",
     });
     expect(response.headers.get("set-cookie")).toBeNull();
+  });
+
+  it.each([
+    "application/json; charset=utf-8",
+    'Application/JSON; charset="utf-8"; profile="https://example.test/a;b\\\"c"',
+  ])("accepts application/json with valid media type parameters: %s", async (contentType) => {
+    configure("local", "e2e", "e2e");
+    const response = await POST(new Request("http://frontend.test/api/e2e/persona", {
+      method: "POST",
+      headers: { "Content-Type": contentType },
+      body: JSON.stringify({ persona: "owner" }),
+    }));
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("set-cookie")).toBe(
+      "crabit-e2e-persona=owner; Path=/; HttpOnly; SameSite=Lax",
+    );
   });
 
   it("clears only the E2E cookie without reading a request body", async () => {
