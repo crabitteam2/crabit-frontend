@@ -16,7 +16,13 @@ async function forward(request: Request, context: RouteContext) {
   return proxyBackendRequest(request, path);
 }
 
-export { forward as DELETE, forward as GET, forward as PATCH, forward as POST, forward as PUT };
+export {
+  forward as DELETE,
+  forward as GET,
+  forward as PATCH,
+  forward as POST,
+  forward as PUT,
+};
 
 export function HEAD() {
   return methodNotAllowedResponse();
