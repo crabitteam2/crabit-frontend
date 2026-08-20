@@ -28,6 +28,8 @@
   --color-kakao: #fee500;
   --color-naver: #03c75a;
 
+  --container-app: 430px;
+
   --font-sans:
     var(--font-pretendard), -apple-system, BlinkMacSystemFont, system-ui,
     sans-serif;
@@ -167,10 +169,38 @@
 }
 
 @layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
-    background: var(--color-layer-default);
+    background: var(--color-layer-basement);
     color: var(--color-fg-neutral);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
   }
+}
+
+@utility pt-safe {
+  padding-top: env(safe-area-inset-top);
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@utility pl-safe {
+  padding-left: env(safe-area-inset-left);
+}
+
+@utility pr-safe {
+  padding-right: env(safe-area-inset-right);
+}
+
+@utility min-h-screen-safe {
+  min-height: calc(
+    100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom)
+  );
 }
