@@ -1,7 +1,7 @@
 import createClient from "openapi-fetch";
 import { describe, expect, it } from "vitest";
 
-import type { paths } from "./generated/crabit-backend";
+import type { components, paths } from "./generated/crabit-backend";
 import {
   createWish,
   deleteWish,
@@ -12,6 +12,25 @@ import {
 
 const accountId = "11111111-1111-4111-8111-111111111111";
 const wishId = "22222222-2222-4222-8222-222222222222";
+const mutationResult: components["schemas"]["WishMutationResult"] = {
+  eventId: "33333333-3333-4333-8333-333333333333",
+  wish: {
+    actualDurationSeconds: null,
+    amount: 40_000,
+    balanceAdjustmentInProgress: true,
+    cardBalanceAccountId: accountId,
+    completedAt: null,
+    createdAt: "2026-08-21T00:00:00Z",
+    id: wishId,
+    purpose: "노트북",
+    state: "IN_PROGRESS",
+    targetAmount: 100_000,
+    targetDate: null,
+    updatedAt: "2026-08-21T00:01:00Z",
+    version: 3,
+    visibility: "PRIVATE",
+  },
+};
 
 describe("Wish typed request helpers", () => {
   it("lists and gets wishes through generated paths while preserving typed data", async () => {
@@ -44,13 +63,13 @@ describe("Wish typed request helpers", () => {
 
   it("expresses Idempotency-Key through the generated create operation", async () => {
     const captured: Request[] = [];
-    const client = testClient(captured);
+    const client = testClient(captured, mutationResult);
 
-    await createWish(client, {
+    await expect(createWish(client, {
       cardBalanceAccountId: accountId,
       idempotencyKey: "create-key",
       body: { purpose: "노트북", targetAmount: 100_000, targetDate: null },
-    });
+    })).resolves.toEqual({ ok: true, data: mutationResult });
 
     expect(captured[0].method).toBe("POST");
     expect(captured[0].url).toBe(
@@ -62,13 +81,13 @@ describe("Wish typed request helpers", () => {
 
   it("fixes merge patch to application/merge-patch+json behind the typed helper", async () => {
     const captured: Request[] = [];
-    const client = testClient(captured);
+    const client = testClient(captured, mutationResult);
 
-    await patchWish(client, {
+    await expect(patchWish(client, {
       cardBalanceAccountId: accountId,
       wishId,
       body: { expectedVersion: 3, targetDate: null },
-    });
+    })).resolves.toEqual({ ok: true, data: mutationResult });
 
     expect(captured[0].method).toBe("PATCH");
     expect(captured[0].headers.get("content-type")).toBe(
@@ -82,14 +101,14 @@ describe("Wish typed request helpers", () => {
 
   it("expresses If-Match and Idempotency-Key through the generated delete operation", async () => {
     const captured: Request[] = [];
-    const client = testClient(captured);
+    const client = testClient(captured, mutationResult);
 
-    await deleteWish(client, {
+    await expect(deleteWish(client, {
       cardBalanceAccountId: accountId,
       wishId,
       idempotencyKey: "delete-key",
       ifMatch: 7,
-    });
+    })).resolves.toEqual({ ok: true, data: mutationResult });
 
     expect(captured[0].method).toBe("DELETE");
     expect(captured[0].headers.get("idempotency-key")).toBe("delete-key");
