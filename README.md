@@ -29,6 +29,10 @@ npm run openapi:generate
 npm run openapi:check
 ```
 
+Feature code uses the typed helpers in `src/lib/http/`. They return `ApiResult`
+instead of exposing raw `openapi-fetch` responses; `unwrapResult()` is the
+framework-neutral bridge for consumers that need a sanitized thrown error.
+
 ## Validation and production
 
 ```sh

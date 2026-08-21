@@ -85,7 +85,9 @@ Review the snapshot, provenance, and generated diff together. A backend OpenAPI 
 
 Browser code obtains `createBrowserApiClient()`, whose base is fixed to same-origin `/api/backend` and which accepts no raw token, backend origin, or credential resolver. Server code obtains `createServerApiClient()`, which uses validated `BACKEND_URL` and can resolve only a canonical persona key or the active request cookie through the server-only registry.
 
-Wish helpers in `src/lib/http/wishes.ts` hide raw paths and methods and expose generated request body and parameter types. They carry `Idempotency-Key`, `If-Match`, and `application/merge-patch+json` through the approved contract. Do not reconstruct operation paths, DTO casing, headers, or media types in UI code.
+Wish helpers in `src/lib/http/wishes.ts` hide raw paths and methods and expose generated request body and parameter types. `listWishes()`, `getWish()`, `createWish()`, `patchWish()`, and `deleteWish()` all return `ApiResult`; they carry repeated state filters, `Idempotency-Key`, `If-Match`, and `application/merge-patch+json` through the approved contract. `getCardBalanceAccount()` preserves the generated `UNKNOWN` versus `KNOWN` union, including nullable unknown balances and the read-time `balanceAdjustmentInProgress` projection. Do not reconstruct operation paths, DTO casing, headers, or media types in UI code.
+
+`ApiResult` returns either exact generated success data or a normalized `FrontendHttpError`. `unwrapResult()` returns success data unchanged and throws only `FrontendRequestError` with that normalized error as its programmatic payload. Raw response bodies, fetch exceptions, credentials, cookies, headers, and parser internals do not cross this boundary. React Query policy, hooks, cache keys, and UI states remain a separate feature concern.
 
 `normalizeErrorResponse()` recognizes only the exact generated nested backend envelope or documented flat BFF/persona envelope. Network and malformed responses map to fixed safe frontend errors. Arbitrary upstream fields, exception text, URLs, headers, cookies, tokens, and stack traces are discarded.
 

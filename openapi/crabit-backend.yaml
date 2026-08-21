@@ -20,8 +20,8 @@ paths:
       tags: [Card Balance Accounts]
       operationId: listMyCardBalanceAccounts
       summary: List the authenticated student's Card Balance Accounts
-      description: UNKNOWN balances remain null rather than being fabricated as zero.
-      security: [{SeedBearer: []}]
+      description: UNKNOWN balances remain null rather than being fabricated as zero. Each account also reports whether an account-scoped Balance Adjustment Case is currently OPEN.
+      security: [{SyntheticBearer: []}]
       responses:
         '200':
           description: Visible Card Balance Accounts.
@@ -32,14 +32,55 @@ paths:
                 unknown-balance: {$ref: '#/components/examples/UnknownBalancePage'}
         '401': {$ref: '#/components/responses/AuthRequired'}
         '403': {$ref: '#/components/responses/Forbidden'}
+  /v1/card-balance-accounts/{cardBalanceAccountId}:
+    parameters: [{$ref: '#/components/parameters/CardBalanceAccountId'}]
+    get:
+      tags: [Card Balance Accounts]
+      operationId: getCardBalanceAccount
+      summary: Get an owned Card Balance Account
+      description: >-
+        Returns the authenticated student's active account from the current
+        persisted projection. A random identifier, closed account, ownership
+        mismatch, and academy mismatch are hidden as the same not-found
+        response. This operation performs no external balance lookup and
+        mutates no persistent state. UNKNOWN amounts remain null. After a
+        successful lookup, a later failed attempt retains the latest successful
+        amounts and lastRefreshedAt while reporting lastRefreshStatus FAILED.
+      security: [{SyntheticBearer: []}]
+      responses:
+        '200':
+          description: Current persisted Card Balance Account projection.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/CardBalanceAccount'}
+              examples:
+                unknown:
+                  summary: unknown-persisted-balance
+                  x-schema-ref: '#/components/schemas/UnknownCardBalanceAccount'
+                  value:
+                    cardBalanceAccountId: 09551375-f69a-4e69-8587-a0d590cbf092
+                    academyId: a12c54ad-c8a2-4102-a03b-28fe4a0daaa7
+                    balanceKnowledge: UNKNOWN
+                    actualCardBalance: null
+                    ledgerAvailableBalance: null
+                    displayAvailableBalance: null
+                    unresolvedShortage: null
+                    balanceAdjustmentInProgress: false
+                    lastRefreshStatus: null
+                    lastRefreshedAt: null
+                failed-refresh-known: {$ref: '#/components/examples/FailedRefreshKnownBalance'}
+                adjustment-open-known: {$ref: '#/components/examples/KnownBalanceAdjustmentOpen'}
+        '401': {$ref: '#/components/responses/AuthRequired'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/CardBalanceAccountNotFound'}
   /v1/card-balance-accounts/{cardBalanceAccountId}/balance-refreshes:
     parameters: [{$ref: '#/components/parameters/CardBalanceAccountId'}]
     post:
       tags: [Card Balance Accounts]
       operationId: refreshCardBalance
       summary: Refresh the current card balance
-      description: Bodyless USER_REQUESTED lookup. This operation is deliberately not idempotency-keyed.
-      security: [{SeedBearer: []}]
+      description: Bodyless USER_REQUESTED lookup. This operation is deliberately not idempotency-keyed and remains allowed while a Balance Adjustment Case is OPEN; the response reports the resulting current adjustment flag.
+      security: [{SyntheticBearer: []}]
       responses:
         '200':
           description: A successful current balance observation.
@@ -55,18 +96,31 @@ paths:
     get:
       tags: [Card Balance Accounts]
       operationId: listCardBalanceChanges
-      summary: List successful and failed card-balance observations
-      description: Ordered by occurredAt DESC then observationId DESC using an opaque cursor.
-      security: [{SeedBearer: []}]
+      summary: List immutable nonzero card-balance changes
+      description: >-
+        Returns only successful observations that produced a nonzero
+        CARD_BALANCE_CHANGE ledger event. Failed observations and successful
+        zero-delta observations remain persisted operational facts but are not
+        money-history items. Results are ordered by occurredAt DESC then eventId
+        DESC. The opaque cursor is bound to this operation, account, ordering
+        version, and final (occurredAt, eventId) tuple; an invalid or mismatched
+        cursor returns 400 without a partial page. Continuation is strictly below
+        that tuple, so eventId stabilizes equal timestamps and later events sorting
+        before the boundary do not alter the continuation. Any valid limit may be
+        used with a valid cursor. Authorization and ownership are re-evaluated on
+        every request, and no cacheability guarantee is introduced.
+      security: [{SyntheticBearer: []}]
       parameters:
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
       responses:
         '200':
-          description: Card balance observation history.
+          description: Immutable nonzero card-balance event history.
           content:
             application/json:
               schema: {$ref: '#/components/schemas/CardBalanceChangePage'}
+              examples:
+                card-balance-change: {$ref: '#/components/examples/CardBalanceChangePageExample'}
         '400': {$ref: '#/components/responses/MalformedRequest'}
         '401': {$ref: '#/components/responses/AuthRequired'}
         '403': {$ref: '#/components/responses/Forbidden'}
@@ -76,9 +130,20 @@ paths:
     get:
       tags: [Card Balance Accounts]
       operationId: listAccountFundMovements
-      summary: List account-level fund movements
-      description: Ordered by occurredAt DESC then eventId DESC. Corrections are compensating ordinary immutable events.
-      security: [{SeedBearer: []}]
+      summary: List all immutable account-level fund movements
+      description: >-
+        Returns one item per immutable ledger event, including external card
+        changes and every Wish movement. A Wish transfer is one account item even
+        though it has two Wish effects. Results are ordered by occurredAt DESC
+        then eventId DESC. The opaque cursor is bound to this operation, account,
+        ordering version, and final tuple; malformed or mismatched cursors return
+        400 without a partial page. Continuation is strictly below that tuple, so
+        eventId stabilizes equal timestamps and later events sorting before the
+        boundary do not alter the continuation. Any valid limit may be used with a
+        valid cursor. Corrections are new compensating events and never edit or
+        delete an earlier event. Authorization and ownership are re-evaluated on
+        every request, and no cacheability guarantee is introduced.
+      security: [{SyntheticBearer: []}]
       parameters:
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
@@ -88,6 +153,9 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/AccountFundMovementPage'}
+              examples:
+                card-balance-change: {$ref: '#/components/examples/AccountCardBalanceChangePageExample'}
+                wish-transfer: {$ref: '#/components/examples/AccountWishTransferPageExample'}
         '400': {$ref: '#/components/responses/MalformedRequest'}
         '401': {$ref: '#/components/responses/AuthRequired'}
         '403': {$ref: '#/components/responses/Forbidden'}
@@ -98,8 +166,8 @@ paths:
       tags: [Wishes]
       operationId: listWishes
       summary: List non-deleted Wishes owned by the account
-      description: Ordered by createdAt DESC then id DESC using an opaque cursor.
-      security: [{SeedBearer: []}]
+      description: Ordered by createdAt DESC then id DESC using an opaque cursor. Each Wish reports the read-time OPEN adjustment state of its Card Balance Account.
+      security: [{SyntheticBearer: []}]
       parameters:
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
@@ -128,8 +196,8 @@ paths:
       tags: [Wishes]
       operationId: createWish
       summary: Create a private zero-funded Wish
-      description: Creates amount 0, state IN_PROGRESS, and visibility PRIVATE even when balance knowledge is UNKNOWN.
-      security: [{SeedBearer: []}]
+      description: Creates amount 0, state IN_PROGRESS, and visibility PRIVATE when balance knowledge is UNKNOWN or no mismatch is open. A matching successful Idempotency-Key result is replayed before evaluating the current mismatch guard. Otherwise, an OPEN Balance Adjustment Case rejects creation with 409 BALANCE_MISMATCH_LOCKED before a new Wish is persisted.
+      security: [{SyntheticBearer: []}]
       parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
       requestBody:
         required: true
@@ -154,7 +222,7 @@ paths:
         '401': {$ref: '#/components/responses/AuthRequired'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/CardBalanceAccountNotFound'}
-        '409': {$ref: '#/components/responses/IdempotencyConflict'}
+        '409': {$ref: '#/components/responses/CreateConflict'}
         '422': {$ref: '#/components/responses/InvalidAmountOrPurpose'}
   /v1/card-balance-accounts/{cardBalanceAccountId}/wishes/{wishId}:
     parameters:
@@ -164,7 +232,8 @@ paths:
       tags: [Wishes]
       operationId: getWish
       summary: Get an owned non-deleted Wish
-      security: [{SeedBearer: []}]
+      description: Returns the read-time OPEN adjustment state of the Wish's Card Balance Account; an open case does not block this read.
+      security: [{SyntheticBearer: []}]
       responses:
         '200':
           description: The Wish.
@@ -178,8 +247,8 @@ paths:
       tags: [Wishes]
       operationId: patchWish
       summary: Atomically merge-patch mutable Wish fields
-      description: Omission preserves a field; targetDate null clears it. Completed Wishes may change visibility only; an open mismatch permits only visibility narrowing.
-      security: [{SeedBearer: []}]
+      description: Omission preserves a field; targetDate null clears it. Outside a mismatch, completed Wishes may change visibility only. An OPEN Balance Adjustment Case rejects every requested patch field, including purpose, targetAmount, targetDate, and every visibility change whether widening, narrowing, or changing to PRIVATE.
+      security: [{SyntheticBearer: []}]
       requestBody:
         required: true
         content:
@@ -202,8 +271,8 @@ paths:
       tags: [Wishes]
       operationId: deleteWish
       summary: Tombstone a Wish
-      description: Returns a final mutation result; all later reads are hidden as WISH_NOT_FOUND.
-      security: [{SeedBearer: []}]
+      description: Returns a final mutation result; all later reads are hidden as WISH_NOT_FOUND. An OPEN Balance Adjustment Case does not block deletion.
+      security: [{SyntheticBearer: []}]
       parameters:
         - $ref: '#/components/parameters/IfMatch'
         - $ref: '#/components/parameters/IdempotencyKey'
@@ -224,7 +293,7 @@ paths:
       operationId: depositToWish
       summary: Deposit Card Balance Account funds into one Wish
       description: Performs PRE_DEPOSIT lookup internally. Provider failure leaves the Wish unchanged; a persisted mismatch observation locks and rejects only this deposit.
-      security: [{SeedBearer: []}]
+      security: [{SyntheticBearer: []}]
       parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
       requestBody:
         required: true
@@ -248,7 +317,7 @@ paths:
       tags: [Wishes]
       operationId: withdrawFromWish
       summary: Withdraw funds from one Wish
-      security: [{SeedBearer: []}]
+      security: [{SyntheticBearer: []}]
       parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
       requestBody:
         required: true
@@ -269,7 +338,7 @@ paths:
       tags: [Wishes]
       operationId: transferWishFunds
       summary: Atomically transfer funds between two Wishes in one account
-      security: [{SeedBearer: []}]
+      security: [{SyntheticBearer: []}]
       parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
       requestBody:
         required: true
@@ -298,7 +367,8 @@ paths:
       tags: [Wishes]
       operationId: completeWish
       summary: Complete an amount-reached Wish
-      security: [{SeedBearer: []}]
+      description: An OPEN Balance Adjustment Case does not block completion; the returned Wish carries the committed post-mutation adjustment flag.
+      security: [{SyntheticBearer: []}]
       parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
       requestBody:
         required: true
@@ -321,7 +391,8 @@ paths:
       tags: [Wishes]
       operationId: abandonWish
       summary: Abandon a Wish and make it permanently private
-      security: [{SeedBearer: []}]
+      description: An OPEN Balance Adjustment Case does not block abandonment; the returned Wish carries the committed post-mutation adjustment flag.
+      security: [{SyntheticBearer: []}]
       parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
       requestBody:
         required: true
@@ -344,8 +415,19 @@ paths:
       tags: [Wishes]
       operationId: listWishFundMovements
       summary: List immutable fund movements projected for one Wish
-      description: Ordered by occurredAt DESC then eventId DESC using an opaque cursor.
-      security: [{SeedBearer: []}]
+      description: >-
+        Returns immutable ledger Wish effects for the requested owned Wish only;
+        external card changes never appear. An owned tombstoned Wish remains
+        readable here even though ordinary Wish detail returns 404. Results are
+        ordered by occurredAt DESC then eventId DESC. The opaque cursor is bound
+        to this operation, account, Wish, ordering version, and final tuple;
+        malformed or mismatched cursors return 400 without a partial page.
+        Continuation is strictly below that tuple, so eventId stabilizes equal
+        timestamps and later events sorting before the boundary do not alter the
+        continuation. Any valid limit may be used with a valid cursor.
+        Authorization and ownership are re-evaluated on every request, and no
+        cacheability guarantee is introduced.
+      security: [{SyntheticBearer: []}]
       parameters:
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
@@ -355,10 +437,14 @@ paths:
           content:
             application/json:
               schema: {$ref: '#/components/schemas/WishFundMovementPage'}
+              examples:
+                transfer-source: {$ref: '#/components/examples/WishTransferSourcePageExample'}
+                deleted-wish: {$ref: '#/components/examples/DeletedWishHistoryPageExample'}
+                deleted-wish-empty: {$ref: '#/components/examples/EmptyDeletedWishHistoryPageExample'}
         '400': {$ref: '#/components/responses/MalformedRequest'}
         '401': {$ref: '#/components/responses/AuthRequired'}
         '403': {$ref: '#/components/responses/Forbidden'}
-        '404': {$ref: '#/components/responses/WishOrAccountNotFound'}
+        '404': {$ref: '#/components/responses/WishHistoryOrAccountNotFound'}
   /v1/academies/{academyId}/shared-cards:
     parameters: [{$ref: '#/components/parameters/AcademyId'}]
     get:
@@ -372,7 +458,7 @@ paths:
         supported. Under this temporary policy, only content or publication changes
         reorder cards. Friend-priority and embedding-based recommendation ordering
         remain open for a future contract and are not active in this version.
-      security: [{SeedBearer: []}]
+      security: [{SyntheticBearer: []}]
       parameters:
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
@@ -399,7 +485,7 @@ paths:
       operationId: getAcademySharedCard
       summary: Get one currently visible Shared Card
       description: The owner may read their own currently public card; every other absence or visibility failure is hidden.
-      security: [{SeedBearer: []}]
+      security: [{SyntheticBearer: []}]
       responses:
         '200':
           description: One currently visible Shared Card.
@@ -415,11 +501,11 @@ paths:
         '404': {$ref: '#/components/responses/SharedCardOrAcademyNotFound'}
 components:
   securitySchemes:
-    SeedBearer:
+    SyntheticBearer:
       type: http
       scheme: bearer
-      bearerFormat: opaque-seed-token
-      description: Opaque deterministic principal token. A known Seed token identifies either a student or an authenticated non-student staff principal. Token issuance and refresh are outside this contract.
+      bearerFormat: opaque-synthetic-token
+      description: Opaque synthetic-principal token. A known token identifies either a student or an authenticated non-student staff principal. Token issuance, refresh, persona selection, and fixture control are outside this contract.
   parameters:
     CardBalanceAccountId:
       name: cardBalanceAccountId
@@ -511,13 +597,19 @@ components:
         application/json:
           schema: {$ref: '#/components/schemas/ErrorEnvelope'}
     CardBalanceAccountNotFound:
-      description: CARD_BALANCE_ACCOUNT_NOT_FOUND — absent or non-owned account is hidden.
+      description: CARD_BALANCE_ACCOUNT_NOT_FOUND — an absent, closed, non-owned, or cross-academy account is hidden.
       x-error-codes: [CARD_BALANCE_ACCOUNT_NOT_FOUND]
       content:
         application/json:
           schema: {$ref: '#/components/schemas/ErrorEnvelope'}
     WishOrAccountNotFound:
       description: CARD_BALANCE_ACCOUNT_NOT_FOUND or WISH_NOT_FOUND — absence, non-ownership, deletion, or hidden state.
+      x-error-codes: [CARD_BALANCE_ACCOUNT_NOT_FOUND, WISH_NOT_FOUND]
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    WishHistoryOrAccountNotFound:
+      description: CARD_BALANCE_ACCOUNT_NOT_FOUND or WISH_NOT_FOUND — the account is absent or non-owned, or the Wish is absent, foreign, or outside that account. An owned tombstoned Wish is intentionally not hidden by this history-specific response and returns 200.
       x-error-codes: [CARD_BALANCE_ACCOUNT_NOT_FOUND, WISH_NOT_FOUND]
       content:
         application/json:
@@ -534,12 +626,14 @@ components:
       content:
         application/json:
           schema: {$ref: '#/components/schemas/ErrorEnvelope'}
-    IdempotencyConflict:
-      description: IDEMPOTENCY_KEY_REUSED.
-      x-error-codes: [IDEMPOTENCY_KEY_REUSED]
+    CreateConflict:
+      description: BALANCE_MISMATCH_LOCKED or IDEMPOTENCY_KEY_REUSED. A matching successful idempotent replay is resolved before the current mismatch guard.
+      x-error-codes: [BALANCE_MISMATCH_LOCKED, IDEMPOTENCY_KEY_REUSED]
       content:
         application/json:
           schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          examples:
+            balance-mismatch-locked: {$ref: '#/components/examples/BalanceMismatchLocked'}
     PatchConflict:
       description: VERSION_CONFLICT, INVALID_STATE_TRANSITION, or BALANCE_MISMATCH_LOCKED.
       x-error-codes: [VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED]
@@ -547,8 +641,8 @@ components:
         application/json:
           schema: {$ref: '#/components/schemas/ErrorEnvelope'}
     DeleteConflict:
-      description: VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, or IDEMPOTENCY_KEY_REUSED.
-      x-error-codes: [VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, IDEMPOTENCY_KEY_REUSED]
+      description: VERSION_CONFLICT, INVALID_STATE_TRANSITION, or IDEMPOTENCY_KEY_REUSED. An open mismatch does not block deletion.
+      x-error-codes: [VERSION_CONFLICT, INVALID_STATE_TRANSITION, IDEMPOTENCY_KEY_REUSED]
       content:
         application/json:
           schema: {$ref: '#/components/schemas/ErrorEnvelope'}
@@ -573,8 +667,8 @@ components:
         application/json:
           schema: {$ref: '#/components/schemas/ErrorEnvelope'}
     StateMutationConflict:
-      description: VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, or IDEMPOTENCY_KEY_REUSED.
-      x-error-codes: [VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, IDEMPOTENCY_KEY_REUSED]
+      description: VERSION_CONFLICT, INVALID_STATE_TRANSITION, or IDEMPOTENCY_KEY_REUSED. An open mismatch does not block completion or abandonment.
+      x-error-codes: [VERSION_CONFLICT, INVALID_STATE_TRANSITION, IDEMPOTENCY_KEY_REUSED]
       content:
         application/json:
           schema: {$ref: '#/components/schemas/ErrorEnvelope'}
@@ -796,7 +890,7 @@ components:
     UnknownCardBalanceAccount:
       type: object
       additionalProperties: false
-      required: [cardBalanceAccountId, academyId, balanceKnowledge, actualCardBalance, ledgerAvailableBalance, displayAvailableBalance, unresolvedShortage, lastRefreshStatus, lastRefreshedAt]
+      required: [cardBalanceAccountId, academyId, balanceKnowledge, actualCardBalance, ledgerAvailableBalance, displayAvailableBalance, unresolvedShortage, balanceAdjustmentInProgress, lastRefreshStatus, lastRefreshedAt]
       properties:
         cardBalanceAccountId: {$ref: '#/components/schemas/Uuid', description: "Stable UUID of the student's Card Balance Account."}
         academyId: {$ref: '#/components/schemas/Uuid', description: "UUID of the academy to which this Card Balance Account belongs."}
@@ -805,6 +899,7 @@ components:
         ledgerAvailableBalance: {type: 'null', description: "Always null until actual card balance is known; the service must not calculate it from a fabricated zero."}
         displayAvailableBalance: {type: 'null', description: "Always null until actual card balance is known; the UI must not display it as zero KRW."}
         unresolvedShortage: {type: 'null', description: "Always null until actual card balance is known; unknown shortage is not the same as no shortage."}
+        balanceAdjustmentInProgress: {type: boolean, const: false, description: "Always false because an OPEN Balance Adjustment Case requires a successful balance observation, which an UNKNOWN account does not have."}
         lastRefreshStatus:
           description: "FAILED when the latest lookup attempt failed before any successful observation; null when no lookup attempt has been recorded."
           type: [string, 'null']
@@ -815,7 +910,7 @@ components:
     KnownCardBalanceAccount:
       type: object
       additionalProperties: false
-      required: [cardBalanceAccountId, academyId, balanceKnowledge, actualCardBalance, ledgerAvailableBalance, displayAvailableBalance, unresolvedShortage, lastRefreshStatus, lastRefreshedAt]
+      required: [cardBalanceAccountId, academyId, balanceKnowledge, actualCardBalance, ledgerAvailableBalance, displayAvailableBalance, unresolvedShortage, balanceAdjustmentInProgress, lastRefreshStatus, lastRefreshedAt]
       properties:
         cardBalanceAccountId: {$ref: '#/components/schemas/Uuid', description: "Stable UUID of the student's Card Balance Account."}
         academyId: {$ref: '#/components/schemas/Uuid', description: "UUID of the academy to which this Card Balance Account belongs."}
@@ -824,6 +919,7 @@ components:
         ledgerAvailableBalance: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW equal to actualCardBalance minus the total held by active Wishes; a negative value is preserved."}
         displayAvailableBalance: {$ref: '#/components/schemas/KrwNonNegative', description: "Non-negative integer KRW equal to max(0, ledgerAvailableBalance) for display."}
         unresolvedShortage: {$ref: '#/components/schemas/KrwNonNegative', description: "Non-negative integer KRW equal to max(0, -ledgerAvailableBalance); zero means no unresolved shortage."}
+        balanceAdjustmentInProgress: {type: boolean, description: "True iff an account-scoped Balance Adjustment Case is OPEN at response read time; false when no OPEN case exists, including RESOLVED-only history. Derived rather than persisted on the account, this flag and the balance fields come from one consistent account projection; a later failed lookup retains the latest successful amounts while the flag reflects the current case."}
         lastRefreshStatus: {type: string, enum: [SUCCESS, FAILED], description: "Outcome of the most recent lookup attempt; FAILED may coexist with amounts preserved from an earlier successful observation."}
         lastRefreshedAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant of the successful observation backing the returned amounts; retained when a later lookup fails."}
     CardBalanceAccountPage:
@@ -852,49 +948,41 @@ components:
         observedAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which this external balance lookup attempt was made."}
         account: {$ref: '#/components/schemas/KnownCardBalanceAccount', description: "Updated KNOWN Card Balance Account snapshot derived from this successful observation."}
     CardBalanceChange:
-      oneOf:
-        - $ref: '#/components/schemas/SuccessfulCardBalanceChange'
-        - $ref: '#/components/schemas/FailedCardBalanceObservation'
-      discriminator:
-        propertyName: outcome
-        mapping:
-          SUCCESS: '#/components/schemas/SuccessfulCardBalanceChange'
-          FAILED: '#/components/schemas/FailedCardBalanceObservation'
-    SuccessfulCardBalanceChange:
       type: object
       additionalProperties: false
-      required: [observationId, outcome, lookupMethod, occurredAt, actualCardBalanceDelta, actualCardBalanceAfter]
+      required: [eventId, eventType, observationId, lookupMethod, occurredAt, actualCardBalanceDelta, actualCardBalanceAfter, correctionOfEventId, balanceAdjustment]
       properties:
-        observationId: {$ref: '#/components/schemas/Uuid', description: "UUID of this successful balance observation."}
-        outcome: {type: string, const: SUCCESS, description: "SUCCESS discriminator identifying the successful observation variant."}
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable CARD_BALANCE_CHANGE ledger event; the same value identifies this fact in account fund-movement history."}
+        eventType: {type: string, const: CARD_BALANCE_CHANGE, description: "Always CARD_BALANCE_CHANGE because observation failures and successful zero-delta observations do not create money-history events."}
+        observationId: {$ref: '#/components/schemas/Uuid', description: "UUID of the exact successful external balance observation linked to this immutable event."}
         lookupMethod: {$ref: '#/components/schemas/BalanceLookupMethod', description: "Trigger for this lookup: USER_REQUESTED, PRE_DEPOSIT, or AUTO_DAILY."}
-        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which the successful external lookup attempt was made."}
-        actualCardBalanceDelta: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW change from the previous successful observed balance, or from zero for the first successful observation."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant equal to the linked successful observation's observedAt value."}
+        actualCardBalanceDelta:
+          description: "Nonzero signed integer KRW change from the prior successful observed balance, or from zero for the first successful observation."
+          allOf:
+            - $ref: '#/components/schemas/KrwSigned'
+            - not: {const: 0}
         actualCardBalanceAfter: {$ref: '#/components/schemas/KrwNonNegative', description: "Non-negative integer KRW observed by this successful lookup."}
-    FailedCardBalanceObservation:
-      type: object
-      additionalProperties: false
-      required: [observationId, outcome, lookupMethod, occurredAt, failureCode]
-      properties:
-        observationId: {$ref: '#/components/schemas/Uuid', description: "UUID of this failed balance observation."}
-        outcome: {type: string, const: FAILED, description: "FAILED discriminator identifying the failed observation variant."}
-        lookupMethod: {$ref: '#/components/schemas/BalanceLookupMethod', description: "Trigger for this failed lookup: USER_REQUESTED, PRE_DEPOSIT, or AUTO_DAILY."}
-        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which the failed external lookup attempt was made."}
-        failureCode: {type: string, const: BALANCE_SYNC_FAILED, description: "Always BALANCE_SYNC_FAILED; no balance delta or replacement balance is produced by this observation."}
+        correctionOfEventId: {type: [string, 'null'], format: uuid, description: "UUID of an earlier immutable event in the same account that this new event compensates; null when this is not a correction. The earlier event remains unchanged."}
+        balanceAdjustment:
+          description: "Immutable Balance Adjustment Case event-link provenance for this ledger event, or null when the event is not linked to an adjustment case."
+          oneOf:
+            - $ref: '#/components/schemas/BalanceAdjustmentEventReference'
+            - type: 'null'
     CardBalanceChangePage:
       type: object
       additionalProperties: false
       required: [items, nextCursor]
       properties:
         items:
-          description: "Successful and failed card-balance observations in occurredAt descending, observationId descending order."
+          description: "Immutable nonzero CARD_BALANCE_CHANGE events in occurredAt descending, eventId descending order; failed and zero-delta observations are excluded."
           type: array
           items: {$ref: '#/components/schemas/CardBalanceChange'}
-        nextCursor: {type: [string, 'null'], minLength: 1, description: "Opaque cursor for the next observation-history page; null when no further page exists."}
+        nextCursor: {type: [string, 'null'], minLength: 1, description: "Opaque cursor derived from the final returned (occurredAt, eventId) tuple when another item exists; null for empty and terminal pages."}
     Wish:
       type: object
       additionalProperties: false
-      required: [id, cardBalanceAccountId, purpose, targetAmount, amount, targetDate, state, visibility, createdAt, updatedAt, completedAt, actualDurationSeconds, version]
+      required: [id, cardBalanceAccountId, purpose, targetAmount, amount, targetDate, state, visibility, balanceAdjustmentInProgress, createdAt, updatedAt, completedAt, actualDurationSeconds, version]
       properties:
         id: {$ref: '#/components/schemas/Uuid', description: "Stable UUID of this Wish."}
         cardBalanceAccountId: {$ref: '#/components/schemas/Uuid', description: "UUID of the owner Card Balance Account to which this Wish is permanently attached."}
@@ -907,6 +995,7 @@ components:
           description: Optional calendar date that may be in the past, present, or future.
         state: {$ref: '#/components/schemas/WishState', description: "Lifecycle state: IN_PROGRESS below target, AMOUNT_REACHED at target before explicit completion, COMPLETED after completion, or ABANDONED after abandonment."}
         visibility: {$ref: '#/components/schemas/WishVisibility', description: "Requested publication scope PRIVATE, FRIENDS, or ACADEMY; current relationship and blocking checks may further hide any Shared Card."}
+        balanceAdjustmentInProgress: {type: boolean, description: "True iff this Wish's Card Balance Account has an OPEN Balance Adjustment Case for this response snapshot; derived and not persisted on the Wish or Shared Card. List and detail responses reflect read time, mutation responses reflect committed post-mutation state, and opening or resolving a case does not advance Wish version or updatedAt. This projection exposes only the boolean, never shortage amount, adjustmentCaseId, observationId, event links, or account history."}
         createdAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which the Wish was created."}
         updatedAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant of the most recent successful Wish content or lifecycle mutation."}
         completedAt: {type: [string, 'null'], format: date-time, pattern: 'Z$', description: "RFC 3339 UTC Z instant of explicit completion for a COMPLETED Wish; null for every other state."}
@@ -988,8 +1077,53 @@ components:
         destinationWish: {$ref: '#/components/schemas/Wish', description: "Authoritative destination Wish snapshot after the atomic transfer."}
         eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the single immutable ledger event containing both transfer effects."}
         occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant shared by the source and destination effects of the transfer."}
+    BalanceAdjustmentEventReference:
+      type: object
+      description: Immutable ledger-to-adjustment-case event-link provenance, not the case's mutable current status. Observation-only first-success mismatch facts do not create history items, and shortage amount, notification state, and unrelated observation data are not exposed here.
+      additionalProperties: false
+      required: [adjustmentCaseId, eventRole, sequenceNumber]
+      properties:
+        adjustmentCaseId: {$ref: '#/components/schemas/Uuid', description: "UUID of the Balance Adjustment Case linked to this immutable ledger event."}
+        eventRole: {type: string, enum: [OPENING_DECREASE, INTERMEDIATE, RESOLUTION], description: "Immutable role of this event inside the adjustment case: opening decrease, intermediate compensation, or resolution."}
+        sequenceNumber: {type: integer, minimum: 0, description: "Zero-based immutable order of this event link inside the adjustment case."}
+    WishHistoryReference:
+      type: object
+      additionalProperties: false
+      required: [wishId, wishPurposeSnapshot, deletedWish, detailAvailable]
+      allOf:
+        - if:
+            properties:
+              deletedWish: {const: true}
+          then:
+            properties:
+              detailAvailable: {const: false}
+      properties:
+        wishId: {$ref: '#/components/schemas/Uuid', description: "Stable UUID of the Wish referenced by this account-level event."}
+        wishPurposeSnapshot: {$ref: '#/components/schemas/Purpose', description: "Immutable Wish purpose captured by the ledger Wish effect when the event occurred."}
+        deletedWish: {type: boolean, description: "True when the referenced Wish is tombstoned at response read time."}
+        detailAvailable: {type: boolean, description: "Whether ordinary Wish detail navigation is currently available; always false when deletedWish is true. No URL or path is emitted."}
+    WishHistorySubject:
+      type: object
+      additionalProperties: false
+      required: [wishId, displayPurpose, deletedWish, detailAvailable]
+      allOf:
+        - if:
+            properties:
+              deletedWish: {const: true}
+          then:
+            properties:
+              detailAvailable: {const: false}
+          else:
+            properties:
+              detailAvailable: {const: true}
+      properties:
+        wishId: {$ref: '#/components/schemas/Uuid', description: "Stable UUID of the owned Wish whose immutable history is returned."}
+        displayPurpose: {$ref: '#/components/schemas/Purpose', description: "Current purpose for an active Wish, or the purpose snapshot captured immediately before tombstoning for a deleted Wish."}
+        deletedWish: {type: boolean, description: "True when this owned Wish is tombstoned at response read time."}
+        detailAvailable: {type: boolean, description: "Exact logical negation of deletedWish; false prevents navigation to ordinary detail for a tombstoned Wish. No URL or path is emitted."}
     AccountFundMovement:
       oneOf:
+        - $ref: '#/components/schemas/AccountCardBalanceChange'
         - $ref: '#/components/schemas/AccountWishDeposit'
         - $ref: '#/components/schemas/AccountWishWithdrawal'
         - $ref: '#/components/schemas/AccountWishTransfer'
@@ -998,84 +1132,146 @@ components:
         - $ref: '#/components/schemas/AccountWishDeletionReturn'
       discriminator:
         propertyName: eventType
+        mapping:
+          CARD_BALANCE_CHANGE: '#/components/schemas/AccountCardBalanceChange'
+          WISH_DEPOSIT: '#/components/schemas/AccountWishDeposit'
+          WISH_WITHDRAWAL: '#/components/schemas/AccountWishWithdrawal'
+          WISH_TRANSFER: '#/components/schemas/AccountWishTransfer'
+          WISH_COMPLETION_RETURN: '#/components/schemas/AccountWishCompletionReturn'
+          WISH_ABANDONMENT_RETURN: '#/components/schemas/AccountWishAbandonmentReturn'
+          WISH_DELETION_RETURN: '#/components/schemas/AccountWishDeletionReturn'
+    AccountCardBalanceChange:
+      type: object
+      additionalProperties: false
+      required: [eventId, eventType, observationId, lookupMethod, occurredAt, actualCardBalanceDelta, actualCardBalanceAfter, accountAvailableBalanceDelta, accountAvailableBalanceAfter, correctionOfEventId, balanceAdjustment]
+      properties:
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of this immutable CARD_BALANCE_CHANGE event; identical to the corresponding CardBalanceChange eventId."}
+        eventType: {type: string, const: CARD_BALANCE_CHANGE, description: "Always CARD_BALANCE_CHANGE, identifying a successful nonzero external card-balance change."}
+        observationId: {$ref: '#/components/schemas/Uuid', description: "UUID of the exact successful balance observation linked to this event."}
+        lookupMethod: {$ref: '#/components/schemas/BalanceLookupMethod', description: "Trigger for the linked observation: USER_REQUESTED, PRE_DEPOSIT, or AUTO_DAILY."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant equal to the linked observation's observedAt value."}
+        actualCardBalanceDelta:
+          description: "Nonzero signed integer KRW external card-balance change."
+          allOf: [{$ref: '#/components/schemas/KrwSigned'}, {not: {const: 0}}]
+        actualCardBalanceAfter: {$ref: '#/components/schemas/KrwNonNegative', description: "Non-negative integer KRW observed after this external change."}
+        accountAvailableBalanceDelta: {$ref: '#/components/schemas/KrwSigned', description: "Signed ledger-available account balance change, exactly equal to actualCardBalanceDelta."}
+        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed ledger-available account balance immediately after the event; negative values are preserved and never display-clamped."}
+        correctionOfEventId: {type: [string, 'null'], format: uuid, description: "Earlier immutable same-account event compensated by this new event, or null; the earlier event remains unchanged."}
+        balanceAdjustment:
+          description: "Immutable Balance Adjustment Case event-link provenance, or null when this event has no adjustment-case link."
+          oneOf: [{$ref: '#/components/schemas/BalanceAdjustmentEventReference'}, {type: 'null'}]
     AccountWishDeposit:
       type: object
       additionalProperties: false
-      required: [eventId, eventType, wishId, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter]
+      required: [eventId, eventType, wish, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter, correctionOfEventId, balanceAdjustment]
       properties:
-        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the corresponding Wish movement projection."}
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the corresponding Wish deposit projection."}
         eventType: {type: string, const: WISH_DEPOSIT, description: "Always WISH_DEPOSIT, identifying funds allocated from account availability to one Wish."}
-        wishId: {$ref: '#/components/schemas/Uuid', description: "UUID of the Wish that received the deposited funds."}
-        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which the immutable deposit event occurred."}
-        accountAvailableBalanceDelta: {$ref: '#/components/schemas/KrwSigned', description: "Negative integer KRW change to ledger-available account balance caused by this deposit."}
-        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW ledger-available account balance immediately after the deposit."}
+        wish: {$ref: '#/components/schemas/WishHistoryReference', description: "Event-time purpose and read-time tombstone context for the Wish that received the funds."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which this immutable deposit event occurred."}
+        accountAvailableBalanceDelta:
+          description: "Negative integer KRW change to ledger-available account balance caused by this deposit."
+          allOf: [{$ref: '#/components/schemas/KrwSigned'}, {maximum: -1}]
+        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed ledger-available account balance immediately after the deposit."}
+        correctionOfEventId: {type: [string, 'null'], format: uuid, description: "Earlier immutable same-account event compensated by this new event, or null."}
+        balanceAdjustment:
+          description: "Immutable Balance Adjustment Case event-link provenance, or null when this event has no adjustment-case link."
+          oneOf: [{$ref: '#/components/schemas/BalanceAdjustmentEventReference'}, {type: 'null'}]
     AccountWishWithdrawal:
       type: object
       additionalProperties: false
-      required: [eventId, eventType, wishId, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter]
+      required: [eventId, eventType, wish, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter, correctionOfEventId, balanceAdjustment]
       properties:
-        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the corresponding Wish movement projection."}
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the corresponding Wish withdrawal projection."}
         eventType: {type: string, const: WISH_WITHDRAWAL, description: "Always WISH_WITHDRAWAL, identifying funds returned from one Wish to account availability."}
-        wishId: {$ref: '#/components/schemas/Uuid', description: "UUID of the Wish from which funds were withdrawn."}
-        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which the immutable withdrawal event occurred."}
-        accountAvailableBalanceDelta: {$ref: '#/components/schemas/KrwSigned', description: "Positive integer KRW change to ledger-available account balance caused by this withdrawal."}
-        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW ledger-available account balance immediately after the withdrawal."}
+        wish: {$ref: '#/components/schemas/WishHistoryReference', description: "Event-time purpose and read-time tombstone context for the Wish from which funds were withdrawn."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which this immutable withdrawal event occurred."}
+        accountAvailableBalanceDelta:
+          description: "Positive integer KRW change to ledger-available account balance caused by this withdrawal."
+          allOf: [{$ref: '#/components/schemas/KrwSigned'}, {minimum: 1}]
+        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed ledger-available account balance immediately after the withdrawal."}
+        correctionOfEventId: {type: [string, 'null'], format: uuid, description: "Earlier immutable same-account event compensated by this new event, or null."}
+        balanceAdjustment:
+          description: "Immutable Balance Adjustment Case event-link provenance, or null when this event has no adjustment-case link."
+          oneOf: [{$ref: '#/components/schemas/BalanceAdjustmentEventReference'}, {type: 'null'}]
     AccountWishTransfer:
       type: object
       additionalProperties: false
-      required: [eventId, eventType, sourceWishId, destinationWishId, amount, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter]
+      required: [eventId, eventType, sourceWish, destinationWish, amount, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter, correctionOfEventId, balanceAdjustment]
       properties:
-        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the single immutable ledger event shared by the source and destination Wish projections."}
-        eventType: {type: string, const: WISH_TRANSFER, description: "Always WISH_TRANSFER, identifying an atomic transfer between two Wishes in the same account."}
-        sourceWishId: {$ref: '#/components/schemas/Uuid', description: "UUID of the Wish from which the transfer amount was removed."}
-        destinationWishId: {$ref: '#/components/schemas/Uuid', description: "UUID of the Wish to which the transfer amount was added."}
-        amount: {$ref: '#/components/schemas/KrwPositive', description: "Positive integer KRW moved atomically from the source Wish to the destination Wish."}
-        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant shared by both effects of the immutable transfer event."}
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the one immutable ledger event shared by both opposite-signed Wish transfer projections."}
+        eventType: {type: string, const: WISH_TRANSFER, description: "Always WISH_TRANSFER, identifying an atomic transfer between two distinct Wishes in the same account."}
+        sourceWish: {$ref: '#/components/schemas/WishHistoryReference', description: "Event-time purpose and read-time tombstone context for the distinct source Wish."}
+        destinationWish: {$ref: '#/components/schemas/WishHistoryReference', description: "Event-time purpose and read-time tombstone context for the distinct destination Wish."}
+        amount: {$ref: '#/components/schemas/KrwPositive', description: "Positive integer KRW moved atomically from sourceWish to destinationWish."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant shared by both immutable Wish effects of the transfer."}
         accountAvailableBalanceDelta: {type: integer, const: 0, description: "Always zero because a same-account Wish transfer does not change account-level availability."}
-        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW ledger-available account balance after the transfer, unchanged by the transfer itself."}
+        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed ledger-available account balance after the transfer, unchanged by the transfer itself."}
+        correctionOfEventId: {type: [string, 'null'], format: uuid, description: "Earlier immutable same-account event compensated by this new event, or null."}
+        balanceAdjustment:
+          description: "Immutable Balance Adjustment Case event-link provenance, or null when this event has no adjustment-case link."
+          oneOf: [{$ref: '#/components/schemas/BalanceAdjustmentEventReference'}, {type: 'null'}]
     AccountWishCompletionReturn:
       type: object
       additionalProperties: false
-      required: [eventId, eventType, wishId, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter]
+      required: [eventId, eventType, wish, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter, correctionOfEventId, balanceAdjustment]
       properties:
-        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the completed Wish's movement projection."}
-        eventType: {type: string, const: WISH_COMPLETION_RETURN, description: "Always WISH_COMPLETION_RETURN, identifying funds returned when a reached Wish is explicitly completed."}
-        wishId: {$ref: '#/components/schemas/Uuid', description: "UUID of the Wish completed by this return event."}
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event shared with the completed Wish's movement projection."}
+        eventType: {type: string, const: WISH_COMPLETION_RETURN, description: "Always WISH_COMPLETION_RETURN, identifying nonzero funds returned during explicit completion."}
+        wish: {$ref: '#/components/schemas/WishHistoryReference', description: "Event-time purpose and read-time tombstone context for the completed Wish."}
         occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which completion returned the remaining Wish funds."}
-        accountAvailableBalanceDelta: {$ref: '#/components/schemas/KrwSigned', description: "Positive integer KRW returned from the completed Wish to account availability."}
-        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW ledger-available account balance immediately after the completion return."}
+        accountAvailableBalanceDelta:
+          description: "Positive integer KRW returned from the completed Wish; a zero return creates no event or history item."
+          allOf: [{$ref: '#/components/schemas/KrwSigned'}, {minimum: 1}]
+        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed ledger-available account balance immediately after the completion return."}
+        correctionOfEventId: {type: [string, 'null'], format: uuid, description: "Earlier immutable same-account event compensated by this new event, or null."}
+        balanceAdjustment:
+          description: "Immutable Balance Adjustment Case event-link provenance, or null when this event has no adjustment-case link."
+          oneOf: [{$ref: '#/components/schemas/BalanceAdjustmentEventReference'}, {type: 'null'}]
     AccountWishAbandonmentReturn:
       type: object
       additionalProperties: false
-      required: [eventId, eventType, wishId, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter]
+      required: [eventId, eventType, wish, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter, correctionOfEventId, balanceAdjustment]
       properties:
-        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the abandoned Wish's movement projection."}
-        eventType: {type: string, const: WISH_ABANDONMENT_RETURN, description: "Always WISH_ABANDONMENT_RETURN, identifying nonzero funds returned when a Wish is abandoned."}
-        wishId: {$ref: '#/components/schemas/Uuid', description: "UUID of the Wish abandoned by this return event."}
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event shared with the abandoned Wish's movement projection."}
+        eventType: {type: string, const: WISH_ABANDONMENT_RETURN, description: "Always WISH_ABANDONMENT_RETURN, identifying nonzero funds returned during abandonment."}
+        wish: {$ref: '#/components/schemas/WishHistoryReference', description: "Event-time purpose and read-time tombstone context for the abandoned Wish."}
         occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which abandonment returned the remaining Wish funds."}
-        accountAvailableBalanceDelta: {$ref: '#/components/schemas/KrwSigned', description: "Positive integer KRW returned from the abandoned Wish to account availability."}
-        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW ledger-available account balance immediately after the abandonment return."}
+        accountAvailableBalanceDelta:
+          description: "Positive integer KRW returned from the abandoned Wish; a zero return creates no event or history item."
+          allOf: [{$ref: '#/components/schemas/KrwSigned'}, {minimum: 1}]
+        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed ledger-available account balance immediately after the abandonment return."}
+        correctionOfEventId: {type: [string, 'null'], format: uuid, description: "Earlier immutable same-account event compensated by this new event, or null."}
+        balanceAdjustment:
+          description: "Immutable Balance Adjustment Case event-link provenance, or null when this event has no adjustment-case link."
+          oneOf: [{$ref: '#/components/schemas/BalanceAdjustmentEventReference'}, {type: 'null'}]
     AccountWishDeletionReturn:
       type: object
       additionalProperties: false
-      required: [eventId, eventType, wishId, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter]
+      required: [eventId, eventType, wish, occurredAt, accountAvailableBalanceDelta, accountAvailableBalanceAfter, correctionOfEventId, balanceAdjustment]
       properties:
-        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the deleted Wish's movement projection."}
-        eventType: {type: string, const: WISH_DELETION_RETURN, description: "Always WISH_DELETION_RETURN, identifying nonzero funds returned when a Wish is tombstoned."}
-        wishId: {$ref: '#/components/schemas/Uuid', description: "UUID of the Wish tombstoned by this return event."}
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event shared with the tombstoned Wish's movement projection."}
+        eventType: {type: string, const: WISH_DELETION_RETURN, description: "Always WISH_DELETION_RETURN, identifying nonzero funds returned during tombstone deletion."}
+        wish: {$ref: '#/components/schemas/WishHistoryReference', description: "Deletion-time purpose and read-time tombstone context for the deleted Wish."}
         occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which deletion returned the remaining Wish funds."}
-        accountAvailableBalanceDelta: {$ref: '#/components/schemas/KrwSigned', description: "Positive integer KRW returned from the deleted Wish to account availability."}
-        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW ledger-available account balance immediately after the deletion return."}
+        accountAvailableBalanceDelta:
+          description: "Positive integer KRW returned from the deleted Wish; a zero return creates no event or history item."
+          allOf: [{$ref: '#/components/schemas/KrwSigned'}, {minimum: 1}]
+        accountAvailableBalanceAfter: {$ref: '#/components/schemas/KrwSigned', description: "Signed ledger-available account balance immediately after the deletion return."}
+        correctionOfEventId: {type: [string, 'null'], format: uuid, description: "Earlier immutable same-account event compensated by this new event, or null."}
+        balanceAdjustment:
+          description: "Immutable Balance Adjustment Case event-link provenance, or null when this event has no adjustment-case link."
+          oneOf: [{$ref: '#/components/schemas/BalanceAdjustmentEventReference'}, {type: 'null'}]
     AccountFundMovementPage:
       type: object
       additionalProperties: false
       required: [items, nextCursor]
       properties:
         items:
-          description: "Immutable account-level fund movements in occurredAt descending, eventId descending order."
+          description: "One item per immutable ledger event in occurredAt descending, eventId descending order, including external card changes and every Wish movement."
           type: array
           items: {$ref: '#/components/schemas/AccountFundMovement'}
-        nextCursor: {type: [string, 'null'], minLength: 1, description: "Opaque cursor for the next account-movement page; null when no further page exists."}
+        nextCursor: {type: [string, 'null'], minLength: 1, description: "Opaque cursor derived from the final returned (occurredAt, eventId) tuple when another item exists; null for empty and terminal pages."}
     WishFundMovement:
       oneOf:
         - $ref: '#/components/schemas/WishDepositMovement'
@@ -1086,78 +1282,136 @@ components:
         - $ref: '#/components/schemas/WishDeletionReturnMovement'
       discriminator:
         propertyName: eventType
+        mapping:
+          WISH_DEPOSIT: '#/components/schemas/WishDepositMovement'
+          WISH_WITHDRAWAL: '#/components/schemas/WishWithdrawalMovement'
+          WISH_TRANSFER: '#/components/schemas/WishTransferMovement'
+          WISH_COMPLETION_RETURN: '#/components/schemas/WishCompletionReturnMovement'
+          WISH_ABANDONMENT_RETURN: '#/components/schemas/WishAbandonmentReturnMovement'
+          WISH_DELETION_RETURN: '#/components/schemas/WishDeletionReturnMovement'
     WishDepositMovement:
       type: object
       additionalProperties: false
-      required: [eventId, eventType, occurredAt, wishAmountDelta, wishAmountAfter]
+      required: [eventId, eventType, occurredAt, wishPurposeSnapshot, wishAmountDelta, wishAmountAfter, correctionOfEventId, balanceAdjustment]
       properties:
-        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the account-level deposit projection."}
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event shared with the account-level deposit projection."}
         eventType: {type: string, const: WISH_DEPOSIT, description: "Always WISH_DEPOSIT, identifying funds added to this Wish."}
-        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which the deposit event occurred."}
-        wishAmountDelta: {$ref: '#/components/schemas/KrwSigned', description: "Positive integer KRW added to this Wish."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which this immutable deposit event occurred."}
+        wishPurposeSnapshot: {$ref: '#/components/schemas/Purpose', description: "Immutable purpose captured for this Wish by the ledger effect when the event occurred."}
+        wishAmountDelta:
+          description: "Positive integer KRW added to this Wish."
+          allOf: [{$ref: '#/components/schemas/KrwSigned'}, {minimum: 1}]
         wishAmountAfter: {$ref: '#/components/schemas/KrwNonNegative', description: "Non-negative integer KRW held by this Wish immediately after the deposit."}
+        correctionOfEventId: {type: [string, 'null'], format: uuid, description: "Earlier immutable same-account event compensated by this new event, or null."}
+        balanceAdjustment:
+          description: "Immutable Balance Adjustment Case event-link provenance, or null when this event has no adjustment-case link."
+          oneOf: [{$ref: '#/components/schemas/BalanceAdjustmentEventReference'}, {type: 'null'}]
     WishWithdrawalMovement:
       type: object
       additionalProperties: false
-      required: [eventId, eventType, occurredAt, wishAmountDelta, wishAmountAfter]
+      required: [eventId, eventType, occurredAt, wishPurposeSnapshot, wishAmountDelta, wishAmountAfter, correctionOfEventId, balanceAdjustment]
       properties:
-        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the account-level withdrawal projection."}
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event shared with the account-level withdrawal projection."}
         eventType: {type: string, const: WISH_WITHDRAWAL, description: "Always WISH_WITHDRAWAL, identifying funds removed from this Wish."}
-        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which the withdrawal event occurred."}
-        wishAmountDelta: {$ref: '#/components/schemas/KrwSigned', description: "Negative integer KRW removed from this Wish."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which this immutable withdrawal event occurred."}
+        wishPurposeSnapshot: {$ref: '#/components/schemas/Purpose', description: "Immutable purpose captured for this Wish by the ledger effect when the event occurred."}
+        wishAmountDelta:
+          description: "Negative integer KRW removed from this Wish."
+          allOf: [{$ref: '#/components/schemas/KrwSigned'}, {maximum: -1}]
         wishAmountAfter: {$ref: '#/components/schemas/KrwNonNegative', description: "Non-negative integer KRW held by this Wish immediately after the withdrawal."}
+        correctionOfEventId: {type: [string, 'null'], format: uuid, description: "Earlier immutable same-account event compensated by this new event, or null."}
+        balanceAdjustment:
+          description: "Immutable Balance Adjustment Case event-link provenance, or null when this event has no adjustment-case link."
+          oneOf: [{$ref: '#/components/schemas/BalanceAdjustmentEventReference'}, {type: 'null'}]
     WishTransferMovement:
       type: object
       additionalProperties: false
-      required: [eventId, eventType, occurredAt, direction, counterpartyWishId, wishAmountDelta, wishAmountAfter]
+      required: [eventId, eventType, occurredAt, wishPurposeSnapshot, direction, counterpartyWish, wishAmountDelta, wishAmountAfter, correctionOfEventId, balanceAdjustment]
+      allOf:
+        - if:
+            properties:
+              direction: {const: SOURCE}
+          then:
+            properties:
+              wishAmountDelta: {maximum: -1}
+          else:
+            properties:
+              wishAmountDelta: {minimum: 1}
       properties:
-        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the single immutable ledger event shared by both Wish transfer projections."}
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the one immutable ledger event shared by both opposite-signed Wish transfer projections."}
         eventType: {type: string, const: WISH_TRANSFER, description: "Always WISH_TRANSFER, identifying one side of an atomic same-account Wish transfer."}
-        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant shared by both Wish effects of the transfer."}
-        direction: {type: string, enum: [SOURCE, DESTINATION], description: "SOURCE when this Wish sent funds and DESTINATION when this Wish received funds."}
-        counterpartyWishId: {$ref: '#/components/schemas/Uuid', description: "UUID of the other Wish participating in the transfer."}
+        occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant shared by both immutable Wish effects of the transfer."}
+        wishPurposeSnapshot: {$ref: '#/components/schemas/Purpose', description: "Immutable purpose captured for this Wish by its ledger effect when the transfer occurred."}
+        direction: {type: string, enum: [SOURCE, DESTINATION], description: "SOURCE with a negative wishAmountDelta when this Wish sent funds; DESTINATION with a positive delta when it received funds."}
+        counterpartyWish: {$ref: '#/components/schemas/WishHistoryReference', description: "Event-time purpose and read-time tombstone context for the distinct other Wish in the transfer."}
         wishAmountDelta: {$ref: '#/components/schemas/KrwSigned', description: "Signed integer KRW effect on this Wish: negative for SOURCE and positive for DESTINATION."}
         wishAmountAfter: {$ref: '#/components/schemas/KrwNonNegative', description: "Non-negative integer KRW held by this Wish immediately after the transfer."}
+        correctionOfEventId: {type: [string, 'null'], format: uuid, description: "Earlier immutable same-account event compensated by this new event, or null."}
+        balanceAdjustment:
+          description: "Immutable Balance Adjustment Case event-link provenance, or null when this event has no adjustment-case link."
+          oneOf: [{$ref: '#/components/schemas/BalanceAdjustmentEventReference'}, {type: 'null'}]
     WishCompletionReturnMovement:
       type: object
       additionalProperties: false
-      required: [eventId, eventType, occurredAt, wishAmountDelta, wishAmountAfter]
+      required: [eventId, eventType, occurredAt, wishPurposeSnapshot, wishAmountDelta, wishAmountAfter, correctionOfEventId, balanceAdjustment]
       properties:
-        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the account-level completion-return projection."}
-        eventType: {type: string, const: WISH_COMPLETION_RETURN, description: "Always WISH_COMPLETION_RETURN, identifying funds removed from this Wish during explicit completion."}
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event shared with the account-level completion-return projection."}
+        eventType: {type: string, const: WISH_COMPLETION_RETURN, description: "Always WISH_COMPLETION_RETURN, identifying nonzero funds removed during explicit completion."}
         occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which completion returned the Wish funds."}
-        wishAmountDelta: {$ref: '#/components/schemas/KrwSigned', description: "Negative integer KRW returned from this Wish to account availability."}
-        wishAmountAfter: {$ref: '#/components/schemas/KrwNonNegative', description: "Always zero KRW after explicit completion."}
+        wishPurposeSnapshot: {$ref: '#/components/schemas/Purpose', description: "Immutable purpose captured for this Wish by the ledger effect when completion occurred."}
+        wishAmountDelta:
+          description: "Negative integer KRW returned from this Wish; a zero return creates no event or history item."
+          allOf: [{$ref: '#/components/schemas/KrwSigned'}, {maximum: -1}]
+        wishAmountAfter: {type: integer, const: 0, description: "Always zero KRW after explicit completion."}
+        correctionOfEventId: {type: [string, 'null'], format: uuid, description: "Earlier immutable same-account event compensated by this new event, or null."}
+        balanceAdjustment:
+          description: "Immutable Balance Adjustment Case event-link provenance, or null when this event has no adjustment-case link."
+          oneOf: [{$ref: '#/components/schemas/BalanceAdjustmentEventReference'}, {type: 'null'}]
     WishAbandonmentReturnMovement:
       type: object
       additionalProperties: false
-      required: [eventId, eventType, occurredAt, wishAmountDelta, wishAmountAfter]
+      required: [eventId, eventType, occurredAt, wishPurposeSnapshot, wishAmountDelta, wishAmountAfter, correctionOfEventId, balanceAdjustment]
       properties:
-        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the account-level abandonment-return projection."}
-        eventType: {type: string, const: WISH_ABANDONMENT_RETURN, description: "Always WISH_ABANDONMENT_RETURN, identifying nonzero funds removed when this Wish was abandoned."}
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event shared with the account-level abandonment-return projection."}
+        eventType: {type: string, const: WISH_ABANDONMENT_RETURN, description: "Always WISH_ABANDONMENT_RETURN, identifying nonzero funds removed during abandonment."}
         occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which abandonment returned the Wish funds."}
-        wishAmountDelta: {$ref: '#/components/schemas/KrwSigned', description: "Negative integer KRW returned from this Wish to account availability."}
-        wishAmountAfter: {$ref: '#/components/schemas/KrwNonNegative', description: "Always zero KRW after abandonment."}
+        wishPurposeSnapshot: {$ref: '#/components/schemas/Purpose', description: "Immutable purpose captured for this Wish by the ledger effect when abandonment occurred."}
+        wishAmountDelta:
+          description: "Negative integer KRW returned from this Wish; a zero return creates no event or history item."
+          allOf: [{$ref: '#/components/schemas/KrwSigned'}, {maximum: -1}]
+        wishAmountAfter: {type: integer, const: 0, description: "Always zero KRW after abandonment."}
+        correctionOfEventId: {type: [string, 'null'], format: uuid, description: "Earlier immutable same-account event compensated by this new event, or null."}
+        balanceAdjustment:
+          description: "Immutable Balance Adjustment Case event-link provenance, or null when this event has no adjustment-case link."
+          oneOf: [{$ref: '#/components/schemas/BalanceAdjustmentEventReference'}, {type: 'null'}]
     WishDeletionReturnMovement:
       type: object
       additionalProperties: false
-      required: [eventId, eventType, occurredAt, wishAmountDelta, wishAmountAfter]
+      required: [eventId, eventType, occurredAt, wishPurposeSnapshot, wishAmountDelta, wishAmountAfter, correctionOfEventId, balanceAdjustment]
       properties:
-        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event, shared with the account-level deletion-return projection."}
-        eventType: {type: string, const: WISH_DELETION_RETURN, description: "Always WISH_DELETION_RETURN, identifying nonzero funds removed when this Wish was tombstoned."}
+        eventId: {$ref: '#/components/schemas/Uuid', description: "UUID of the immutable ledger event shared with the account-level deletion-return projection."}
+        eventType: {type: string, const: WISH_DELETION_RETURN, description: "Always WISH_DELETION_RETURN, identifying nonzero funds removed during tombstone deletion."}
         occurredAt: {$ref: '#/components/schemas/UtcInstant', description: "RFC 3339 UTC Z instant at which deletion returned the Wish funds."}
-        wishAmountDelta: {$ref: '#/components/schemas/KrwSigned', description: "Negative integer KRW returned from this Wish to account availability."}
-        wishAmountAfter: {$ref: '#/components/schemas/KrwNonNegative', description: "Always zero KRW after tombstone deletion."}
+        wishPurposeSnapshot: {$ref: '#/components/schemas/Purpose', description: "Immutable deletion-time purpose captured for this Wish by the ledger effect."}
+        wishAmountDelta:
+          description: "Negative integer KRW returned from this Wish; a zero return creates no event or history item."
+          allOf: [{$ref: '#/components/schemas/KrwSigned'}, {maximum: -1}]
+        wishAmountAfter: {type: integer, const: 0, description: "Always zero KRW after tombstone deletion."}
+        correctionOfEventId: {type: [string, 'null'], format: uuid, description: "Earlier immutable same-account event compensated by this new event, or null."}
+        balanceAdjustment:
+          description: "Immutable Balance Adjustment Case event-link provenance, or null when this event has no adjustment-case link."
+          oneOf: [{$ref: '#/components/schemas/BalanceAdjustmentEventReference'}, {type: 'null'}]
     WishFundMovementPage:
       type: object
       additionalProperties: false
-      required: [items, nextCursor]
+      required: [wish, items, nextCursor]
       properties:
+        wish: {$ref: '#/components/schemas/WishHistorySubject', description: "Read-time subject context for the owned active or tombstoned Wish whose immutable effects are returned."}
         items:
-          description: "Immutable fund movements projected for this Wish in occurredAt descending, eventId descending order."
+          description: "Immutable ledger effects for this Wish only, in occurredAt descending, eventId descending order; CARD_BALANCE_CHANGE never appears."
           type: array
           items: {$ref: '#/components/schemas/WishFundMovement'}
-        nextCursor: {type: [string, 'null'], minLength: 1, description: "Opaque cursor for the next Wish-movement page; null when no further page exists."}
+        nextCursor: {type: [string, 'null'], minLength: 1, description: "Opaque cursor derived from the final returned (occurredAt, eventId) tuple when another item exists; null for empty and terminal pages."}
     SharedCard:
       oneOf:
         - $ref: '#/components/schemas/ProgressSharedCard'
@@ -1225,6 +1479,7 @@ components:
             ledgerAvailableBalance: null
             displayAvailableBalance: null
             unresolvedShortage: null
+            balanceAdjustmentInProgress: false
             lastRefreshStatus: null
             lastRefreshedAt: null
         nextCursor: null
@@ -1240,6 +1495,7 @@ components:
         ledgerAvailableBalance: 150000
         displayAvailableBalance: 150000
         unresolvedShortage: 0
+        balanceAdjustmentInProgress: false
         lastRefreshStatus: FAILED
         lastRefreshedAt: '2026-08-16T02:00:00Z'
     EmptyWishPage:
@@ -1261,6 +1517,7 @@ components:
           targetDate: '2026-12-31'
           state: IN_PROGRESS
           visibility: PRIVATE
+          balanceAdjustmentInProgress: false
           createdAt: '2026-08-16T02:10:00Z'
           updatedAt: '2026-08-16T02:10:00Z'
           completedAt: null
@@ -1269,7 +1526,7 @@ components:
         eventId: null
     IdempotentReplay:
       summary: idempotent-replay
-      description: The original success body is returned with Idempotency-Replayed true.
+      description: The original success body is returned with Idempotency-Replayed true, including the balanceAdjustmentInProgress value captured by that original result rather than the current read-time value.
       x-schema-ref: '#/components/schemas/WishMutationResult'
       x-response-headers:
         Idempotency-Replayed: true
@@ -1283,12 +1540,45 @@ components:
           targetDate: '2026-12-31'
           state: IN_PROGRESS
           visibility: PRIVATE
+          balanceAdjustmentInProgress: true
           createdAt: '2026-08-16T02:10:00Z'
           updatedAt: '2026-08-16T02:20:00Z'
           completedAt: null
           actualDurationSeconds: null
           version: 1
         eventId: c88a568c-38a8-4767-a88a-caf3dad22976
+    KnownBalanceAdjustmentOpen:
+      summary: known-balance-adjustment-open
+      x-schema-ref: '#/components/schemas/KnownCardBalanceAccount'
+      value:
+        cardBalanceAccountId: 09551375-f69a-4e69-8587-a0d590cbf092
+        academyId: a12c54ad-c8a2-4102-a03b-28fe4a0daaa7
+        balanceKnowledge: KNOWN
+        actualCardBalance: 70000
+        ledgerAvailableBalance: -20000
+        displayAvailableBalance: 0
+        unresolvedShortage: 20000
+        balanceAdjustmentInProgress: true
+        lastRefreshStatus: SUCCESS
+        lastRefreshedAt: '2026-08-18T08:00:00Z'
+    WishBalanceAdjustmentOpen:
+      summary: wish-balance-adjustment-open
+      x-schema-ref: '#/components/schemas/Wish'
+      value:
+        id: 341ab749-bbab-4b08-9334-0e4b12347b48
+        cardBalanceAccountId: 09551375-f69a-4e69-8587-a0d590cbf092
+        purpose: 새 노트북
+        targetAmount: 1500000
+        amount: 200000
+        targetDate: '2026-12-31'
+        state: IN_PROGRESS
+        visibility: PRIVATE
+        balanceAdjustmentInProgress: true
+        createdAt: '2026-08-16T02:10:00Z'
+        updatedAt: '2026-08-16T02:20:00Z'
+        completedAt: null
+        actualDurationSeconds: null
+        version: 1
     BalanceSyncFailed:
       summary: balance-sync-failed
       x-schema-ref: '#/components/schemas/ErrorEnvelope'
@@ -1325,24 +1615,138 @@ components:
           details: {}
     CardBalanceChangeExample:
       summary: card-balance-change
-      x-schema-ref: '#/components/schemas/SuccessfulCardBalanceChange'
+      x-schema-ref: '#/components/schemas/CardBalanceChange'
       value:
-        observationId: 6df5b01a-446e-4684-b201-bdb099fca0de
-        outcome: SUCCESS
+        eventId: 11111111-1111-1111-1111-111111111111
+        eventType: CARD_BALANCE_CHANGE
+        observationId: 22222222-2222-2222-2222-222222222222
         lookupMethod: USER_REQUESTED
-        occurredAt: '2026-08-16T03:00:00Z'
+        occurredAt: '2026-08-18T03:00:00Z'
         actualCardBalanceDelta: -5000
         actualCardBalanceAfter: 245000
+        correctionOfEventId: null
+        balanceAdjustment:
+          adjustmentCaseId: 33333333-3333-3333-3333-333333333333
+          eventRole: OPENING_DECREASE
+          sequenceNumber: 0
+    CardBalanceChangePageExample:
+      summary: card-balance-change-page
+      x-schema-ref: '#/components/schemas/CardBalanceChangePage'
+      value:
+        items:
+          - eventId: 11111111-1111-1111-1111-111111111111
+            eventType: CARD_BALANCE_CHANGE
+            observationId: 22222222-2222-2222-2222-222222222222
+            lookupMethod: USER_REQUESTED
+            occurredAt: '2026-08-18T03:00:00Z'
+            actualCardBalanceDelta: -5000
+            actualCardBalanceAfter: 245000
+            correctionOfEventId: null
+            balanceAdjustment:
+              adjustmentCaseId: 33333333-3333-3333-3333-333333333333
+              eventRole: OPENING_DECREASE
+              sequenceNumber: 0
+        nextCursor: null
+    AccountCardBalanceChangeExample:
+      summary: account-card-balance-change
+      x-schema-ref: '#/components/schemas/AccountCardBalanceChange'
+      value:
+        eventId: 11111111-1111-1111-1111-111111111111
+        eventType: CARD_BALANCE_CHANGE
+        observationId: 22222222-2222-2222-2222-222222222222
+        lookupMethod: USER_REQUESTED
+        occurredAt: '2026-08-18T03:00:00Z'
+        actualCardBalanceDelta: -5000
+        actualCardBalanceAfter: 245000
+        accountAvailableBalanceDelta: -5000
+        accountAvailableBalanceAfter: -25000
+        correctionOfEventId: null
+        balanceAdjustment:
+          adjustmentCaseId: 33333333-3333-3333-3333-333333333333
+          eventRole: OPENING_DECREASE
+          sequenceNumber: 0
+    AccountCardBalanceChangePageExample:
+      summary: account-card-balance-change-page
+      x-schema-ref: '#/components/schemas/AccountFundMovementPage'
+      value:
+        items:
+          - eventId: 11111111-1111-1111-1111-111111111111
+            eventType: CARD_BALANCE_CHANGE
+            observationId: 22222222-2222-2222-2222-222222222222
+            lookupMethod: USER_REQUESTED
+            occurredAt: '2026-08-18T03:00:00Z'
+            actualCardBalanceDelta: -5000
+            actualCardBalanceAfter: 245000
+            accountAvailableBalanceDelta: -5000
+            accountAvailableBalanceAfter: -25000
+            correctionOfEventId: null
+            balanceAdjustment:
+              adjustmentCaseId: 33333333-3333-3333-3333-333333333333
+              eventRole: OPENING_DECREASE
+              sequenceNumber: 0
+        nextCursor: null
     AccountFundMovementExample:
       summary: account-fund-movement
       x-schema-ref: '#/components/schemas/AccountWishDeposit'
       value:
         eventId: a1516b68-c31b-49c5-ab0c-b66a2f5fde6e
         eventType: WISH_DEPOSIT
-        wishId: 341ab749-bbab-4b08-9334-0e4b12347b48
+        wish:
+          wishId: 341ab749-bbab-4b08-9334-0e4b12347b48
+          wishPurposeSnapshot: 새 노트북
+          deletedWish: false
+          detailAvailable: true
         occurredAt: '2026-08-16T03:05:00Z'
         accountAvailableBalanceDelta: -50000
         accountAvailableBalanceAfter: 100000
+        correctionOfEventId: null
+        balanceAdjustment: null
+    AccountWishTransferExample:
+      summary: account-wish-transfer
+      x-schema-ref: '#/components/schemas/AccountWishTransfer'
+      value:
+        eventId: 55555555-5555-5555-5555-555555555555
+        eventType: WISH_TRANSFER
+        sourceWish:
+          wishId: 66666666-6666-6666-6666-666666666666
+          wishPurposeSnapshot: 자전거
+          deletedWish: false
+          detailAvailable: true
+        destinationWish:
+          wishId: 77777777-7777-7777-7777-777777777777
+          wishPurposeSnapshot: 여름 캠프
+          deletedWish: false
+          detailAvailable: true
+        amount: 30000
+        occurredAt: '2026-08-18T04:00:00Z'
+        accountAvailableBalanceDelta: 0
+        accountAvailableBalanceAfter: -25000
+        correctionOfEventId: null
+        balanceAdjustment: null
+    AccountWishTransferPageExample:
+      summary: account-wish-transfer-page
+      x-schema-ref: '#/components/schemas/AccountFundMovementPage'
+      value:
+        items:
+          - eventId: 55555555-5555-5555-5555-555555555555
+            eventType: WISH_TRANSFER
+            sourceWish:
+              wishId: 66666666-6666-6666-6666-666666666666
+              wishPurposeSnapshot: 자전거
+              deletedWish: false
+              detailAvailable: true
+            destinationWish:
+              wishId: 77777777-7777-7777-7777-777777777777
+              wishPurposeSnapshot: 여름 캠프
+              deletedWish: false
+              detailAvailable: true
+            amount: 30000
+            occurredAt: '2026-08-18T04:00:00Z'
+            accountAvailableBalanceDelta: 0
+            accountAvailableBalanceAfter: -25000
+            correctionOfEventId: null
+            balanceAdjustment: null
+        nextCursor: null
     WishFundMovementExample:
       summary: wish-fund-movement
       x-schema-ref: '#/components/schemas/WishDepositMovement'
@@ -1350,8 +1754,94 @@ components:
         eventId: a1516b68-c31b-49c5-ab0c-b66a2f5fde6e
         eventType: WISH_DEPOSIT
         occurredAt: '2026-08-16T03:05:00Z'
+        wishPurposeSnapshot: 새 노트북
         wishAmountDelta: 50000
         wishAmountAfter: 250000
+        correctionOfEventId: null
+        balanceAdjustment: null
+    WishTransferSourcePageExample:
+      summary: wish-transfer-source-page
+      x-schema-ref: '#/components/schemas/WishFundMovementPage'
+      value:
+        wish:
+          wishId: 66666666-6666-6666-6666-666666666666
+          displayPurpose: 자전거
+          deletedWish: false
+          detailAvailable: true
+        items:
+          - eventId: 55555555-5555-5555-5555-555555555555
+            eventType: WISH_TRANSFER
+            occurredAt: '2026-08-18T04:00:00Z'
+            wishPurposeSnapshot: 자전거
+            direction: SOURCE
+            counterpartyWish:
+              wishId: 77777777-7777-7777-7777-777777777777
+              wishPurposeSnapshot: 여름 캠프
+              deletedWish: false
+              detailAvailable: true
+            wishAmountDelta: -30000
+            wishAmountAfter: 70000
+            correctionOfEventId: null
+            balanceAdjustment: null
+        nextCursor: null
+    WishTransferDestinationPageExample:
+      summary: wish-transfer-destination-page
+      x-schema-ref: '#/components/schemas/WishFundMovementPage'
+      value:
+        wish:
+          wishId: 77777777-7777-7777-7777-777777777777
+          displayPurpose: 여름 캠프
+          deletedWish: false
+          detailAvailable: true
+        items:
+          - eventId: 55555555-5555-5555-5555-555555555555
+            eventType: WISH_TRANSFER
+            occurredAt: '2026-08-18T04:00:00Z'
+            wishPurposeSnapshot: 여름 캠프
+            direction: DESTINATION
+            counterpartyWish:
+              wishId: 66666666-6666-6666-6666-666666666666
+              wishPurposeSnapshot: 자전거
+              deletedWish: false
+              detailAvailable: true
+            wishAmountDelta: 30000
+            wishAmountAfter: 120000
+            correctionOfEventId: null
+            balanceAdjustment: null
+        nextCursor: null
+    DeletedWishHistoryPageExample:
+      summary: deleted-wish-history-page
+      x-schema-ref: '#/components/schemas/WishFundMovementPage'
+      value:
+        wish:
+          wishId: 44444444-4444-4444-4444-444444444444
+          displayPurpose: 새 노트북
+          deletedWish: true
+          detailAvailable: false
+        items:
+          - eventId: 88888888-8888-8888-8888-888888888888
+            eventType: WISH_DELETION_RETURN
+            occurredAt: '2026-08-18T05:00:00Z'
+            wishPurposeSnapshot: 새 노트북
+            wishAmountDelta: -70000
+            wishAmountAfter: 0
+            correctionOfEventId: null
+            balanceAdjustment:
+              adjustmentCaseId: 33333333-3333-3333-3333-333333333333
+              eventRole: RESOLUTION
+              sequenceNumber: 2
+        nextCursor: null
+    EmptyDeletedWishHistoryPageExample:
+      summary: deleted-wish-empty-history-page
+      x-schema-ref: '#/components/schemas/WishFundMovementPage'
+      value:
+        wish:
+          wishId: 99999999-9999-9999-9999-999999999999
+          displayPurpose: 오래된 저축 목표
+          deletedWish: true
+          detailAvailable: false
+        items: []
+        nextCursor: null
     PurposeAsciiBoundaries:
       summary: purpose-ascii-boundaries
       description: ASCII boundary spaces are accepted and removed before the normalized Purpose is persisted and returned.

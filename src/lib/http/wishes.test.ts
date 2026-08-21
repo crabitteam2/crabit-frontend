@@ -2,12 +2,46 @@ import createClient from "openapi-fetch";
 import { describe, expect, it } from "vitest";
 
 import type { paths } from "./generated/crabit-backend";
-import { createWish, deleteWish, patchWish } from "./wishes";
+import {
+  createWish,
+  deleteWish,
+  getWish,
+  listWishes,
+  patchWish,
+} from "./wishes";
 
 const accountId = "11111111-1111-4111-8111-111111111111";
 const wishId = "22222222-2222-4222-8222-222222222222";
 
 describe("Wish typed request helpers", () => {
+  it("lists and gets wishes through generated paths while preserving typed data", async () => {
+    const captured: Request[] = [];
+    const page = { items: [], nextCursor: "opaque-next" };
+    const client = testClient(captured, page);
+
+    await expect(listWishes(client, {
+      cardBalanceAccountId: accountId,
+      cursor: "opaque-current",
+      limit: 20,
+      state: ["IN_PROGRESS", "COMPLETED"],
+    })).resolves.toEqual({ ok: true, data: page });
+
+    expect(captured[0].url).toContain(`/${accountId}/wishes?`);
+    expect(captured[0].url).toContain("cursor=opaque-current");
+    expect(captured[0].url).toContain("state=IN_PROGRESS");
+    expect(captured[0].url).toContain("state=COMPLETED");
+
+    const wish = { id: wishId, balanceAdjustmentInProgress: true };
+    const detailClient = testClient(captured, wish);
+    await expect(getWish(detailClient, {
+      cardBalanceAccountId: accountId,
+      wishId,
+    })).resolves.toEqual({ ok: true, data: wish });
+    expect(captured[1].url).toBe(
+      `https://backend.test/v1/card-balance-accounts/${accountId}/wishes/${wishId}`,
+    );
+  });
+
   it("expresses Idempotency-Key through the generated create operation", async () => {
     const captured: Request[] = [];
     const client = testClient(captured);
@@ -63,12 +97,12 @@ describe("Wish typed request helpers", () => {
   });
 });
 
-function testClient(captured: Request[]) {
+function testClient(captured: Request[], body: unknown = {}) {
   return createClient<paths>({
     baseUrl: "https://backend.test",
     fetch: async (request) => {
       captured.push(request);
-      return new Response(JSON.stringify({}), {
+      return new Response(JSON.stringify(body), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });

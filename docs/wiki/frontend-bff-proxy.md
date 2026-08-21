@@ -73,6 +73,8 @@ The backend status and response bytes are preserved. Only `Content-Type`, `WWW-A
 
 Statuses that prohibit response bodies are returned with a null body. Backend `4xx` and `5xx` responses are ordinary backend responses and are not rewritten.
 
+Typed feature helpers normalize those same-origin responses after the BFF boundary. They accept only the exact backend or BFF error envelope and return a safe `ApiResult`; the proxy itself continues to preserve bytes and does not interpret application payloads.
+
 ## BFF-generated failures
 
 Generated failures use `application/json`, `Cache-Control: no-store`, and exactly `code` plus `message`.
