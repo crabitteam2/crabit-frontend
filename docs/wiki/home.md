@@ -19,6 +19,8 @@
 
 - [프론트엔드 README](https://github.com/crabitteam2/crabit-frontend/blob/main/README.md): 요구 사항,
   설치, 로컬 개발, 등록된 검증 명령
+- [프론트엔드 HTTP 아키텍처](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/frontend-http-architecture.md):
+  UI와 typed client부터 BFF, 백엔드 인증·컨트롤러·오류 경계까지 이어지는 revision별 구조와 요청 흐름
 - [프론트엔드 BFF 프록시](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/frontend-bff-proxy.md):
   런타임 설정, 전달 정책, 보안 경계, BFF 검증, 문제 해결
 - [카드 잔액 E2E 시나리오](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/card-balance-e2e-scenarios.md):
@@ -35,6 +37,7 @@
 | 편집 가능한 저장소 원본 | 독자용 Wiki 대상 |
 | --- | --- |
 | [`docs/wiki/home.md`](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/home.md) | [Home](https://github.com/crabitteam2/crabit-frontend/wiki) |
+| [`docs/wiki/frontend-http-architecture.md`](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/frontend-http-architecture.md) | [Frontend-HTTP-Architecture](https://github.com/crabitteam2/crabit-frontend/wiki/Frontend-HTTP-Architecture) |
 | [`docs/wiki/frontend-bff-proxy.md`](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/frontend-bff-proxy.md) | [Frontend-BFF-Proxy](https://github.com/crabitteam2/crabit-frontend/wiki/Frontend-BFF-Proxy) |
 | [`docs/wiki/card-balance-e2e-scenarios.md`](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/card-balance-e2e-scenarios.md) | [Card-Balance-E2E-Scenarios](https://github.com/crabitteam2/crabit-frontend/wiki/Card-Balance-E2E-Scenarios) |
 
