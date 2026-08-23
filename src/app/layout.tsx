@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="ko" className={pretendard.variable}>
       <body className="font-sans">
-        <div className="bg-layer-default max-w-app pt-safe pb-safe mx-auto min-h-svh w-full">
+        <div className="bg-layer-default max-w-app pb-safe mx-auto min-h-svh w-full">
           {children}
         </div>
       </body>

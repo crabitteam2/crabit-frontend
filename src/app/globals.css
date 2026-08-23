@@ -199,6 +199,14 @@
   padding-right: env(safe-area-inset-right);
 }
 
+@utility no-scrollbar {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @utility min-h-screen-safe {
   min-height: calc(
     100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom)
