@@ -1,11 +1,64 @@
-export default function Home() {
+import { ACADEMY_NAME, resolveHomeData } from "@/lib/mock/home";
+import { AcademySection } from "./_components/academy-section";
+import { CharacterArea } from "./_components/character-area";
+import { HomeHeader } from "./_components/home-header";
+import { ProgressBar } from "./_components/progress-bar";
+import {
+  toProgressPercent,
+  toProgressStage,
+} from "./_components/progress-stage";
+import { QuickActions } from "./_components/quick-actions";
+import { RecapSection } from "./_components/recap-section";
+import { ShortageNotice } from "./_components/shortage-notice";
+import { TabBar } from "./_components/tab-bar";
+
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { nickname, representativeWish, unresolvedShortage } = resolveHomeData(
+    await searchParams,
+  );
+  const percent = representativeWish
+    ? toProgressPercent(
+        representativeWish.amount,
+        representativeWish.targetAmount,
+      )
+    : 0;
+  const hasShortage = unresolvedShortage > 0;
+
   return (
-    <main className="flex min-h-svh flex-col items-center justify-center gap-2">
-      <h1 className="text-t1 text-fg-brand font-semibold">Crabit</h1>
-      <p className="text-b3 text-fg-neutral-muted">
-        Edit <code className="font-mono">src/app/page.tsx</code> to start
-        building.
-      </p>
-    </main>
+    <div className="flex flex-col">
+      <CharacterArea
+        stage={representativeWish ? toProgressStage(percent) : null}
+      >
+        <HomeHeader
+          nickname={nickname}
+          wishPurpose={representativeWish?.purpose ?? null}
+        />
+      </CharacterArea>
+
+      <main className="relative -mt-[17px] flex flex-col px-4">
+        <ProgressBar percent={percent} />
+        {hasShortage ? (
+          <div className="pt-10">
+            <ShortageNotice />
+          </div>
+        ) : null}
+        <div className={hasShortage ? "pt-[68px]" : "pt-10"}>
+          <QuickActions isLocked={hasShortage} />
+        </div>
+        <div className="pt-[68px]">
+          <AcademySection academyName={ACADEMY_NAME} />
+        </div>
+        <div className="pt-[68px]">
+          <RecapSection />
+        </div>
+      </main>
+
+      <div className="h-[182px]" />
+      <TabBar />
+    </div>
   );
 }
