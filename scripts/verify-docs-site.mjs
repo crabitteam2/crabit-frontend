@@ -1,6 +1,7 @@
 import { access, readFile, readdir } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readDocsBasePath } from "./docs-base-path.mjs";
 
 const repositoryRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -8,27 +9,13 @@ const repositoryRoot = path.resolve(
 );
 const outputRoot = path.join(repositoryRoot, "dist", "docs");
 
-function readBasePath(argv) {
-  const index = argv.indexOf("--base-path");
-  const value = index < 0 ? "/crabit-frontend/" : argv[index + 1];
-  if (
-    typeof value !== "string" ||
-    !/^\/[A-Za-z0-9._/-]*\/$/.test(value) ||
-    value.includes("//") ||
-    value.includes("..")
-  ) {
-    throw new Error("--base-path must be a safe absolute path ending in /");
-  }
-  return value;
-}
-
 async function requireFile(relativePath) {
   const absolutePath = path.join(outputRoot, relativePath);
   await access(absolutePath);
   return readFile(absolutePath, "utf8");
 }
 
-const basePath = readBasePath(process.argv.slice(2));
+const basePath = readDocsBasePath(process.argv.slice(2));
 const rootIndex = await requireFile("index.html");
 await requireFile("storybook/index.html");
 await requireFile("api/index.html");

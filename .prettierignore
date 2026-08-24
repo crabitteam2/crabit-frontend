@@ -4,6 +4,7 @@ playwright-report
 blob-report
 test-results
 package-lock.json
+openapi/crabit-backend.yaml
 *.svg
 
 # Not yet formatted; owned by in-flight backend work.

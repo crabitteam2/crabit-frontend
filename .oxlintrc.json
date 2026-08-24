@@ -13,6 +13,12 @@
       "rules": {
         "tsdoc/syntax": "error"
       }
+    },
+    {
+      "files": ["src/lib/http/generated/**/*.ts"],
+      "rules": {
+        "tsdoc/syntax": "off"
+      }
     }
   ]
 }

@@ -2,6 +2,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { readDocsBasePath } from "./docs-base-path.mjs";
 
 const repositoryRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -10,20 +11,6 @@ const repositoryRoot = path.resolve(
 const outputRoot = path.join(repositoryRoot, "dist", "docs");
 const storybookOutput = path.join(outputRoot, "storybook");
 const apiOutput = path.join(outputRoot, "api");
-
-function readBasePath(argv) {
-  const index = argv.indexOf("--base-path");
-  const value = index < 0 ? "/crabit-frontend/" : argv[index + 1];
-  if (
-    typeof value !== "string" ||
-    !/^\/[A-Za-z0-9._/-]*\/$/.test(value) ||
-    value.includes("//") ||
-    value.includes("..")
-  ) {
-    throw new Error("--base-path must be a safe absolute path ending in /");
-  }
-  return value;
-}
 
 function run(command, args) {
   const executable = process.platform === "win32" ? `${command}.cmd` : command;
@@ -43,7 +30,7 @@ function run(command, args) {
   }
 }
 
-const basePath = readBasePath(process.argv.slice(2));
+const basePath = readDocsBasePath(process.argv.slice(2));
 
 await rm(outputRoot, { recursive: true, force: true });
 await mkdir(outputRoot, { recursive: true });
