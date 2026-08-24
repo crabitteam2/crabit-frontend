@@ -1,14 +1,20 @@
 import "server-only";
 
+/** 서버가 허용하는 실행 환경 이름입니다. */
 export const APP_ENVIRONMENTS = ["local", "e2e", "staging", "prod"] as const;
 
+/** 서버가 허용하는 실행 환경입니다. */
 export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number];
 
+/** 검증을 통과한 BFF 실행 환경입니다. */
 export interface BffEnvironment {
+  /** 검증된 실행 환경 이름입니다. */
   readonly appEnv: AppEnvironment;
+  /** 자격 증명·경로·쿼리·프래그먼트가 없는 백엔드 루트 URL입니다. */
   readonly backendUrl: URL;
 }
 
+/** 설정 값이 공개 가능한 규칙을 위반했음을 나타내는 정규화 오류입니다. */
 export class BffConfigurationError extends Error {
   constructor() {
     super("BFF configuration is invalid");
@@ -16,6 +22,10 @@ export class BffConfigurationError extends Error {
   }
 }
 
+/**
+ * 대소문자를 구분하는 `APP_ENV`와 `BACKEND_URL`을 읽고 검증합니다.
+ * staging과 prod에서는 HTTPS 백엔드만 허용합니다.
+ */
 export function readBffEnvironment(
   values: Readonly<Record<string, string | undefined>> = process.env,
 ): BffEnvironment {

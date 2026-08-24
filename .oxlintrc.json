@@ -1,9 +1,18 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["react", "typescript", "oxc", "nextjs"],
+  "jsPlugins": ["eslint-plugin-tsdoc"],
   "rules": {
     "react/rules-of-hooks": "error",
     "nextjs/no-html-link-for-pages": "error",
     "nextjs/no-img-element": "error"
-  }
+  },
+  "overrides": [
+    {
+      "files": ["src/**/*.ts", "src/**/*.tsx"],
+      "rules": {
+        "tsdoc/syntax": "error"
+      }
+    }
+  ]
 }

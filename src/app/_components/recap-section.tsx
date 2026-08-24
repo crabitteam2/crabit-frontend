@@ -1,3 +1,4 @@
+/** 주간·월간 저축 리포트 미리보기 카드를 가로 스크롤 영역으로 표시합니다. */
 export function RecapSection() {
   return (
     <section className="flex flex-col gap-2">

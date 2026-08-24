@@ -3,7 +3,9 @@ import lockIcon from "@/../public/images/home/card-locked.svg";
 import newWishIcon from "@/../public/images/home/quick-new-wish.svg";
 import wishlistIcon from "@/../public/images/home/quick-wishlist.svg";
 
+/** 위시 바로가기 카드의 잠금 상태입니다. */
 interface QuickActionsProps {
+  /** 잔액 조정이 필요하면 두 버튼을 모두 비활성화하고 잠금 오버레이를 표시합니다. */
   isLocked: boolean;
 }
 
@@ -20,6 +22,7 @@ const cards = [
   },
 ];
 
+/** 진행 위시 목록과 새 위시 등록 바로가기를 같은 잠금 상태로 렌더링합니다. */
 export function QuickActions({ isLocked }: QuickActionsProps) {
   return (
     <div className="flex gap-4">

@@ -9,6 +9,10 @@ import starIcon from "@/../public/images/home/tab-star.svg";
 const COLLAPSE_AFTER = 120;
 const SCROLL_THRESHOLD = 8;
 
+/**
+ * 홈 하단 탭 바를 렌더링하고 스크롤 방향에 따라 보조 아이콘을 접거나 펼칩니다.
+ * 120px 아래에서 8px 이상 내려가면 접히고, 8px 이상 올라가면 다시 펼쳐집니다.
+ */
 export function TabBar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
