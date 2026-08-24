@@ -35,7 +35,6 @@ const preview: Preview = {
       appDirectory: true,
     },
     viewport: {
-      defaultViewport: "mobile390",
       options: {
         mobile375: {
           name: "Mobile 375",
@@ -57,6 +56,7 @@ const preview: Preview = {
   },
   initialGlobals: {
     backgrounds: { value: "light" },
+    viewport: { value: "mobile390", isRotated: false },
   },
 };
 
