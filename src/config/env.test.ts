@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("server-only", () => ({}));
@@ -8,6 +10,28 @@ import {
 } from "./env";
 
 describe("readBffEnvironment", () => {
+  it("accepts every required assignment from the checked-in environment example", () => {
+    const example = readFileSync(
+      new URL("../../.env.example", import.meta.url),
+      "utf8",
+    );
+    const assignments = Object.fromEntries(
+      example
+        .split(/\r?\n/)
+        .filter((line) => /^[A-Z][A-Z0-9_]*=/.test(line))
+        .map((line) => {
+          const separator = line.indexOf("=");
+          return [line.slice(0, separator), line.slice(separator + 1)];
+        }),
+    );
+
+    const environment = readBffEnvironment(assignments);
+
+    expect(environment.appEnv).toBe("local");
+    expect(environment.backendProfile).toBe("prod");
+    expect(environment.backendUrl.href).toBe("http://127.0.0.1:8080/");
+  });
+
   it.each([
     ["local", "e2e"],
     ["local", "demo"],
