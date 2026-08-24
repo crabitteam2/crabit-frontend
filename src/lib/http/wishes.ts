@@ -39,6 +39,15 @@ export interface DeleteWishOptions {
   readonly ifMatch: components["parameters"]["IfMatch"];
 }
 
+export interface GetRepresentativeWishOptions {
+  readonly cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+}
+
+export interface SelectRepresentativeWishOptions {
+  readonly cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+  readonly body: operations["selectRepresentativeWish"]["requestBody"]["content"]["application/json"];
+}
+
 export function listWishes(
   client: CrabitApiClient,
   options: ListWishesOptions,
@@ -119,6 +128,31 @@ export function deleteWish(
           "If-Match": options.ifMatch,
         },
       },
+    },
+  ));
+}
+
+export function getRepresentativeWish(
+  client: CrabitApiClient,
+  options: GetRepresentativeWishOptions,
+): Promise<ApiResult<components["schemas"]["Wish"] | undefined>> {
+  return apiResult<components["schemas"]["Wish"] | undefined>(() => client.GET(
+    "/v1/card-balance-accounts/{cardBalanceAccountId}/representative-wish",
+    { params: { path: options } },
+  ));
+}
+
+export function selectRepresentativeWish(
+  client: CrabitApiClient,
+  options: SelectRepresentativeWishOptions,
+): Promise<ApiResult<components["schemas"]["Wish"]>> {
+  return apiResult<components["schemas"]["Wish"]>(() => client.PUT(
+    "/v1/card-balance-accounts/{cardBalanceAccountId}/representative-wish",
+    {
+      params: {
+        path: { cardBalanceAccountId: options.cardBalanceAccountId },
+      },
+      body: options.body,
     },
   ));
 }

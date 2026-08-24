@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "repository_id": "crabit-backend",
-  "repository_sha": "6ec7539a34cf1a9e7766a34b4a9b9e084569eaaf",
+  "repository_sha": "a3d01715dc075d8714b7ef973516944d92c7de33",
   "source_path": "api/openapi.yaml",
-  "source_sha256": "sha256:f8ceea3137a890e235e5e75a111fc14e33208ca117e363c4a9d13bf5d1ff2eef"
+  "source_sha256": "sha256:46441e7968fee579251868fe544d7e7375ceee44c5aeb110dcec1ef29238fe6b"
 }

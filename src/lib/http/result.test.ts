@@ -18,6 +18,15 @@ describe("ApiResult boundary", () => {
     expect(unwrapResult(result)).toBe(data);
   });
 
+  it("represents a bodyless 204 success as undefined", async () => {
+    const result = await apiResult<undefined>(async () => ({
+      response: new Response(null, { status: 204 }),
+    }));
+
+    expect(result).toEqual({ ok: true, data: undefined });
+    expect(unwrapResult(result)).toBeUndefined();
+  });
+
   it.each([
     ["backend", 404, {
       error: {

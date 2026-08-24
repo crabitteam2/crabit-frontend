@@ -1,6 +1,6 @@
 # Frontend profile, persona, and typed HTTP foundation
 
-This page is the durable operations source for the frontend deployment profile policy, server-only persona credentials, persona cookies, BFF authorization boundary, pinned backend OpenAPI snapshot, and typed HTTP clients. It documents repository behavior; it does not claim that hosting secrets, backend Demo support, or a deployment is already available.
+This page is the durable operations source for the frontend deployment profile policy, server-only persona credentials, persona cookies, BFF authorization boundary, pinned backend OpenAPI snapshot, and typed HTTP clients. It documents repository behavior and the backend support present at the pinned source revision. It does not claim that hosting secrets or a deployment is already available.
 
 ## Closed deployment matrix
 
@@ -32,7 +32,9 @@ The active namespace must contain all six values. Empty, whitespace-bearing, con
 
 Token values belong only in the server runtime secret store. Do not commit them, put them in `.env` files, prefix them with `NEXT_PUBLIC_`, send them to browser code, log them, or write them into cookies. Rotate one namespace as an atomic six-value set, restart the frontend server, verify its health, then revoke the old backend credentials. E2E and Demo rotations are independent.
 
-Stable Demo remains externally dependent on a separately delivered backend Demo profile and matching credential registry. This frontend change alone does not make Demo authentication operational.
+The backend source pinned below contains separate E2E and Demo authentication filters, token registries, fixture initialization, and profile resources. The Demo profile includes six server-only persona-token settings, Demo fixture lifecycle support, and `DemoHttpCardBalanceProvider`; the E2E profile includes deterministic fixtures, a fixed clock, scripted balance behavior, and `/e2e` control routes. The profiles are mutually exclusive: Demo does not load the E2E routes or deterministic balance scripts.
+
+Repository deployment design intends staging backend images built from `develop` to run with the E2E profile and Stable Demo backend images built from protected `main` to run with the Demo profile. This implementation did not verify a deployed image digest, running service, HTTPS endpoint, secret injection, database health, or frontend-to-backend runtime success. Matching server secrets and a verified deployment are still required before persona authentication is operational.
 
 ## Persona Route Handlers and cookies
 
@@ -58,6 +60,8 @@ The BFF validates the target before examining the E2E boundary. If the first val
 ## Pinned OpenAPI and generated types
 
 `openapi/crabit-backend.yaml` is an exact byte snapshot of `crabit-backend/api/openapi.yaml`. `openapi/provenance.json` records the backend repository SHA, source path, and SHA-256 digest. Normal install, test, build, and drift verification use only these committed frontend files and do not require a sibling backend checkout.
+
+The current snapshot pins backend revision `a3d01715dc075d8714b7ef973516944d92c7de33` and source digest `sha256:46441e7968fee579251868fe544d7e7375ceee44c5aeb110dcec1ef29238fe6b`. It contains 27 paths and 32 operations, including the twelve Friend Management operations and the representative-Wish read and selection operations described below.
 
 Generate and check types:
 
@@ -85,11 +89,23 @@ Review the snapshot, provenance, and generated diff together. A backend OpenAPI 
 
 Browser code obtains `createBrowserApiClient()`, whose base is fixed to same-origin `/api/backend` and which accepts no raw token, backend origin, or credential resolver. Server code obtains `createServerApiClient()`, which uses validated `BACKEND_URL` and can resolve only a canonical persona key or the active request cookie through the server-only registry.
 
-Wish helpers in `src/lib/http/wishes.ts` hide raw paths and methods and expose generated request body and parameter types. `listWishes()`, `getWish()`, `createWish()`, `patchWish()`, and `deleteWish()` all return `ApiResult`; they carry repeated state filters, `Idempotency-Key`, `If-Match`, and `application/merge-patch+json` through the approved contract. `getCardBalanceAccount()` preserves the generated `UNKNOWN` versus `KNOWN` union, including nullable unknown balances and the read-time `balanceAdjustmentInProgress` projection. Do not reconstruct operation paths, DTO casing, headers, or media types in UI code.
+Wish helpers in `src/lib/http/wishes.ts` hide raw paths and methods and expose generated request body and parameter types. `listWishes()`, `getWish()`, `createWish()`, `patchWish()`, and `deleteWish()` all return `ApiResult`; they carry repeated state filters, `Idempotency-Key`, `If-Match`, and `application/merge-patch+json` through the approved contract. The regenerated contract also records `415 UNSUPPORTED_MEDIA_TYPE` for create, complete, and abandon, `400 MALFORMED_REQUEST` for malformed Wish detail paths, and the ability to change visibility on an abandoned Wish through the existing patch shape.
+
+`getRepresentativeWish()` returns the selected `Wish`, or successful `undefined` for the backend's bodyless `204`. `selectRepresentativeWish()` accepts only a generated `{ wishId }` body and returns the selected `Wish` directly. It does not expose an idempotency key, concurrency header, `WishMutationResult`, or event ID. Selecting the current representative is a successful no-op according to the backend contract; same-account `IN_PROGRESS` and `AMOUNT_REACHED` Wishes are eligible, while `COMPLETED` and `ABANDONED` Wishes return `INVALID_STATE_TRANSITION`.
+
+`src/lib/http/friends.ts` provides generated-type-backed helpers for all Friend Management operations:
+
+- same-academy student search, current-friend listing, and unfriend;
+- send, list sent, list received, cancel, accept, and reject friend requests;
+- list, create, and release global student blocks.
+
+Search and list helpers preserve opaque cursors without decoding them. Bodyless action and delete helpers send no fabricated request body, idempotency key, or concurrency header, and bodyless `204` success maps to `ApiResult<undefined>`. Callers supply an already constructed `CrabitApiClient`; no helper accepts a raw method, path, origin, token, cookie, or `Authorization` value.
+
+`getCardBalanceAccount()` preserves the generated `UNKNOWN` versus `KNOWN` union, including nullable unknown balances and the read-time `balanceAdjustmentInProgress` projection. Do not reconstruct operation paths, DTO casing, headers, or media types in UI code.
 
 `ApiResult` returns either exact generated success data or a normalized `FrontendHttpError`. `unwrapResult()` returns success data unchanged and throws only `FrontendRequestError` with that normalized error as its programmatic payload. Raw response bodies, fetch exceptions, credentials, cookies, headers, and parser internals do not cross this boundary. React Query policy, hooks, cache keys, and UI states remain a separate feature concern.
 
-`normalizeErrorResponse()` recognizes only the exact generated nested backend envelope or documented flat BFF/persona envelope. Network and malformed responses map to fixed safe frontend errors. Arbitrary upstream fields, exception text, URLs, headers, cookies, tokens, and stack traces are discarded.
+`normalizeErrorResponse()` recognizes only the exact generated nested backend envelope or documented flat BFF/persona envelope. Its backend allowlist includes the Friend Management codes `STUDENT_NOT_FOUND`, `FRIENDSHIP_NOT_FOUND`, `FRIEND_REQUEST_NOT_FOUND`, `STUDENT_BLOCK_NOT_FOUND`, `SELF_RELATIONSHIP`, `ALREADY_FRIENDS`, `FRIEND_REQUEST_ALREADY_PENDING`, `INCOMING_FRIEND_REQUEST_PENDING`, `FRIEND_REQUEST_NOT_PENDING`, `FRIEND_REQUEST_NOT_ACTIONABLE`, and `STUDENT_BLOCK_ALREADY_ACTIVE`. Unknown codes still map to `MALFORMED_RESPONSE`. Network and malformed responses map to fixed safe frontend errors. Arbitrary upstream fields, exception text, URLs, headers, cookies, tokens, and stack traces are discarded.
 
 ## Validation and troubleshooting
 

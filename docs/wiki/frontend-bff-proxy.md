@@ -75,6 +75,12 @@ Statuses that prohibit response bodies are returned with a null body. Backend `4
 
 Typed feature helpers normalize those same-origin responses after the BFF boundary. They accept only the exact backend or BFF error envelope and return a safe `ApiResult`; the proxy itself continues to preserve bytes and does not interpret application payloads.
 
+## Backend profile availability boundary
+
+At backend revision `a3d01715dc075d8714b7ef973516944d92c7de33`, the repository contains distinct E2E and Demo authentication filters, credential registries, fixtures, and profile resources. Demo includes six server-only persona settings and its HTTP card-balance provider; E2E includes deterministic fixtures, a fixed clock, scripted balance behavior, and `/e2e` control routes. The mutually exclusive Demo profile does not load E2E routes or deterministic scripts.
+
+The repository deployment design intends staging backend images from `develop` to use E2E and Stable Demo images from protected `main` to use Demo. That source and topology evidence is not deployment evidence: this frontend implementation did not verify an image digest, a running backend, HTTPS reachability, runtime secrets, database health, or an end-to-end deployed request.
+
 ## BFF-generated failures
 
 Generated failures use `application/json`, `Cache-Control: no-store`, and exactly `code` plus `message`.

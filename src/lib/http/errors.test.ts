@@ -30,6 +30,37 @@ describe("frontend HTTP error normalization", () => {
     });
   });
 
+  it.each([
+    "STUDENT_NOT_FOUND",
+    "FRIENDSHIP_NOT_FOUND",
+    "FRIEND_REQUEST_NOT_FOUND",
+    "STUDENT_BLOCK_NOT_FOUND",
+    "SELF_RELATIONSHIP",
+    "ALREADY_FRIENDS",
+    "FRIEND_REQUEST_ALREADY_PENDING",
+    "INCOMING_FRIEND_REQUEST_PENDING",
+    "FRIEND_REQUEST_NOT_PENDING",
+    "FRIEND_REQUEST_NOT_ACTIONABLE",
+    "STUDENT_BLOCK_ALREADY_ACTIVE",
+  ] as const)("recognizes the generated Friend Management code %s", async (code) => {
+    const response = jsonResponse(409, {
+      error: {
+        code,
+        message: `${code} message`,
+        retryable: false,
+        traceId: "friend-trace",
+        fieldErrors: [],
+        details: {},
+      },
+    });
+
+    await expect(normalizeErrorResponse(response)).resolves.toMatchObject({
+      kind: "backend",
+      status: 409,
+      code,
+    });
+  });
+
   it("recognizes only documented exact flat BFF envelopes", async () => {
     const response = jsonResponse(404, {
       code: "BFF_NOT_FOUND",
@@ -83,6 +114,16 @@ describe("frontend HTTP error normalization", () => {
       message: "BFF route is not found",
     }, 'application/json; charset="unterminated'),
     jsonResponse(500, { code: "UNKNOWN_CODE", message: "unsafe", extra: "secret" }),
+    jsonResponse(409, {
+      error: {
+        code: "FUTURE_RELATIONSHIP_CODE",
+        message: "unsafe",
+        retryable: false,
+        traceId: "trace",
+        fieldErrors: [],
+        details: { secret: "raw-token-value" },
+      },
+    }),
     jsonResponse(400, {
       error: {
         code: "AUTH_REQUIRED",

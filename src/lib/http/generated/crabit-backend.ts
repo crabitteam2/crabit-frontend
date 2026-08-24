@@ -1,4 +1,188 @@
 export interface paths {
+    "/v1/academies/{academyId}/friend-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send a friend request
+         * @description Creates one PENDING request from CurrentPrincipal.subjectId to the target current same-academy student. Client input never controls the sender. Under the canonical student-pair lock, an active bilateral block is hidden as STUDENT_NOT_FOUND; self, current friendship, same-direction PENDING, and reverse-direction PENDING states return their documented conflicts. No Idempotency-Key is accepted: a replay is evaluated against current state.
+         */
+        post: operations["sendFriendRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academies/{academyId}/friend-requests/{friendRequestId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description UUID of the friend request. Unauthorized or wrong-role identifiers are normalized to FRIEND_REQUEST_NOT_FOUND. */
+                friendRequestId: components["parameters"]["FriendRequestId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Cancel a sent pending friend request
+         * @description Cancels only a PENDING request owned by the authenticated student as sender. A request outside the academy, not sender-owned, or otherwise unauthorized is hidden as FRIEND_REQUEST_NOT_FOUND. A processed owned request returns FRIEND_REQUEST_NOT_PENDING.
+         */
+        delete: operations["cancelFriendRequest"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academies/{academyId}/friend-requests/{friendRequestId}/acceptance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description UUID of the friend request. Unauthorized or wrong-role identifiers are normalized to FRIEND_REQUEST_NOT_FOUND. */
+                friendRequestId: components["parameters"]["FriendRequestId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept a received pending friend request
+         * @description Accepts only a PENDING request owned by the authenticated student as receiver. Under the canonical student-pair lock, the service rechecks current academy memberships, the exact request, absence of a current friendship, and absence of either directional block. The request becomes ACCEPTED and exactly one current friendship is created or restarted in one transaction. A concurrent loser returns the documented conflict.
+         */
+        post: operations["acceptFriendRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academies/{academyId}/friend-requests/{friendRequestId}/rejection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description UUID of the friend request. Unauthorized or wrong-role identifiers are normalized to FRIEND_REQUEST_NOT_FOUND. */
+                friendRequestId: components["parameters"]["FriendRequestId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reject a received pending friend request
+         * @description Rejects only a PENDING request owned by the authenticated student as receiver. A request outside the academy, not receiver-owned, or otherwise unauthorized is hidden as FRIEND_REQUEST_NOT_FOUND. A processed owned request returns FRIEND_REQUEST_NOT_PENDING.
+         */
+        post: operations["rejectFriendRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academies/{academyId}/friend-requests/received": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * List received pending friend requests
+         * @description Lists only current PENDING requests whose receiver is the authenticated student. Results are ordered by createdAt DESC, then friendRequestId DESC. The opaque cursor is bound to this operation, authenticated student, academy, ordering version, and final tuple. Malformed or mismatched cursors return 400 without a partial page; continuation is strictly below the final tuple, and any valid limit may be used with a valid cursor.
+         */
+        get: operations["listReceivedFriendRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academies/{academyId}/friend-requests/sent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * List sent pending friend requests
+         * @description Lists only current PENDING requests whose sender is the authenticated student. Results are ordered by createdAt DESC, then friendRequestId DESC. The opaque cursor is bound to this operation, authenticated student, academy, ordering version, and final tuple. Malformed or mismatched cursors return 400 without a partial page; continuation is strictly below the final tuple, and any valid limit may be used with a valid cursor.
+         */
+        get: operations["listSentFriendRequests"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academies/{academyId}/friends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * List current academy friends
+         * @description Lists the authenticated student's current canonical friendships whose counterpart is a current member of the requested academy. Results are ordered by friendsSince DESC, then studentId DESC. The opaque cursor is bound to this operation, authenticated student, academy, ordering version, and final tuple. Malformed or mismatched cursors return 400 without a partial page; continuation is strictly below the final tuple, and any valid limit may be used with a valid cursor.
+         */
+        get: operations["listAcademyFriends"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academies/{academyId}/friends/{studentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description UUID of the relationship counterpart; authenticated ownership always comes from CurrentPrincipal and is never supplied here. */
+                studentId: components["parameters"]["StudentId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * End a current academy friendship
+         * @description Ends the authenticated student's current friendship with the target in the requested academy. Absence, an ended relationship, nonmembership, and nonownership are hidden as FRIENDSHIP_NOT_FOUND. This operation does not reactivate any historical friend request and has no success body.
+         */
+        delete: operations["unfriendAcademyStudent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/academies/{academyId}/shared-cards": {
         parameters: {
             query?: never;
@@ -36,6 +220,28 @@ export interface paths {
          * @description The owner may read their own currently public card; every other absence or visibility failure is hidden.
          */
         get: operations["getAcademySharedCard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academies/{academyId}/students": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Search current same-academy students by nickname
+         * @description Searches current members of the authenticated student's academy by a case-sensitive contiguous Unicode code-point substring of the stored NFC-normalized nickname. The authenticated student, non-current members, and candidates with an active block in either direction are excluded. Each result computes exactly one current relationship state: NONE, FRIEND, OUTGOING_PENDING, or INCOMING_PENDING. Results are ordered by nickname ASC, then studentId ASC. The opaque cursor is bound to this operation, authenticated student, academy, ordering version, normalized nickname filter, and final ordering tuple. A malformed, foreign-operation, foreign-actor, foreign-academy, or filter-mismatched cursor returns 400 without a partial page. Continuation is strictly after the final tuple, and any valid limit may be used with a valid cursor.
+         */
+        get: operations["searchAcademyStudents"];
         put?: never;
         post?: never;
         delete?: never;
@@ -132,6 +338,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/card-balance-accounts/{cardBalanceAccountId}/representative-wish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * Get the current representative Wish
+         * @description Validates the authenticated student and active owned same-academy Card Balance Account before resolving the current selection. Returns the selected nondeleted IN_PROGRESS or AMOUNT_REACHED Wish directly as the existing Wish snapshot, or 204 with no body when the valid account has no representative. This read remains available during an OPEN Balance Adjustment Case, performs no external balance lookup, and mutates no persistent state. When an open account has exactly one Active nondeleted Wish, that Wish is the representative. Creating a second Active Wish preserves an existing representative. When the representative completes, is abandoned, or is deleted, remove it and automatically select another Wish only when exactly one Active nondeleted Wish remains. Closing the account removes the selection and makes this operation return CARD_BALANCE_ACCOUNT_NOT_FOUND. Representative selection never changes owned Wish ordering, Wish visibility, Shared Cards, feed ordering, notifications, ledger history, or account balance.
+         */
+        get: operations["getRepresentativeWish"];
+        /**
+         * Select the representative Wish
+         * @description Atomically replaces the account's prior representative with the named same-account Active Wish. Selecting the current representative succeeds with 200 as a no-op and preserves the Wish updatedAt and version. Selection remains available during an OPEN Balance Adjustment Case and creates no LedgerEvent, notification outbox entry, selection history, or Wish mutation. Concurrent selections serialize through the account-first lock; the last committed selection is final, and each successful response is the Wish selected by that request at its commit. Error precedence is fixed: a missing or invalid bearer credential returns 401 AUTH_REQUIRED; an authenticated non-student principal returns 403 FORBIDDEN; a malformed path UUID or JSON body, missing or wrongly typed wishId, or unknown request field returns 400 MALFORMED_REQUEST; an absent, closed, non-owned, or cross-academy account returns 404 CARD_BALANCE_ACCOUNT_NOT_FOUND before Wish eligibility is disclosed; for a valid account an absent, tombstoned, or other-account Wish returns 404 WISH_NOT_FOUND regardless of its lifecycle state; a same-account COMPLETED or ABANDONED Wish returns 409 INVALID_STATE_TRANSITION; and a same-account IN_PROGRESS or AMOUNT_REACHED Wish succeeds, including private Wishes and the current representative. Selection never changes owned Wish ordering, Wish visibility, Shared Cards, feed ordering, notifications, ledger history, or account balance.
+         */
+        put: operations["selectRepresentativeWish"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/card-balance-accounts/{cardBalanceAccountId}/transfers": {
         parameters: {
             query?: never;
@@ -203,7 +435,7 @@ export interface paths {
         head?: never;
         /**
          * Atomically merge-patch mutable Wish fields
-         * @description Omission preserves a field; targetDate null clears it. Outside a mismatch, completed Wishes may change visibility only. An OPEN Balance Adjustment Case rejects every requested patch field, including purpose, targetAmount, targetDate, and every visibility change whether widening, narrowing, or changing to PRIVATE.
+         * @description Omission preserves a field; targetDate null clears it. Outside a mismatch, completed and abandoned Wishes may change visibility only. Abandonment removes the shared card; changing an abandoned Wish's visibility updates owner-visible Wish metadata but never creates a shared card. An OPEN Balance Adjustment Case rejects every requested patch field, including purpose, targetAmount, targetDate, and every visibility change whether widening, narrowing, or changing to PRIVATE.
          */
         patch: operations["patchWish"];
         trace?: never;
@@ -335,6 +567,53 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/student-blocks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List active blocks created by the authenticated student
+         * @description Lists only active directional blocks whose blocker is CurrentPrincipal.subjectId. Results are ordered by blockedAt DESC, then studentId DESC. The opaque cursor is bound to this operation, authenticated student, ordering version, and final tuple. Malformed or mismatched cursors return 400 without a partial page; continuation is strictly below the final tuple, and any valid limit may be used with a valid cursor.
+         */
+        get: operations["listMyStudentBlocks"];
+        put?: never;
+        /**
+         * Block a student globally
+         * @description Creates or recreates the authenticated student's directional global block. Client input never controls the blocker. Under the canonical student-pair lock, the operation ends every current friendship across all academies, changes every PENDING request in both directions and all academies to CANCELED with processedAt set, and activates the block in one transaction. A replay is evaluated against current state and no Idempotency-Key is accepted.
+         */
+        post: operations["blockStudent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/student-blocks/{studentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description UUID of the relationship counterpart; authenticated ownership always comes from CurrentPrincipal and is never supplied here. */
+                studentId: components["parameters"]["StudentId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Release a directional student block
+         * @description Releases only the current block whose blocker is the authenticated student. Absence, a released block, or a block not owned by the actor is hidden as STUDENT_BLOCK_NOT_FOUND. Unblocking never restores a friendship or any request canceled by blocking and has no success body.
+         */
+        delete: operations["unblockStudent"];
         options?: never;
         head?: never;
         patch?: never;
@@ -639,6 +918,16 @@ export interface components {
              */
             targetDate: string | null;
         };
+        /** @description Request payload naming only the receiver; the sender always comes from CurrentPrincipal.subjectId. */
+        CreateFriendRequestRequest: {
+            /** @description UUID of the intended current same-academy receiver. */
+            studentId: components["schemas"]["Uuid"];
+        };
+        /** @description Request payload naming only the blocked student; the blocker always comes from CurrentPrincipal.subjectId. */
+        CreateStudentBlockRequest: {
+            /** @description UUID of the student to block globally. */
+            studentId: components["schemas"]["Uuid"];
+        };
         CreateWishRequest: {
             purpose: components["schemas"]["PurposeInput"];
             targetAmount: components["schemas"]["KrwPositive"];
@@ -647,7 +936,7 @@ export interface components {
         };
         Cursor: string;
         /** @enum {string} */
-        ErrorCode: "MALFORMED_REQUEST" | "EXPECTED_VERSION_REQUIRED" | "IDEMPOTENCY_KEY_REQUIRED" | "AUTH_REQUIRED" | "FORBIDDEN" | "CARD_BALANCE_ACCOUNT_NOT_FOUND" | "WISH_NOT_FOUND" | "ACADEMY_NOT_FOUND" | "SHARED_CARD_NOT_FOUND" | "VERSION_CONFLICT" | "INVALID_STATE_TRANSITION" | "BALANCE_MISMATCH_LOCKED" | "INSUFFICIENT_AVAILABLE_BALANCE" | "INSUFFICIENT_WISH_AMOUNT" | "TARGET_AMOUNT_EXCEEDED" | "CROSS_ACCOUNT_TRANSFER_FORBIDDEN" | "IDEMPOTENCY_KEY_REUSED" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_AMOUNT" | "INVALID_PURPOSE" | "INVALID_VERSION" | "BALANCE_SYNC_FAILED";
+        ErrorCode: "MALFORMED_REQUEST" | "EXPECTED_VERSION_REQUIRED" | "IDEMPOTENCY_KEY_REQUIRED" | "AUTH_REQUIRED" | "FORBIDDEN" | "CARD_BALANCE_ACCOUNT_NOT_FOUND" | "WISH_NOT_FOUND" | "ACADEMY_NOT_FOUND" | "SHARED_CARD_NOT_FOUND" | "VERSION_CONFLICT" | "INVALID_STATE_TRANSITION" | "BALANCE_MISMATCH_LOCKED" | "INSUFFICIENT_AVAILABLE_BALANCE" | "INSUFFICIENT_WISH_AMOUNT" | "TARGET_AMOUNT_EXCEEDED" | "CROSS_ACCOUNT_TRANSFER_FORBIDDEN" | "IDEMPOTENCY_KEY_REUSED" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_AMOUNT" | "INVALID_PURPOSE" | "INVALID_VERSION" | "BALANCE_SYNC_FAILED" | "STUDENT_NOT_FOUND" | "FRIENDSHIP_NOT_FOUND" | "FRIEND_REQUEST_NOT_FOUND" | "STUDENT_BLOCK_NOT_FOUND" | "SELF_RELATIONSHIP" | "ALREADY_FRIENDS" | "FRIEND_REQUEST_ALREADY_PENDING" | "INCOMING_FRIEND_REQUEST_PENDING" | "FRIEND_REQUEST_NOT_PENDING" | "FRIEND_REQUEST_NOT_ACTIONABLE" | "STUDENT_BLOCK_ALREADY_ACTIVE";
         ErrorEnvelope: {
             /** @description Structured error payload shared by every declared non-success JSON response. */
             error: {
@@ -673,6 +962,60 @@ export interface components {
             /** @description Human-readable explanation of the field-specific failure. */
             message: string;
         };
+        Friend: {
+            /** @description RFC 3339 UTC Z instant at which the current friendship was created or restarted. */
+            friendsSince: components["schemas"]["UtcInstant"];
+            /** @description Current nonblank nickname of the friend. */
+            nickname: string;
+            /** @description Stable UUID of the current friend. */
+            studentId: components["schemas"]["Uuid"];
+        };
+        FriendPage: {
+            /** @description Current academy friends ordered by friendsSince descending, studentId descending. */
+            items: components["schemas"]["Friend"][];
+            /** @description Opaque cursor derived from the final returned (friendsSince, studentId) tuple; null when no further item exists. */
+            nextCursor: string | null;
+        };
+        /** @description Privacy-minimal friend-request projection. Counterpart is the receiver for sent results and sender for received results. */
+        FriendRequest: {
+            /** @description Receiver for sent results and sender for received results; ownership identifiers are not exposed separately. */
+            counterpart: components["schemas"]["StudentSummary"];
+            /** @description RFC 3339 UTC Z instant at which this request was created. */
+            createdAt: components["schemas"]["UtcInstant"];
+            /** @description Stable UUID of this friend request. */
+            friendRequestId: components["schemas"]["Uuid"];
+            /** @description RFC 3339 UTC Z processing instant for ACCEPTED, REJECTED, or CANCELED; null only while PENDING. */
+            processedAt: components["schemas"]["UtcInstant"] | null;
+            /** @description Current request lifecycle state. */
+            status: components["schemas"]["FriendRequestStatus"];
+        } & ({
+            /** @description Must remain null while status is PENDING. */
+            processedAt?: null;
+            /**
+             * @description PENDING branch discriminator requiring an unprocessed request.
+             * @constant
+             */
+            status?: "PENDING";
+        } | {
+            /** @description Required processing instant for every terminal request state. */
+            processedAt?: components["schemas"]["UtcInstant"];
+            /**
+             * @description Processed branch discriminator for terminal request states.
+             * @enum {unknown}
+             */
+            status?: "ACCEPTED" | "REJECTED" | "CANCELED";
+        });
+        FriendRequestPage: {
+            /** @description Actor-owned PENDING requests ordered by createdAt descending, friendRequestId descending. */
+            items: components["schemas"]["FriendRequest"][];
+            /** @description Opaque cursor derived from the final returned (createdAt, friendRequestId) tuple; null when no further item exists. */
+            nextCursor: string | null;
+        };
+        /**
+         * @description Current request lifecycle state; processed requests never return to PENDING.
+         * @enum {string}
+         */
+        FriendRequestStatus: "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELED";
         KnownCardBalanceAccount: {
             /** @description UUID of the academy to which this Card Balance Account belongs. */
             academyId: components["schemas"]["Uuid"];
@@ -744,12 +1087,56 @@ export interface components {
          *     5. Count Unicode code points after NFC normalization. Persist and return values containing 1 through 200 Unicode code points; otherwise return 422 INVALID_PURPOSE.
          */
         PurposeInput: string;
+        /**
+         * @description Current relationship between the authenticated student and one same-academy search result, computed at response read time.
+         * @enum {string}
+         */
+        RelationshipState: "NONE" | "FRIEND" | "OUTGOING_PENDING" | "INCOMING_PENDING";
+        RepresentativeWishSelectionRequest: {
+            /** @description UUID of the nondeleted Active Wish to select from this Card Balance Account. */
+            wishId: components["schemas"]["Uuid"];
+        };
         SharedCard: components["schemas"]["ProgressSharedCard"] | components["schemas"]["CompletionSharedCard"];
         SharedCardPage: {
             /** @description Currently visible progress and completion cards in provisional contentUpdatedAt descending, sharedCardId descending order. */
             items: components["schemas"]["SharedCard"][];
             /** @description Opaque cursor for the next Shared Card page; null when no further page exists. */
             nextCursor: string | null;
+        };
+        StudentBlock: {
+            /** @description RFC 3339 UTC Z instant at which the current directional block was created or recreated. */
+            blockedAt: components["schemas"]["UtcInstant"];
+            /** @description Current nonblank nickname of the blocked student. */
+            nickname: string;
+            /** @description Stable UUID of the blocked student. */
+            studentId: components["schemas"]["Uuid"];
+        };
+        StudentBlockPage: {
+            /** @description Active blocks created by the authenticated student, ordered by blockedAt descending, studentId descending. */
+            items: components["schemas"]["StudentBlock"][];
+            /** @description Opaque cursor derived from the final returned (blockedAt, studentId) tuple; null when no further item exists. */
+            nextCursor: string | null;
+        };
+        StudentRelationship: {
+            /** @description Current nonblank nickname used by the deterministic search ordering. */
+            nickname: string;
+            /** @description Exactly one current relationship state computed for the authenticated student. */
+            relationshipState: components["schemas"]["RelationshipState"];
+            /** @description Stable UUID of the same-academy search result. */
+            studentId: components["schemas"]["Uuid"];
+        };
+        StudentRelationshipPage: {
+            /** @description Same-academy matches ordered by nickname ascending, studentId ascending after self, non-current membership, and bilateral-block exclusions. */
+            items: components["schemas"]["StudentRelationship"][];
+            /** @description Opaque cursor derived from the final returned (nickname, studentId) tuple and normalized nickname filter; null when no further item exists. */
+            nextCursor: string | null;
+        };
+        /** @description Privacy-minimal student projection with no real name, card data, Wish data, authentication data, or academy-membership internals. */
+        StudentSummary: {
+            /** @description Current nonblank student nickname, containing at most 80 Unicode code points. */
+            nickname: string;
+            /** @description Stable UUID of the projected counterpart student. */
+            studentId: components["schemas"]["Uuid"];
         };
         UnknownCardBalanceAccount: {
             /** @description UUID of the academy to which this Card Balance Account belongs. */
@@ -1129,7 +1516,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, or IDEMPOTENCY_KEY_REUSED. An open mismatch does not block deletion. */
+        /** @description VERSION_CONFLICT or IDEMPOTENCY_KEY_REUSED. An open mismatch does not block deletion. */
         DeleteConflict: {
             headers: {
                 [name: string]: unknown;
@@ -1158,6 +1545,88 @@ export interface components {
         };
         /** @description FORBIDDEN — the authenticated principal is not a student. */
         Forbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description ACADEMY_NOT_FOUND — a missing, foreign, or non-current academy scope is hidden. */
+        FriendManagementAcademyNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description AUTH_REQUIRED — missing or invalid bearer token. */
+        FriendManagementAuthRequired: {
+            headers: {
+                "WWW-Authenticate": "Bearer";
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description FORBIDDEN — the authenticated principal is not a student. */
+        FriendManagementForbidden: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description MALFORMED_REQUEST — malformed JSON, UUID, nickname, limit, or opaque cursor. */
+        FriendManagementMalformedRequest: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description FRIEND_REQUEST_NOT_PENDING, FRIEND_REQUEST_NOT_ACTIONABLE, or ALREADY_FRIENDS after canonical pair-lock revalidation. */
+        FriendRequestAcceptanceConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description SELF_RELATIONSHIP, ALREADY_FRIENDS, FRIEND_REQUEST_ALREADY_PENDING, or INCOMING_FRIEND_REQUEST_PENDING. */
+        FriendRequestCreateConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description FRIEND_REQUEST_NOT_PENDING — an authorized request exists but has already been processed. */
+        FriendRequestNotPending: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description ACADEMY_NOT_FOUND or FRIEND_REQUEST_NOT_FOUND — wrong-academy, wrong-role, and otherwise unauthorized request identifiers are hidden. */
+        FriendRequestOrAcademyNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description ACADEMY_NOT_FOUND or FRIENDSHIP_NOT_FOUND — absence, ended state, nonmembership, and nonownership are hidden. */
+        FriendshipOrAcademyNotFound: {
             headers: {
                 [name: string]: unknown;
             };
@@ -1228,6 +1697,15 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /** @description UNSUPPORTED_MEDIA_TYPE — request Content-Type must be application/json. */
+        JsonUnsupportedMediaType: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
         /** @description MALFORMED_REQUEST, including a missing or non-integer required version, or IDEMPOTENCY_KEY_REQUIRED. */
         MalformedOrIdempotencyRequired: {
             headers: {
@@ -1255,6 +1733,15 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /** @description INVALID_STATE_TRANSITION — the named same-account Wish is COMPLETED or ABANDONED and cannot be selected. */
+        RepresentativeWishSelectionConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
         /** @description ACADEMY_NOT_FOUND or SHARED_CARD_NOT_FOUND — absence or current visibility failure is hidden. */
         SharedCardOrAcademyNotFound: {
             headers: {
@@ -1266,6 +1753,42 @@ export interface components {
         };
         /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, or IDEMPOTENCY_KEY_REUSED. An open mismatch does not block completion or abandonment. */
         StateMutationConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description SELF_RELATIONSHIP or STUDENT_BLOCK_ALREADY_ACTIVE. */
+        StudentBlockConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description STUDENT_BLOCK_NOT_FOUND — absence, released state, and nonownership are hidden. */
+        StudentBlockNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description STUDENT_NOT_FOUND — an absent or otherwise hidden student target is not disclosed. */
+        StudentNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description ACADEMY_NOT_FOUND or STUDENT_NOT_FOUND — academy scope failures and hidden direct targets are not disclosed. */
+        StudentOrAcademyNotFound: {
             headers: {
                 [name: string]: unknown;
             };
@@ -1334,12 +1857,18 @@ export interface components {
         CardBalanceAccountId: components["schemas"]["Uuid"];
         /** @description Opaque cursor tied to the endpoint's fixed ordering. */
         Cursor: components["schemas"]["Cursor"];
+        /** @description UUID of the friend request. Unauthorized or wrong-role identifiers are normalized to FRIEND_REQUEST_NOT_FOUND. */
+        FriendRequestId: components["schemas"]["Uuid"];
         /** @description Permanent per-student namespace; reuse is valid only for the same operation, target, and canonical request. */
         IdempotencyKey: string;
         /** @description Exact non-negative integer Wish version for bodyless DELETE concurrency. A missing or non-integer value remains 400; a decoded negative value returns 422 INVALID_VERSION; a stale non-negative value returns 409 VERSION_CONFLICT. */
         IfMatch: components["schemas"]["WishVersion"];
         Limit: number;
+        /** @description Repeatedly remove leading and trailing Unicode Space_Separator code points, normalize to NFC, reject Cc, Cf, Zl, and Zp, and require 1 through 80 Unicode code points. Matching is a case-sensitive contiguous Unicode code-point substring against NFC-normalized stored nicknames. */
+        NicknameSearch: string;
         SharedCardId: components["schemas"]["Uuid"];
+        /** @description UUID of the relationship counterpart; authenticated ownership always comes from CurrentPrincipal and is never supplied here. */
+        StudentId: components["schemas"]["Uuid"];
         WishId: components["schemas"]["Uuid"];
     };
     requestBodies: never;
@@ -1351,6 +1880,240 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    sendFriendRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateFriendRequestRequest"];
+            };
+        };
+        responses: {
+            /** @description Friend request created in PENDING state. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendRequest"];
+                };
+            };
+            400: components["responses"]["FriendManagementMalformedRequest"];
+            401: components["responses"]["FriendManagementAuthRequired"];
+            403: components["responses"]["FriendManagementForbidden"];
+            404: components["responses"]["StudentOrAcademyNotFound"];
+            409: components["responses"]["FriendRequestCreateConflict"];
+        };
+    };
+    cancelFriendRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description UUID of the friend request. Unauthorized or wrong-role identifiers are normalized to FRIEND_REQUEST_NOT_FOUND. */
+                friendRequestId: components["parameters"]["FriendRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request canceled with status CANCELED and non-null processedAt. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendRequest"];
+                };
+            };
+            400: components["responses"]["FriendManagementMalformedRequest"];
+            401: components["responses"]["FriendManagementAuthRequired"];
+            403: components["responses"]["FriendManagementForbidden"];
+            404: components["responses"]["FriendRequestOrAcademyNotFound"];
+            409: components["responses"]["FriendRequestNotPending"];
+        };
+    };
+    acceptFriendRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description UUID of the friend request. Unauthorized or wrong-role identifiers are normalized to FRIEND_REQUEST_NOT_FOUND. */
+                friendRequestId: components["parameters"]["FriendRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request accepted and one current friendship established. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Friend"];
+                };
+            };
+            400: components["responses"]["FriendManagementMalformedRequest"];
+            401: components["responses"]["FriendManagementAuthRequired"];
+            403: components["responses"]["FriendManagementForbidden"];
+            404: components["responses"]["FriendRequestOrAcademyNotFound"];
+            409: components["responses"]["FriendRequestAcceptanceConflict"];
+        };
+    };
+    rejectFriendRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description UUID of the friend request. Unauthorized or wrong-role identifiers are normalized to FRIEND_REQUEST_NOT_FOUND. */
+                friendRequestId: components["parameters"]["FriendRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Request rejected with status REJECTED and non-null processedAt. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendRequest"];
+                };
+            };
+            400: components["responses"]["FriendManagementMalformedRequest"];
+            401: components["responses"]["FriendManagementAuthRequired"];
+            403: components["responses"]["FriendManagementForbidden"];
+            404: components["responses"]["FriendRequestOrAcademyNotFound"];
+            409: components["responses"]["FriendRequestNotPending"];
+        };
+    };
+    listReceivedFriendRequests: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor tied to the endpoint's fixed ordering. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Actor-owned incoming PENDING requests. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendRequestPage"];
+                };
+            };
+            400: components["responses"]["FriendManagementMalformedRequest"];
+            401: components["responses"]["FriendManagementAuthRequired"];
+            403: components["responses"]["FriendManagementForbidden"];
+            404: components["responses"]["FriendManagementAcademyNotFound"];
+        };
+    };
+    listSentFriendRequests: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor tied to the endpoint's fixed ordering. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Actor-owned outgoing PENDING requests. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendRequestPage"];
+                };
+            };
+            400: components["responses"]["FriendManagementMalformedRequest"];
+            401: components["responses"]["FriendManagementAuthRequired"];
+            403: components["responses"]["FriendManagementForbidden"];
+            404: components["responses"]["FriendManagementAcademyNotFound"];
+        };
+    };
+    listAcademyFriends: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor tied to the endpoint's fixed ordering. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current academy friendships. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendPage"];
+                };
+            };
+            400: components["responses"]["FriendManagementMalformedRequest"];
+            401: components["responses"]["FriendManagementAuthRequired"];
+            403: components["responses"]["FriendManagementForbidden"];
+            404: components["responses"]["FriendManagementAcademyNotFound"];
+        };
+    };
+    unfriendAcademyStudent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description UUID of the relationship counterpart; authenticated ownership always comes from CurrentPrincipal and is never supplied here. */
+                studentId: components["parameters"]["StudentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Friendship ended; the response has no body. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["FriendManagementMalformedRequest"];
+            401: components["responses"]["FriendManagementAuthRequired"];
+            403: components["responses"]["FriendManagementForbidden"];
+            404: components["responses"]["FriendshipOrAcademyNotFound"];
+        };
+    };
     listAcademySharedCards: {
         parameters: {
             query?: {
@@ -1405,6 +2168,38 @@ export interface operations {
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["SharedCardOrAcademyNotFound"];
+        };
+    };
+    searchAcademyStudents: {
+        parameters: {
+            query: {
+                /** @description Opaque cursor tied to the endpoint's fixed ordering. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description Repeatedly remove leading and trailing Unicode Space_Separator code points, normalize to NFC, reject Cc, Cf, Zl, and Zp, and require 1 through 80 Unicode code points. Matching is a case-sensitive contiguous Unicode code-point substring against NFC-normalized stored nicknames. */
+                nickname: components["parameters"]["NicknameSearch"];
+            };
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current same-academy student matches with relationship state. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentRelationshipPage"];
+                };
+            };
+            400: components["responses"]["FriendManagementMalformedRequest"];
+            401: components["responses"]["FriendManagementAuthRequired"];
+            403: components["responses"]["FriendManagementForbidden"];
+            404: components["responses"]["FriendManagementAcademyNotFound"];
         };
     };
     getCardBalanceAccount: {
@@ -1518,6 +2313,71 @@ export interface operations {
             404: components["responses"]["CardBalanceAccountNotFound"];
         };
     };
+    getRepresentativeWish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current representative Wish. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Wish"];
+                };
+            };
+            /** @description The valid account currently has no representative Wish. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["MalformedRequest"];
+            401: components["responses"]["AuthRequired"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CardBalanceAccountNotFound"];
+        };
+    };
+    selectRepresentativeWish: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RepresentativeWishSelectionRequest"];
+            };
+        };
+        responses: {
+            /** @description Selected representative Wish, returned directly without a mutation wrapper or eventId. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Wish"];
+                };
+            };
+            400: components["responses"]["MalformedRequest"];
+            401: components["responses"]["AuthRequired"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["WishOrAccountNotFound"];
+            409: components["responses"]["RepresentativeWishSelectionConflict"];
+            415: components["responses"]["JsonUnsupportedMediaType"];
+        };
+    };
     transferWishFunds: {
         parameters: {
             query?: never;
@@ -1618,6 +2478,15 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["CardBalanceAccountNotFound"];
             409: components["responses"]["CreateConflict"];
+            /** @description UNSUPPORTED_MEDIA_TYPE — Content-Type is not application/json. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             422: components["responses"]["InvalidAmountOrPurpose"];
         };
     };
@@ -1642,6 +2511,7 @@ export interface operations {
                     "application/json": components["schemas"]["Wish"];
                 };
             };
+            400: components["responses"]["MalformedRequest"];
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["WishOrAccountNotFound"];
@@ -1732,6 +2602,15 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["WishOrAccountNotFound"];
             409: components["responses"]["StateMutationConflict"];
+            /** @description UNSUPPORTED_MEDIA_TYPE — Content-Type is not application/json. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             422: components["responses"]["InvalidVersion"];
         };
     };
@@ -1760,6 +2639,15 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["WishOrAccountNotFound"];
             409: components["responses"]["StateMutationConflict"];
+            /** @description UNSUPPORTED_MEDIA_TYPE — Content-Type is not application/json. */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
             422: components["responses"]["InvalidVersion"];
         };
     };
@@ -1871,6 +2759,87 @@ export interface operations {
             };
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
+        };
+    };
+    listMyStudentBlocks: {
+        parameters: {
+            query?: {
+                /** @description Opaque cursor tied to the endpoint's fixed ordering. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active blocks created by the authenticated student. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentBlockPage"];
+                };
+            };
+            400: components["responses"]["FriendManagementMalformedRequest"];
+            401: components["responses"]["FriendManagementAuthRequired"];
+            403: components["responses"]["FriendManagementForbidden"];
+        };
+    };
+    blockStudent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateStudentBlockRequest"];
+            };
+        };
+        responses: {
+            /** @description Directional global block created or recreated. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentBlock"];
+                };
+            };
+            400: components["responses"]["FriendManagementMalformedRequest"];
+            401: components["responses"]["FriendManagementAuthRequired"];
+            403: components["responses"]["FriendManagementForbidden"];
+            404: components["responses"]["StudentNotFound"];
+            409: components["responses"]["StudentBlockConflict"];
+        };
+    };
+    unblockStudent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description UUID of the relationship counterpart; authenticated ownership always comes from CurrentPrincipal and is never supplied here. */
+                studentId: components["parameters"]["StudentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Block released; the response has no body. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["FriendManagementMalformedRequest"];
+            401: components["responses"]["FriendManagementAuthRequired"];
+            403: components["responses"]["FriendManagementForbidden"];
+            404: components["responses"]["StudentBlockNotFound"];
         };
     };
 }

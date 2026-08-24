@@ -29,9 +29,12 @@ npm run openapi:generate
 npm run openapi:check
 ```
 
-Feature code uses the typed helpers in `src/lib/http/`. They return `ApiResult`
-instead of exposing raw `openapi-fetch` responses; `unwrapResult()` is the
-framework-neutral bridge for consumers that need a sanitized thrown error.
+Feature code uses the typed helpers in `src/lib/http/`. The Wish helpers include
+representative-Wish read and selection operations, while `friends.ts` covers
+same-academy search, friendships, friend requests, and global student blocks.
+They return `ApiResult` instead of exposing raw `openapi-fetch` responses;
+`unwrapResult()` is the framework-neutral bridge for consumers that need a
+sanitized thrown error.
 
 ## Validation and production
 
