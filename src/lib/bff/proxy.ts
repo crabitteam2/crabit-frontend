@@ -4,6 +4,11 @@ import {
   readBffEnvironment,
   type BffEnvironment,
 } from "../../config/env";
+import {
+  readPersonaTokenConfiguration,
+  type PersonaTokenConfiguration,
+} from "../../config/persona-tokens";
+import { readPersonaCookie } from "../persona/cookies";
 
 const FORWARDED_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 const METHODS_WITH_BODY = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -25,6 +30,7 @@ const UPSTREAM_TIMEOUT_MILLISECONDS = 10_000;
 export interface ProxyDependencies {
   readonly fetchImpl?: typeof globalThis.fetch;
   readonly loadEnvironment?: () => BffEnvironment;
+  readonly loadTokens?: (environment: BffEnvironment) => PersonaTokenConfiguration;
   readonly timeoutMilliseconds?: number;
 }
 
@@ -38,8 +44,10 @@ export async function proxyBackendRequest(
   }
 
   let environment: BffEnvironment;
+  let tokenConfiguration: PersonaTokenConfiguration;
   try {
     environment = (dependencies.loadEnvironment ?? readBffEnvironment)();
+    tokenConfiguration = (dependencies.loadTokens ?? defaultLoadTokens)(environment);
   } catch {
     return errorResponse(
       500,
@@ -51,6 +59,10 @@ export async function proxyBackendRequest(
   const target = constructTarget(request.url, pathSegments, environment);
   if (target === null) {
     return invalidRequestResponse();
+  }
+
+  if (pathSegments[0] === "e2e" && !environment.profilePolicy.allowsE2eUpstream) {
+    return errorResponse(404, "BFF_NOT_FOUND", "BFF route is not found");
   }
 
   let body: ArrayBuffer | undefined;
@@ -72,9 +84,11 @@ export async function proxyBackendRequest(
   let upstreamResponse: Response;
   let upstreamBody: ArrayBuffer;
   try {
+    const headers = copyAllowedHeaders(request.headers, REQUEST_HEADER_ALLOWLIST);
+    injectServerCredential(headers, request.headers, environment, tokenConfiguration);
     upstreamResponse = await fetchImpl(target, {
       method: request.method,
-      headers: copyAllowedHeaders(request.headers, REQUEST_HEADER_ALLOWLIST),
+      headers,
       ...(body === undefined ? {} : { body }),
       cache: "no-store",
       redirect: "manual",
@@ -102,6 +116,29 @@ export async function proxyBackendRequest(
     statusText: upstreamResponse.statusText,
     headers,
   });
+}
+
+function defaultLoadTokens(environment: BffEnvironment) {
+  return readPersonaTokenConfiguration(environment.backendProfile);
+}
+
+function injectServerCredential(
+  upstreamHeaders: Headers,
+  browserHeaders: Headers,
+  environment: BffEnvironment,
+  tokenConfiguration: PersonaTokenConfiguration,
+) {
+  const namespace = environment.profilePolicy.credentialNamespace;
+  if (namespace === null || tokenConfiguration.active === null) {
+    return;
+  }
+
+  const persona = readPersonaCookie(browserHeaders, namespace);
+  if (persona === null) {
+    return;
+  }
+
+  upstreamHeaders.set("Authorization", `Bearer ${tokenConfiguration.active[persona]}`);
 }
 
 export function methodNotAllowedResponse() {

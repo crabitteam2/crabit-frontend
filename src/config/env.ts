@@ -1,12 +1,24 @@
 import "server-only";
 
-export const APP_ENVIRONMENTS = ["local", "e2e", "staging", "prod"] as const;
+import {
+  resolveProfilePolicy,
+  type AppEnvironment,
+  type BackendProfile,
+  type ProfilePolicy,
+} from "./profile-policy";
 
-export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number];
+export {
+  APP_ENVIRONMENTS,
+  BACKEND_PROFILES,
+  type AppEnvironment,
+  type BackendProfile,
+} from "./profile-policy";
 
 export interface BffEnvironment {
   readonly appEnv: AppEnvironment;
+  readonly backendProfile: BackendProfile;
   readonly backendUrl: URL;
+  readonly profilePolicy: ProfilePolicy;
 }
 
 export class BffConfigurationError extends Error {
@@ -19,17 +31,20 @@ export class BffConfigurationError extends Error {
 export function readBffEnvironment(
   values: Readonly<Record<string, string | undefined>> = process.env,
 ): BffEnvironment {
-  const appEnv = values.APP_ENV;
-  if (!isAppEnvironment(appEnv)) {
+  let profilePolicy: ProfilePolicy;
+  try {
+    profilePolicy = resolveProfilePolicy(values.APP_ENV, values.BACKEND_PROFILE);
+  } catch {
     throw new BffConfigurationError();
   }
 
-  const backendUrl = parseBackendUrl(values.BACKEND_URL, appEnv);
-  return { appEnv, backendUrl };
-}
-
-function isAppEnvironment(value: string | undefined): value is AppEnvironment {
-  return APP_ENVIRONMENTS.some((candidate) => candidate === value);
+  const backendUrl = parseBackendUrl(values.BACKEND_URL, profilePolicy.appEnv);
+  return {
+    appEnv: profilePolicy.appEnv,
+    backendProfile: profilePolicy.backendProfile,
+    backendUrl,
+    profilePolicy,
+  };
 }
 
 function parseBackendUrl(

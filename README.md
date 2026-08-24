@@ -44,16 +44,29 @@ Open [http://localhost:3000](http://localhost:3000).
 
 ## Backend-for-Frontend proxy
 
-The server exposes the backend through the same-origin `/api/backend/[...path]` Route Handler. See
-the canonical [Frontend BFF proxy Wiki source](docs/wiki/frontend-bff-proxy.md) for runtime
-configuration, forwarding rules, security boundaries, BFF-specific validation, and troubleshooting.
+The server exposes the backend through the same-origin `/api/backend/[...path]` Route Handler. Deployment and backend profiles are validated separately, and E2E or Demo persona credentials are selected only on the server. See the canonical [Frontend BFF proxy Wiki source](docs/wiki/frontend-bff-proxy.md) and [profile/persona/typed HTTP operations Wiki source](docs/wiki/frontend-profile-http-foundation.md).
+
+The checked backend contract snapshot lives at `openapi/crabit-backend.yaml`. Regenerate and verify its typed client input with:
+
+```sh
+npm run openapi:generate
+npm run openapi:check
+```
+
+Feature code uses the typed helpers in `src/lib/http/`. The Wish helpers include
+representative-Wish read and selection operations, while `friends.ts` covers
+same-academy search, friendships, friend requests, and global student blocks.
+They return `ApiResult` instead of exposing raw `openapi-fetch` responses;
+`unwrapResult()` is the framework-neutral bridge for consumers that need a
+sanitized thrown error.
 
 ## Validation
 
 ```sh
 npm run test
 npm run lint
-APP_ENV=local BACKEND_URL=http://127.0.0.1:18080 npm run build
+APP_ENV=local BACKEND_PROFILE=prod BACKEND_URL=http://127.0.0.1:18080 npm run build
+npm run openapi:check
 npm run smoke:bff
 ```
 
@@ -65,5 +78,5 @@ Playwright usage, follow the [Card Balance E2E guide](docs/wiki/card-balance-e2e
 After a successful production build, start the server separately:
 
 ```sh
-APP_ENV=local BACKEND_URL=http://127.0.0.1:18080 npm run start
+APP_ENV=local BACKEND_PROFILE=prod BACKEND_URL=http://127.0.0.1:18080 npm run start
 ```
