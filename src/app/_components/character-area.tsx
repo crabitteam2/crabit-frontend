@@ -50,11 +50,15 @@ const characterByStage: Record<ProgressStage, CharacterLayout> = {
   },
 };
 
+/** 홈 상단 캐릭터 영역의 진행 상태와 전경 콘텐츠입니다. */
 interface CharacterAreaProps {
+  /** 대표 위시가 없으면 `null`, 있으면 계산된 저축 진행 단계입니다. */
   stage: ProgressStage | null;
+  /** 캐릭터 배경 위에 배치할 헤더 등의 전경 콘텐츠입니다. */
   children: React.ReactNode;
 }
 
+/** 진행 단계에 맞는 캐릭터와 고정 높이의 홈 상단 배경을 렌더링합니다. */
 export function CharacterArea({ stage, children }: CharacterAreaProps) {
   const character = stage === null ? null : characterByStage[stage];
 

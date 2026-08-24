@@ -1,6 +1,7 @@
 import Image from "next/image";
 import warningIcon from "@/../public/images/home/shortage-warning.svg";
 
+/** 카드 잔액 조정이 필요함을 상태 메시지로 알립니다. */
 export function ShortageNotice() {
   return (
     <p

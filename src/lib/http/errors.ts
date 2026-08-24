@@ -1,17 +1,33 @@
 import type { components } from "./generated/crabit-backend";
 import { isJsonMediaType } from "./media-type";
 
+/** 프론트엔드가 분기할 수 있는 정규화 오류 출처입니다. */
 export type FrontendErrorKind = "backend" | "bff" | "network" | "malformed";
+
+/** 고정된 백엔드 오류 봉투가 허용하는 오류 코드입니다. */
 export type BackendErrorCode = components["schemas"]["ErrorCode"];
 
+/** 기능 코드에 노출되는 정규화된 HTTP 오류입니다. */
 export interface FrontendHttpError {
+  /** 오류가 발생하거나 정규화된 계층입니다. */
   readonly kind: FrontendErrorKind;
+  /** 응답을 받은 경우의 HTTP 상태 코드입니다. */
   readonly status?: number;
-  readonly code: BackendErrorCode | BffErrorCode | "NETWORK_ERROR" | "MALFORMED_RESPONSE";
+  /** 백엔드·BFF·네트워크·응답 형식 오류를 구분하는 안정적인 코드입니다. */
+  readonly code:
+    BackendErrorCode | BffErrorCode | "NETWORK_ERROR" | "MALFORMED_RESPONSE";
+  /** 사용자 흐름 또는 로그에 사용할 정규화 메시지입니다. */
   readonly message: string;
+  /** 같은 작업을 다시 시도할 수 있는지 나타냅니다. */
   readonly retryable?: boolean;
+  /** 백엔드 추적 식별자입니다. */
   readonly traceId?: string;
-  readonly fieldErrors?: readonly { readonly field: string; readonly message: string }[];
+  /** 입력 필드별 백엔드 검증 오류입니다. */
+  readonly fieldErrors?: readonly {
+    readonly field: string;
+    readonly message: string;
+  }[];
+  /** 백엔드가 제공한 추가 JSON 객체입니다. */
   readonly details?: Readonly<Record<string, unknown>>;
 }
 
@@ -63,10 +79,17 @@ const BFF_ERROR_CODES = [
   "PERSONA_CONFIGURATION_ERROR",
 ] as const;
 
+/** BFF와 persona Route Handler가 반환할 수 있는 오류 코드입니다. */
 export type BffErrorCode = (typeof BFF_ERROR_CODES)[number];
 const BFF_ERROR_CODE_SET = new Set<string>(BFF_ERROR_CODES);
 
-export async function normalizeErrorResponse(response: Response): Promise<FrontendHttpError> {
+/**
+ * HTTP 오류 응답을 백엔드 또는 BFF 오류 봉투로 엄격히 검증해 정규화합니다.
+ * JSON 미디어 타입, 키 집합 또는 필드 타입이 다르면 malformed 오류를 반환합니다.
+ */
+export async function normalizeErrorResponse(
+  response: Response,
+): Promise<FrontendHttpError> {
   if (!isJsonMediaType(response.headers.get("content-type"))) {
     return malformedError(response.status);
   }
@@ -87,6 +110,7 @@ export async function normalizeErrorResponse(response: Response): Promise<Fronte
   return bff ?? malformedError(response.status);
 }
 
+/** 전송 단계 예외를 재시도 가능한 네트워크 오류로 정규화합니다. */
 export function normalizeNetworkFailure(): FrontendHttpError {
   return {
     kind: "network",
@@ -96,29 +120,34 @@ export function normalizeNetworkFailure(): FrontendHttpError {
   };
 }
 
-function normalizeBackendEnvelope(value: unknown, status: number): FrontendHttpError | null {
+function normalizeBackendEnvelope(
+  value: unknown,
+  status: number,
+): FrontendHttpError | null {
   if (!hasExactKeys(value, ["error"])) {
     return null;
   }
   const error = value.error;
-  if (!hasExactKeys(error, [
-    "code",
-    "details",
-    "fieldErrors",
-    "message",
-    "retryable",
-    "traceId",
-  ])) {
+  if (
+    !hasExactKeys(error, [
+      "code",
+      "details",
+      "fieldErrors",
+      "message",
+      "retryable",
+      "traceId",
+    ])
+  ) {
     return null;
   }
   if (
-    typeof error.code !== "string"
-    || !BACKEND_ERROR_CODES.has(error.code as BackendErrorCode)
-    || !isNonemptyString(error.message)
-    || typeof error.retryable !== "boolean"
-    || !isNonemptyString(error.traceId)
-    || !isFieldErrors(error.fieldErrors)
-    || !isJsonObject(error.details)
+    typeof error.code !== "string" ||
+    !BACKEND_ERROR_CODES.has(error.code as BackendErrorCode) ||
+    !isNonemptyString(error.message) ||
+    typeof error.retryable !== "boolean" ||
+    !isNonemptyString(error.traceId) ||
+    !isFieldErrors(error.fieldErrors) ||
+    !isJsonObject(error.details)
   ) {
     return null;
   }
@@ -135,12 +164,15 @@ function normalizeBackendEnvelope(value: unknown, status: number): FrontendHttpE
   };
 }
 
-function normalizeBffEnvelope(value: unknown, status: number): FrontendHttpError | null {
+function normalizeBffEnvelope(
+  value: unknown,
+  status: number,
+): FrontendHttpError | null {
   if (
-    !hasExactKeys(value, ["code", "message"])
-    || typeof value.code !== "string"
-    || !BFF_ERROR_CODE_SET.has(value.code)
-    || !isNonemptyString(value.message)
+    !hasExactKeys(value, ["code", "message"]) ||
+    typeof value.code !== "string" ||
+    !BFF_ERROR_CODE_SET.has(value.code) ||
+    !isNonemptyString(value.message)
   ) {
     return null;
   }
@@ -166,8 +198,11 @@ function hasExactKeys(
   value: unknown,
   keys: readonly string[],
 ): value is Record<string, unknown> {
-  return isJsonObject(value)
-    && JSON.stringify(Object.keys(value).sort()) === JSON.stringify([...keys].sort());
+  return (
+    isJsonObject(value) &&
+    JSON.stringify(Object.keys(value).sort()) ===
+      JSON.stringify([...keys].sort())
+  );
 }
 
 function isJsonObject(value: unknown): value is Record<string, unknown> {
@@ -181,9 +216,13 @@ function isNonemptyString(value: unknown): value is string {
 function isFieldErrors(
   value: unknown,
 ): value is { readonly field: string; readonly message: string }[] {
-  return Array.isArray(value) && value.every((item) => (
-    hasExactKeys(item, ["field", "message"])
-    && isNonemptyString(item.field)
-    && isNonemptyString(item.message)
-  ));
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (item) =>
+        hasExactKeys(item, ["field", "message"]) &&
+        isNonemptyString(item.field) &&
+        isNonemptyString(item.message),
+    )
+  );
 }

@@ -1,9 +1,12 @@
 const milestones = [10, 30, 60, 100];
 
+/** 저축 진행률 막대에 표시할 값입니다. */
 interface ProgressBarProps {
+  /** 호출자가 계산한 진행률입니다. 일반 사용 경로에서는 0에서 100 사이입니다. */
   percent: number;
 }
 
+/** 현재 진행률과 10·30·60·100% 이정표를 함께 표시합니다. */
 export function ProgressBar({ percent }: ProgressBarProps) {
   return (
     <div className="flex h-[75px] flex-col gap-[18px]">

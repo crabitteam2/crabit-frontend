@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 .next
 out
+/dist
+/storybook-static
 next-env.d.ts
 *.tsbuildinfo
 *.local

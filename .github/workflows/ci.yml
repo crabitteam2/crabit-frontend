@@ -26,8 +26,12 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
+      - run: npx playwright install --with-deps chromium
       - run: npm run format:check
       - run: npm run lint
       - run: npm run test
+      - run: npm run test:storybook
+      - run: npm run build:docs
+      - run: npm run verify:docs -- --base-path /crabit-frontend/
       - run: npm run build
       - run: npm run smoke:bff

@@ -1,10 +1,13 @@
 import Image from "next/image";
 import bannerImage from "@/../public/images/home/academy-banner.png";
 
+/** 학원 카드에 표시할 현재 학원 정보입니다. */
 interface AcademySectionProps {
+  /** 사용자에게 노출할 학원 이름입니다. */
   academyName: string;
 }
 
+/** 친구들의 위시리스트로 이동하는 학원 안내 카드를 렌더링합니다. */
 export function AcademySection({ academyName }: AcademySectionProps) {
   return (
     <section className="flex flex-col gap-2">

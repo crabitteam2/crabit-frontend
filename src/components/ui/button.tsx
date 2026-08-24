@@ -33,17 +33,27 @@ const toneStyles: Record<ButtonVariant, Record<ButtonColor, string>> = {
   },
 };
 
+/** Crabit 버튼의 시각적 형태와 네이티브 버튼 속성입니다. */
 export interface ButtonProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
   "color"
 > {
+  /** 채움 정도입니다. 기본값은 `fill`입니다. */
   variant?: ButtonVariant;
+  /** 의미 색상입니다. 기본값은 `primary`입니다. */
   color?: ButtonColor;
+  /** 높이와 패딩을 결정하는 크기입니다. 기본값은 `medium`입니다. */
   size?: ButtonSize;
+  /** 로딩 스피너를 표시하고 버튼을 비활성화할지 여부입니다. */
   isLoading?: boolean;
+  /** 평상시에 표시하고 로딩 중에는 스크린 리더에만 남기는 레이블입니다. */
   children?: ReactNode;
 }
 
+/**
+ * Crabit의 공통 버튼을 렌더링합니다.
+ * 로딩 중에는 `aria-busy`와 네이티브 `disabled`를 함께 적용합니다.
+ */
 export function Button({
   variant = "fill",
   color = "primary",
