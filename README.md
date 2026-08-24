@@ -18,6 +18,8 @@ locations have distinct roles:
 Start with the [repository-owned Wiki Home source](docs/wiki/home.md) for the complete documentation
 map. The detailed guides are:
 
+- [Frontend HTTP architecture](docs/wiki/frontend-http-architecture.md): revision-qualified flow from
+  UI and typed clients through the BFF to backend authentication, controllers, and error boundaries
 - [Frontend BFF proxy](docs/wiki/frontend-bff-proxy.md): runtime configuration, forwarding and
   security boundaries, BFF validation, and troubleshooting
 - [Card Balance E2E Scenarios](docs/wiki/card-balance-e2e-scenarios.md): deterministic scenario CLI,
