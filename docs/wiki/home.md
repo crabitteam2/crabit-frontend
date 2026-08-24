@@ -21,7 +21,7 @@
   설치, 로컬 개발, 등록된 검증 명령
 - [프론트엔드 BFF 프록시](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/frontend-bff-proxy.md):
   런타임 설정, 전달 정책, 보안 경계, BFF 검증, 문제 해결
-- [Frontend profile, persona, and typed HTTP foundation](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/frontend-profile-http-foundation.md):
+- [Frontend profile, persona, and typed HTTP foundation](frontend-profile-http-foundation.md):
   배포 profile 정책, 서버 전용 persona credential, BFF 인증 경계, 고정 OpenAPI와 typed HTTP 모듈
 - [카드 잔액 E2E 시나리오](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/card-balance-e2e-scenarios.md):
   결정적 시나리오 CLI, Playwright fixture, 백엔드 제어 표면, 문제 해결
@@ -38,7 +38,7 @@
 | --- | --- |
 | [`docs/wiki/home.md`](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/home.md) | [Home](https://github.com/crabitteam2/crabit-frontend/wiki) |
 | [`docs/wiki/frontend-bff-proxy.md`](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/frontend-bff-proxy.md) | [Frontend-BFF-Proxy](https://github.com/crabitteam2/crabit-frontend/wiki/Frontend-BFF-Proxy) |
-| [`docs/wiki/frontend-profile-http-foundation.md`](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/frontend-profile-http-foundation.md) | 저장소 전용(Draft PR #5). 이 Feature Run에서는 GitHub Wiki 대상으로 게시하지 않음 |
+| [`docs/wiki/frontend-profile-http-foundation.md`](frontend-profile-http-foundation.md) | 저장소 전용(Draft PR #5). 이 Feature Run에서는 GitHub Wiki 대상으로 게시하지 않음 |
 | [`docs/wiki/card-balance-e2e-scenarios.md`](https://github.com/crabitteam2/crabit-frontend/blob/main/docs/wiki/card-balance-e2e-scenarios.md) | [Card-Balance-E2E-Scenarios](https://github.com/crabitteam2/crabit-frontend/wiki/Card-Balance-E2E-Scenarios) |
 
 커밋된 저장소 원본에서만 게시하고, 각 Wiki 페이지를 다시 읽었을 때 바이트가 원본과 같은지
