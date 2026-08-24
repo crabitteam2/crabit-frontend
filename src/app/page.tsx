@@ -1,136 +1,64 @@
-import Image from 'next/image'
-import heroImage from '@/assets/hero.png'
-import reactLogo from '@/assets/react.svg'
-import { Counter } from './counter'
+import { ACADEMY_NAME, resolveHomeData } from "@/lib/mock/home";
+import { AcademySection } from "./_components/academy-section";
+import { CharacterArea } from "./_components/character-area";
+import { HomeHeader } from "./_components/home-header";
+import { ProgressBar } from "./_components/progress-bar";
+import {
+  toProgressPercent,
+  toProgressStage,
+} from "./_components/progress-stage";
+import { QuickActions } from "./_components/quick-actions";
+import { RecapSection } from "./_components/recap-section";
+import { ShortageNotice } from "./_components/shortage-notice";
+import { TabBar } from "./_components/tab-bar";
 
-export default function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const { nickname, representativeWish, unresolvedShortage } = resolveHomeData(
+    await searchParams,
+  );
+  const percent = representativeWish
+    ? toProgressPercent(
+        representativeWish.amount,
+        representativeWish.targetAmount,
+      )
+    : 0;
+  const hasShortage = unresolvedShortage > 0;
+
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <Image
-            src={heroImage}
-            className="base"
-            width={170}
-            height={179}
-            priority
-            alt=""
-          />
-          <Image
-            src={reactLogo}
-            className="framework"
-            width={36}
-            height={32}
-            alt="React logo"
-          />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/app/page.tsx</code> and save to see your changes
-          </p>
-        </div>
-        <Counter />
-      </section>
+    <div className="flex flex-col">
+      <CharacterArea
+        stage={representativeWish ? toProgressStage(percent) : null}
+      >
+        <HomeHeader
+          nickname={nickname}
+          wishPurpose={representativeWish?.purpose ?? null}
+        />
+      </CharacterArea>
 
-      <div className="ticks" />
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon" />
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://nextjs.org/docs" target="_blank" rel="noreferrer">
-                Explore Next.js
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank" rel="noreferrer">
-                <Image
-                  className="button-icon"
-                  src={reactLogo}
-                  width={18}
-                  height={18}
-                  alt=""
-                />
-                Learn React
-              </a>
-            </li>
-          </ul>
+      <main className="relative -mt-[17px] flex flex-col px-4">
+        <ProgressBar percent={percent} />
+        {hasShortage ? (
+          <div className="pt-10">
+            <ShortageNotice />
+          </div>
+        ) : null}
+        <div className={hasShortage ? "pt-[68px]" : "pt-10"}>
+          <QuickActions isLocked={hasShortage} />
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon" />
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Next.js community</p>
-          <ul>
-            <li>
-              <a
-                href="https://github.com/vercel/next.js"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon" />
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://nextjs.org/discord" target="_blank" rel="noreferrer">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon" />
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/nextjs" target="_blank" rel="noreferrer">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon" />
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a
-                href="https://bsky.app/profile/nextjs.org"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon" />
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
+        <div className="pt-[68px]">
+          <AcademySection academyName={ACADEMY_NAME} />
         </div>
-      </section>
+        <div className="pt-[68px]">
+          <RecapSection />
+        </div>
+      </main>
 
-      <div className="ticks" />
-      <section id="spacer" aria-hidden="true" />
-    </>
-  )
+      <div className="h-[182px]" />
+      <TabBar />
+    </div>
+  );
 }

@@ -1,0 +1,20 @@
+.next
+out
+playwright-report
+blob-report
+test-results
+package-lock.json
+openapi/crabit-backend.yaml
+*.svg
+
+# Not yet formatted; owned by in-flight backend work.
+.github
+docs
+scripts
+tests
+src/config
+src/e2e
+src/lib
+README.md
+next.config.mjs
+tsconfig.json
