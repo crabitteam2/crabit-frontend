@@ -11,6 +11,7 @@ interface BottomSheetProps {
   onClose: () => void;
   title: string;
   compactHeader?: boolean;
+  header?: ReactNode;
   children: ReactNode;
 }
 
@@ -19,6 +20,7 @@ export function BottomSheet({
   onClose,
   title,
   compactHeader,
+  header,
   children,
 }: BottomSheetProps) {
   const titleId = useId();
@@ -98,25 +100,43 @@ export function BottomSheet({
             aria-hidden="true"
             className="h-[6px] w-[49px] shrink-0 rounded-[9px] bg-[#d9d9d9]"
           />
-          <div
-            className={`flex w-full items-center justify-between pt-6 ${compactHeader ? "pb-6" : "pb-11"}`}
-          >
-            <h2
+          {header === undefined ? (
+            <div
+              className={`flex w-full items-center justify-between pt-6 ${compactHeader ? "pb-6" : "pb-11"}`}
+            >
+              <h2
+                id={titleId}
+                className="text-t1 text-fg-neutral font-bold whitespace-nowrap"
+              >
+                {title}
+              </h2>
+              <button
+                ref={closeButtonRef}
+                type="button"
+                onClick={onClose}
+                aria-label="시트 닫기"
+                className="relative block size-8 shrink-0"
+              >
+                <Image src={closeIcon} alt="" fill sizes="32px" />
+              </button>
+            </div>
+          ) : (
+            <div
+              className="flex w-full items-center justify-between pt-[13px] pb-10"
               id={titleId}
-              className="text-t1 text-fg-neutral font-bold whitespace-nowrap"
             >
-              {title}
-            </h2>
-            <button
-              ref={closeButtonRef}
-              type="button"
-              onClick={onClose}
-              aria-label="시트 닫기"
-              className="relative block size-8 shrink-0"
-            >
-              <Image src={closeIcon} alt="" fill sizes="32px" />
-            </button>
-          </div>
+              {header}
+              <button
+                ref={closeButtonRef}
+                type="button"
+                onClick={onClose}
+                aria-label="시트 닫기"
+                className="relative block size-6 shrink-0"
+              >
+                <Image src={closeIcon} alt="" fill sizes="24px" />
+              </button>
+            </div>
+          )}
           {children}
         </div>
       </div>

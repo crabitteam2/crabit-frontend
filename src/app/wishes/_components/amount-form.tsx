@@ -2,19 +2,12 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import heroImage from "@/../public/images/wishes/deposit-hero.png";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useKeyboardViewport } from "@/hooks/use-keyboard-viewport";
 import { ScreenHeader } from "./screen-header";
-
-const KEYBOARD_THRESHOLD = 120;
-
-interface ViewportBox {
-  height: number;
-  offsetTop: number;
-  isKeyboardOpen: boolean;
-}
 
 interface AmountFormProps {
   title: string;
@@ -33,43 +26,8 @@ export function AmountForm({
 }: AmountFormProps) {
   const router = useRouter();
   const [value, setValue] = useState("");
-  const [box, setBox] = useState<ViewportBox | null>(null);
-  const tallest = useRef(0);
-
-  useEffect(() => {
-    const viewport = window.visualViewport;
-    if (viewport === null) return;
-
-    const sync = () => {
-      tallest.current = Math.max(tallest.current, viewport.height);
-      setBox({
-        height: viewport.height,
-        offsetTop: viewport.offsetTop,
-        isKeyboardOpen: tallest.current - viewport.height > KEYBOARD_THRESHOLD,
-      });
-    };
-
-    sync();
-    viewport.addEventListener("resize", sync);
-    viewport.addEventListener("scroll", sync);
-    return () => {
-      viewport.removeEventListener("resize", sync);
-      viewport.removeEventListener("scroll", sync);
-    };
-  }, []);
-
+  const box = useKeyboardViewport();
   const isKeyboardOpen = box?.isKeyboardOpen ?? false;
-
-  useEffect(() => {
-    if (!isKeyboardOpen) return;
-
-    const { overflow } = document.body.style;
-    document.body.style.overflow = "hidden";
-    window.scrollTo(0, 0);
-    return () => {
-      document.body.style.overflow = overflow;
-    };
-  }, [isKeyboardOpen]);
 
   const digits = value.replace(/\D/g, "");
   const amount = digits === "" ? 0 : Number(digits);
@@ -109,6 +67,7 @@ export function AmountForm({
       >
         <Input
           label="금액"
+          variant="line-brand"
           inputMode="numeric"
           placeholder="입력하세요"
           value={digits === "" ? "" : amount.toLocaleString("ko-KR")}

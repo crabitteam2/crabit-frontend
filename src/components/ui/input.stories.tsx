@@ -18,6 +18,18 @@ export const 값있음: Story = {
   args: { label: "금액", defaultValue: "5,000" },
 };
 
+export const 브랜드밑줄: Story = {
+  args: { label: "금액", variant: "line-brand", defaultValue: "5,000" },
+};
+
+export const 채움: Story = {
+  args: { label: "목표", variant: "filled", placeholder: "시나모롤 키링" },
+};
+
+export const 읽기전용: Story = {
+  args: { label: "목표 기간", readOnly: true, value: "2026.06.01-2026.10.31" },
+};
+
 export const 오류: Story = {
   args: {
     label: "금액",

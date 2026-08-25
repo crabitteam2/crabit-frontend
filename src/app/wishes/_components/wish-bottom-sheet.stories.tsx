@@ -13,3 +13,7 @@ type Story = StoryObj<typeof meta>;
 export const 열림: Story = {
   args: { isOpen: true, onClose: () => {} },
 };
+
+export const 정보수정연결: Story = {
+  args: { isOpen: true, onClose: () => {}, infoHref: "/wishes/w3/info" },
+};

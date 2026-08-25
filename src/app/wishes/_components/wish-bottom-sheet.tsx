@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 
 const ACTIONS = [
@@ -9,23 +10,33 @@ const ACTIONS = [
   "학원 피드 올리기",
 ] as const;
 
+const ACTION_STYLE =
+  "text-t3 text-fg-neutral flex w-full items-start pb-11 text-left font-medium";
+
 interface WishBottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
+  infoHref?: string;
 }
 
-export function WishBottomSheet({ isOpen, onClose }: WishBottomSheetProps) {
+export function WishBottomSheet({
+  isOpen,
+  onClose,
+  infoHref,
+}: WishBottomSheetProps) {
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} title="저축 기록 내역">
-      {ACTIONS.map((action) => (
-        <button
-          key={action}
-          type="button"
-          className="text-t3 text-fg-neutral flex w-full items-start pb-11 text-left font-medium"
-        >
-          {action}
-        </button>
-      ))}
+      {ACTIONS.map((action) =>
+        action === "정보 수정" && infoHref !== undefined ? (
+          <Link key={action} href={infoHref} className={ACTION_STYLE}>
+            {action}
+          </Link>
+        ) : (
+          <button key={action} type="button" className={ACTION_STYLE}>
+            {action}
+          </button>
+        ),
+      )}
     </BottomSheet>
   );
 }
