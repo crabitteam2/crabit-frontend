@@ -107,6 +107,14 @@ export const finishedDetailWishTheme: WishTheme = {
   highlightsGoal: true,
 };
 
+export const abandonedDetailWishTheme: WishTheme = {
+  card: "",
+  track: "bg-gray-2",
+  fill: "bg-gray-4",
+  fillsTrack: false,
+  highlightsGoal: false,
+};
+
 export const sourceWishTheme: WishTheme = {
   card: "",
   track: "bg-pink-2",
