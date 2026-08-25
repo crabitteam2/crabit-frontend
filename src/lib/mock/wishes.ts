@@ -122,6 +122,10 @@ const wishes: Wish[] = [
 
 const FINISHED_STATES: readonly WishState[] = ["COMPLETED", "ABANDONED"];
 
+export function isFinishedWish(wish: Wish) {
+  return FINISHED_STATES.includes(wish.state);
+}
+
 const movements: FundMovement[] = [
   {
     id: "m1",
@@ -182,11 +186,13 @@ export function resolveWishListData(params: SearchParams): WishListData {
 
   if (list === "empty") return { inProgress: [], finished: [] };
 
+  const deletedId = readParam(params, "deleted");
+  const kept = wishes.filter((w) => w.id !== deletedId);
   const inProgress = hoistRepresentative(
-    wishes.filter((w) => !FINISHED_STATES.includes(w.state)),
+    kept.filter((w) => !FINISHED_STATES.includes(w.state)),
     params,
   );
-  const finished = wishes.filter((w) => FINISHED_STATES.includes(w.state));
+  const finished = kept.filter((w) => FINISHED_STATES.includes(w.state));
 
   if (list === "in-progress-only") return { inProgress, finished: [] };
   if (list === "finished-only") return { inProgress: [], finished };

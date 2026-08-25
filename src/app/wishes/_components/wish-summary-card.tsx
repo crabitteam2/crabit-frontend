@@ -1,7 +1,7 @@
 import { toProgressPercent } from "@/app/_components/progress-stage";
-import type { Wish } from "@/lib/mock/wishes";
+import { isFinishedWish, type Wish } from "@/lib/mock/wishes";
 import { WishProgressBar } from "./wish-progress-bar";
-import { detailWishTheme } from "./wish-theme";
+import { detailWishTheme, finishedDetailWishTheme } from "./wish-theme";
 
 interface WishSummaryCardProps {
   wish: Wish;
@@ -9,9 +9,12 @@ interface WishSummaryCardProps {
 
 export function WishSummaryCard({ wish }: WishSummaryCardProps) {
   const percent = toProgressPercent(wish.amount, wish.targetAmount);
+  const isFinished = isFinishedWish(wish);
 
   return (
-    <article className="bg-pink-6/5 flex flex-col overflow-hidden rounded-[20px] px-8 pt-7 pb-4">
+    <article
+      className={`flex flex-col overflow-hidden rounded-[20px] px-8 pt-7 pb-4 ${isFinished ? "bg-gray-1" : "bg-pink-6/5"}`}
+    >
       <p className="text-t3 text-fg-neutral truncate pb-2 font-semibold">
         {wish.purpose}
       </p>
@@ -27,7 +30,10 @@ export function WishSummaryCard({ wish }: WishSummaryCardProps) {
       <p className="text-fg-neutral-muted flex justify-end pb-3 text-[14px] leading-[34px] tracking-[-0.3px]">
         {wish.targetAmount.toLocaleString("ko-KR")} 원
       </p>
-      <WishProgressBar percent={percent} theme={detailWishTheme} />
+      <WishProgressBar
+        percent={percent}
+        theme={isFinished ? finishedDetailWishTheme : detailWishTheme}
+      />
     </article>
   );
 }

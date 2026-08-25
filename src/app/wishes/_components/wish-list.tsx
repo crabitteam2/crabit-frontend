@@ -21,14 +21,20 @@ interface DialogState {
   kind: DialogKind;
 }
 
-type WishListProps = WishListData;
+const TOAST_MESSAGE = "설정이 저장되었습니다.";
 
-export function WishList({ inProgress, finished }: WishListProps) {
+interface WishListProps extends WishListData {
+  hasToast?: boolean;
+}
+
+export function WishList({ inProgress, finished, hasToast }: WishListProps) {
   const router = useRouter();
   const [sheetWish, setSheetWish] = useState<Wish | null>(null);
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [abandonedIds, setAbandonedIds] = useState<string[]>([]);
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(
+    hasToast === true ? TOAST_MESSAGE : null,
+  );
   const [inProgressShown, setInProgressShown] = useState(PAGE_SIZE);
   const [finishedShown, setFinishedShown] = useState(PAGE_SIZE);
 
@@ -58,7 +64,7 @@ export function WishList({ inProgress, finished }: WishListProps) {
     if (dialog === null) return;
     setAbandonedIds((ids) => [...ids, dialog.wish.id]);
     setDialog(null);
-    setToast("설정이 저장되었습니다.");
+    setToast(TOAST_MESSAGE);
   };
 
   return (
