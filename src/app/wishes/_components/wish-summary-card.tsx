@@ -1,10 +1,20 @@
 import { toProgressPercent } from "@/app/_components/progress-stage";
 import { isFinishedWish, type Wish } from "@/lib/mock/wishes";
 import { WishProgressBar } from "./wish-progress-bar";
-import { detailWishTheme, finishedDetailWishTheme } from "./wish-theme";
+import {
+  abandonedDetailWishTheme,
+  detailWishTheme,
+  finishedDetailWishTheme,
+} from "./wish-theme";
 
 interface WishSummaryCardProps {
   wish: Wish;
+}
+
+function summaryTheme(wish: Wish) {
+  if (wish.state === "ABANDONED") return abandonedDetailWishTheme;
+  if (wish.state === "COMPLETED") return finishedDetailWishTheme;
+  return detailWishTheme;
 }
 
 export function WishSummaryCard({ wish }: WishSummaryCardProps) {
@@ -30,10 +40,7 @@ export function WishSummaryCard({ wish }: WishSummaryCardProps) {
       <p className="text-fg-neutral-muted flex justify-end pb-3 text-[14px] leading-[34px] tracking-[-0.3px]">
         {wish.targetAmount.toLocaleString("ko-KR")} 원
       </p>
-      <WishProgressBar
-        percent={percent}
-        theme={isFinished ? finishedDetailWishTheme : detailWishTheme}
-      />
+      <WishProgressBar percent={percent} theme={summaryTheme(wish)} />
     </article>
   );
 }
