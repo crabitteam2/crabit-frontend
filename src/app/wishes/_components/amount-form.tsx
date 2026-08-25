@@ -16,15 +16,21 @@ interface ViewportBox {
   isKeyboardOpen: boolean;
 }
 
-interface DepositAmountFormProps {
-  wishId: string;
+interface AmountFormProps {
+  title: string;
+  backHref: string;
+  nextPath: string;
   available: number;
+  availableLabel: string;
 }
 
-export function DepositAmountForm({
-  wishId,
+export function AmountForm({
+  title,
+  backHref,
+  nextPath,
   available,
-}: DepositAmountFormProps) {
+  availableLabel,
+}: AmountFormProps) {
   const router = useRouter();
   const [value, setValue] = useState("");
   const [box, setBox] = useState<ViewportBox | null>(null);
@@ -83,11 +89,7 @@ export function DepositAmountForm({
           : undefined
       }
     >
-      <ScreenHeader
-        title="얼마를 저축할까요?"
-        backHref={`/wishes/${wishId}/deposit`}
-        spacing="loose"
-      />
+      <ScreenHeader title={title} backHref={backHref} spacing="loose" />
 
       {isKeyboardOpen ? null : (
         <div className="px-4">
@@ -114,7 +116,7 @@ export function DepositAmountForm({
           error={isOver ? "사용 가능한 금액을 넘었어요." : undefined}
         />
         <span className="text-e1 text-gray-5 py-2">
-          현재 사용 가능한 금액 : {available.toLocaleString("ko-KR")}원
+          {availableLabel} : {available.toLocaleString("ko-KR")}원
         </span>
       </div>
 
@@ -128,9 +130,7 @@ export function DepositAmountForm({
           className="w-full"
           disabled={!canSubmit}
           onPointerDown={(event) => event.preventDefault()}
-          onClick={() =>
-            router.push(`/wishes/${wishId}/deposit/coin?amount=${amount}`)
-          }
+          onClick={() => router.push(`${nextPath}?amount=${amount}`)}
         >
           다음
         </Button>
