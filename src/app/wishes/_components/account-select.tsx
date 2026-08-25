@@ -46,9 +46,6 @@ export function AccountSelect({
     setTab(next);
   };
 
-  const isEmpty =
-    tab === "내 카드" ? accounts.length === 0 : wishes.length === 0;
-
   return (
     <>
       <div className="px-4">
@@ -77,13 +74,7 @@ export function AccountSelect({
         ))}
       </div>
 
-      {isEmpty ? (
-        <p className="text-b1 text-fg-neutral-muted px-4 pb-10">
-          {tab === "내 카드"
-            ? "선택할 수 있는 카드가 없어요."
-            : "선택할 수 있는 위시가 없어요."}
-        </p>
-      ) : (
+      {tab === "내 위시" && wishes.length === 0 ? null : (
         <ul className="flex flex-col gap-10 px-4 pb-10">
           {tab === "내 카드"
             ? accounts.map((account) => (

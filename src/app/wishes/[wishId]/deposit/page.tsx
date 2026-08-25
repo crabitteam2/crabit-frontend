@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { resolveCardAccounts } from "@/lib/mock/accounts";
+import { cardAccounts } from "@/lib/mock/accounts";
 import { findWish, resolveWishListData } from "@/lib/mock/wishes";
 import { AccountSelect } from "../../_components/account-select";
 import { ScreenHeader } from "../../_components/screen-header";
@@ -16,7 +16,6 @@ export default async function DepositAccountPage({
   if (wish === null) notFound();
 
   const query = await searchParams;
-  const accounts = resolveCardAccounts(query);
   const { inProgress } = resolveWishListData(query);
   const sources = inProgress.filter((item) => item.id !== wishId);
 
@@ -27,7 +26,7 @@ export default async function DepositAccountPage({
         backHref={`/wishes/${wishId}`}
         spacing="loose"
       />
-      <AccountSelect wishId={wishId} accounts={accounts} wishes={sources} />
+      <AccountSelect wishId={wishId} accounts={cardAccounts} wishes={sources} />
     </div>
   );
 }

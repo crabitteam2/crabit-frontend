@@ -34,20 +34,15 @@ interface HistoryListProps {
 }
 
 export function HistoryList({ movements }: HistoryListProps) {
-  if (movements.length === 0) {
-    return (
-      <p className="text-b1 text-fg-neutral-muted px-4 py-6">
-        저축 기록이 없어요.
-      </p>
-    );
-  }
-
   const months: { key: string; items: FundMovement[] }[] = [];
   for (const movement of movements) {
     const key = toMonthKey(toParts(movement.occurredAt));
     const last = months.at(-1);
     if (last?.key === key) last.items.push(movement);
     else months.push({ key, items: [movement] });
+  }
+  if (months.length === 0) {
+    months.push({ key: toMonthKey(toParts(new Date())), items: [] });
   }
 
   return (
