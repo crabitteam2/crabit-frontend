@@ -48,10 +48,8 @@ export function WishEditForm({
   const digits = nextAmount.replace(/\D/g, "");
   const amount = digits === "" ? 0 : Number(digits);
   const nextPeriod = toPeriod(range);
-  const isRangeComplete = range.start !== null && range.end !== null;
-  const savedPeriod = isRangeComplete ? nextPeriod : "";
   const canSubmit =
-    nextPurpose.trim() !== "" || amount > 0 || savedPeriod !== (period ?? "");
+    nextPurpose.trim() !== "" || amount > 0 || nextPeriod !== (period ?? "");
 
   const submit = () => {
     if (isCalendarOpen) {
@@ -62,7 +60,7 @@ export function WishEditForm({
     const params = new URLSearchParams();
     params.set("purpose", nextPurpose === "" ? purpose : nextPurpose);
     params.set("targetAmount", String(amount === 0 ? targetAmount : amount));
-    if (savedPeriod !== "") params.set("period", savedPeriod);
+    if (nextPeriod !== "") params.set("period", nextPeriod);
     router.push(`${donePath}?${params.toString()}`);
   };
 
@@ -136,7 +134,7 @@ export function WishEditForm({
         <Button
           size="xlarge"
           className="w-full"
-          disabled={isCalendarOpen ? !isRangeComplete : !canSubmit}
+          disabled={!isCalendarOpen && !canSubmit}
           onPointerDown={(event) => event.preventDefault()}
           onClick={submit}
         >

@@ -56,6 +56,10 @@ export function Calendar({ value, onChange }: CalendarProps) {
 
   const select = (day: number) => {
     const key = toDateKey(new Date(view.year, view.month, day));
+    if (key === value.start) {
+      onChange({ start: null, end: null });
+      return;
+    }
     if (value.start === null || value.end !== null || key < value.start) {
       onChange({ start: key, end: null });
       return;
