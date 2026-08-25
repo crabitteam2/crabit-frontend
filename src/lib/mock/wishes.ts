@@ -167,12 +167,25 @@ function readParam(params: SearchParams, key: string) {
   return Array.isArray(raw) ? raw[0] : raw;
 }
 
+function hoistRepresentative(list: Wish[], params: SearchParams) {
+  const wishId = readParam(params, "representative");
+  if (wishId === undefined) return list;
+
+  const picked = list.filter((wish) => wish.id === wishId);
+  if (picked.length === 0) return list;
+
+  return [...picked, ...list.filter((wish) => wish.id !== wishId)];
+}
+
 export function resolveWishListData(params: SearchParams): WishListData {
   const list = readParam(params, "list");
 
   if (list === "empty") return { inProgress: [], finished: [] };
 
-  const inProgress = wishes.filter((w) => !FINISHED_STATES.includes(w.state));
+  const inProgress = hoistRepresentative(
+    wishes.filter((w) => !FINISHED_STATES.includes(w.state)),
+    params,
+  );
   const finished = wishes.filter((w) => FINISHED_STATES.includes(w.state));
 
   if (list === "in-progress-only") return { inProgress, finished: [] };

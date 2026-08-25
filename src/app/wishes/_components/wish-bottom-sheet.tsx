@@ -17,12 +17,14 @@ interface WishBottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
   infoHref?: string;
+  onRepresentative?: () => void;
 }
 
 export function WishBottomSheet({
   isOpen,
   onClose,
   infoHref,
+  onRepresentative,
 }: WishBottomSheetProps) {
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} title="저축 기록 내역">
@@ -32,7 +34,12 @@ export function WishBottomSheet({
             {action}
           </Link>
         ) : (
-          <button key={action} type="button" className={ACTION_STYLE}>
+          <button
+            key={action}
+            type="button"
+            onClick={action === "대표 위시 설정" ? onRepresentative : undefined}
+            className={ACTION_STYLE}
+          >
             {action}
           </button>
         ),

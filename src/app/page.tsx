@@ -2,6 +2,7 @@ import { ACADEMY_NAME, resolveHomeData } from "@/lib/mock/home";
 import { AcademySection } from "./_components/academy-section";
 import { CharacterArea } from "./_components/character-area";
 import { HomeHeader } from "./_components/home-header";
+import { HomeToast } from "./_components/home-toast";
 import { ProgressBar } from "./_components/progress-bar";
 import {
   toProgressPercent,
@@ -17,9 +18,19 @@ export default async function Home({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { nickname, representativeWish, unresolvedShortage } = resolveHomeData(
-    await searchParams,
-  );
+  const query = await searchParams;
+  const { nickname, representativeWish, unresolvedShortage } =
+    resolveHomeData(query);
+
+  const rawToast = query.toast;
+  const toastKey = (Array.isArray(rawToast) ? rawToast[0] : rawToast) ?? null;
+  const closeParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (key === "toast" || value === undefined) continue;
+    closeParams.set(key, Array.isArray(value) ? (value[0] ?? "") : value);
+  }
+  const closeHref =
+    closeParams.size === 0 ? "/" : `/?${closeParams.toString()}`;
   const percent = representativeWish
     ? toProgressPercent(
         representativeWish.amount,
@@ -30,6 +41,8 @@ export default async function Home({
 
   return (
     <div className="flex flex-col">
+      <HomeToast toastKey={toastKey} closeHref={closeHref} />
+
       <CharacterArea
         stage={representativeWish ? toProgressStage(percent) : null}
       >
