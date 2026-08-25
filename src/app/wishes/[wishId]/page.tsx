@@ -42,7 +42,7 @@ export default async function WishDetailPage({
         </Button>
       </div>
 
-      <HistoryFilterBar period="3개월" sort="최신순" />
+      <HistoryFilterBar />
       <HistoryList movements={movements} />
 
       <div className="h-[calc(2.5rem+env(safe-area-inset-bottom))]" />
