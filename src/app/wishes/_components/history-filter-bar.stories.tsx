@@ -10,6 +10,4 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  args: { period: "3개월", sort: "최신순" },
-};
+export const Default: Story = {};

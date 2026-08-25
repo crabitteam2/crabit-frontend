@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { findWish, resolveMovements } from "@/lib/mock/wishes";
@@ -25,7 +26,7 @@ export default async function WishDetailPage({
       <ScreenHeader
         title="저축 기록 내역"
         backHref="/wishes"
-        dense
+        spacing="tight"
         action={<WishDetailActions purpose={wish.purpose} />}
       />
 
@@ -34,15 +35,18 @@ export default async function WishDetailPage({
       </div>
 
       <div className="flex gap-4 px-4 pt-[22.25px] pb-[6.25px]">
-        <Button size="large" className="flex-1">
+        <Link
+          href={`/wishes/${wishId}/deposit`}
+          className="bg-brand-solid text-fg-contrast text-b4 inline-flex h-12 flex-1 items-center justify-center rounded-xl px-5 font-semibold"
+        >
           저축하기
-        </Button>
+        </Link>
         <Button size="large" variant="weak" className="flex-1">
           출금하기
         </Button>
       </div>
 
-      <HistoryFilterBar period="3개월" sort="최신순" />
+      <HistoryFilterBar />
       <HistoryList movements={movements} />
 
       <div className="h-[calc(2.5rem+env(safe-area-inset-bottom))]" />

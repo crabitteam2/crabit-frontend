@@ -5,11 +5,18 @@ const MILESTONES = [10, 40, 70, 100];
 interface WishProgressBarProps {
   percent: number;
   theme: WishTheme;
+  compact?: boolean;
 }
 
-export function WishProgressBar({ percent, theme }: WishProgressBarProps) {
+export function WishProgressBar({
+  percent,
+  theme,
+  compact,
+}: WishProgressBarProps) {
   return (
-    <div className="flex flex-col gap-2 pt-5 pb-[10px]">
+    <div
+      className={`flex flex-col gap-2 pt-5 ${compact ? "pb-1" : "pb-[10px]"}`}
+    >
       <div
         role="progressbar"
         aria-valuenow={Math.round(percent)}
