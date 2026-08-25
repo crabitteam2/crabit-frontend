@@ -5,7 +5,12 @@ const meta = {
   title: "UI/ConfirmDialog",
   component: ConfirmDialog,
   parameters: { layout: "fullscreen" },
-  args: { isOpen: true, onConfirm: () => {}, onCancel: () => {} },
+  args: {
+    isOpen: true,
+    onPrimary: () => {},
+    onSecondary: () => {},
+    onDismiss: () => {},
+  },
 } satisfies Meta<typeof ConfirmDialog>;
 
 export default meta;
@@ -20,16 +25,22 @@ export const 대표위시: Story = {
         <br />홈 화면 가장 상단에서 확인할 수 있어요.
       </>
     ),
-    confirmLabel: "선택하기",
-    cancelLabel: "괜찮아요",
+    primaryLabel: "선택하기",
+    secondaryLabel: "괜찮아요",
   },
 };
 
-export const 한줄설명: Story = {
+export const 목표포기: Story = {
   args: {
     title: "목표를 정말 포기할까요?",
-    description: "포기하면 되돌릴 수 없어요.",
-    confirmLabel: "포기하기",
-    cancelLabel: "괜찮아요",
+    description: (
+      <>
+        포기하면 종료 위시로 이동하고,
+        <br />
+        지금까지 모은 금액은 카드 잔액으로 돌아가요.
+      </>
+    ),
+    primaryLabel: "계속하기",
+    secondaryLabel: "포기하기",
   },
 };

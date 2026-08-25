@@ -7,20 +7,22 @@ interface ConfirmDialogProps {
   isOpen: boolean;
   title: string;
   description: ReactNode;
-  confirmLabel: string;
-  cancelLabel: string;
-  onConfirm: () => void;
-  onCancel: () => void;
+  primaryLabel: string;
+  secondaryLabel: string;
+  onPrimary: () => void;
+  onSecondary: () => void;
+  onDismiss: () => void;
 }
 
 export function ConfirmDialog({
   isOpen,
   title,
   description,
-  confirmLabel,
-  cancelLabel,
-  onConfirm,
-  onCancel,
+  primaryLabel,
+  secondaryLabel,
+  onPrimary,
+  onSecondary,
+  onDismiss,
 }: ConfirmDialogProps) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -33,7 +35,7 @@ export function ConfirmDialog({
     dialogRef.current?.querySelector("button")?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onCancel();
+      if (event.key === "Escape") onDismiss();
     };
     const { overflow } = document.body.style;
     document.body.style.overflow = "hidden";
@@ -44,7 +46,7 @@ export function ConfirmDialog({
       document.body.style.overflow = overflow;
       previouslyFocused.current?.focus();
     };
-  }, [isOpen, onCancel]);
+  }, [isOpen, onDismiss]);
 
   if (!isOpen) return null;
 
@@ -72,11 +74,11 @@ export function ConfirmDialog({
             {description}
           </p>
           <div className="flex items-center justify-center gap-4">
-            <Button size="large" onClick={onConfirm}>
-              {confirmLabel}
+            <Button size="large" onClick={onPrimary}>
+              {primaryLabel}
             </Button>
-            <Button size="large" variant="weak" onClick={onCancel}>
-              {cancelLabel}
+            <Button size="large" variant="weak" onClick={onSecondary}>
+              {secondaryLabel}
             </Button>
           </div>
         </div>
