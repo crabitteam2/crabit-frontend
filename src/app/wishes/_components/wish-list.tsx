@@ -95,6 +95,9 @@ export function WishList({ inProgress, finished }: WishListProps) {
       <WishBottomSheet
         isOpen={sheetWish !== null}
         onClose={() => setSheetWish(null)}
+        infoHref={
+          sheetWish === null ? undefined : `/wishes/${sheetWish.id}/info`
+        }
       />
     </>
   );

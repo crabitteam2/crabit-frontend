@@ -6,10 +6,11 @@ import moreIcon from "@/../public/images/wishes/more.svg";
 import { WishBottomSheet } from "./wish-bottom-sheet";
 
 interface WishDetailActionsProps {
+  wishId: string;
   purpose: string;
 }
 
-export function WishDetailActions({ purpose }: WishDetailActionsProps) {
+export function WishDetailActions({ wishId, purpose }: WishDetailActionsProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -22,7 +23,11 @@ export function WishDetailActions({ purpose }: WishDetailActionsProps) {
       >
         <Image src={moreIcon} alt="" fill sizes="32px" />
       </button>
-      <WishBottomSheet isOpen={isOpen} onClose={() => setIsOpen(false)} />
+      <WishBottomSheet
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        infoHref={`/wishes/${wishId}/info`}
+      />
     </>
   );
 }

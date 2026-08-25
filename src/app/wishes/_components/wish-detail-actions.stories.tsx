@@ -10,4 +10,6 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = { args: { purpose: "시나모롤 인형" } };
+export const Default: Story = {
+  args: { wishId: "w3", purpose: "시나모롤 인형" },
+};

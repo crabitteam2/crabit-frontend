@@ -109,6 +109,7 @@ export function AmountForm({
       >
         <Input
           label="금액"
+          variant="line-brand"
           inputMode="numeric"
           placeholder="입력하세요"
           value={digits === "" ? "" : amount.toLocaleString("ko-KR")}

@@ -26,7 +26,7 @@ export default async function WishDetailPage({
         title="저축 기록 내역"
         backHref="/wishes"
         spacing="tight"
-        action={<WishDetailActions purpose={wish.purpose} />}
+        action={<WishDetailActions wishId={wishId} purpose={wish.purpose} />}
       />
 
       <div className="px-4">
