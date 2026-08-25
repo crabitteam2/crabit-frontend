@@ -10,6 +10,8 @@ const ACTIONS = [
   "학원 피드 올리기",
 ] as const;
 
+type WishAction = (typeof ACTIONS)[number];
+
 const ACTION_STYLE =
   "text-t3 text-fg-neutral flex w-full items-start pb-11 text-left font-medium";
 
@@ -17,13 +19,23 @@ interface WishBottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
   infoHref?: string;
+  onRepresentative?: () => void;
+  onAbandon?: () => void;
 }
 
 export function WishBottomSheet({
   isOpen,
   onClose,
   infoHref,
+  onRepresentative,
+  onAbandon,
 }: WishBottomSheetProps) {
+  const handlerFor = (action: WishAction) => {
+    if (action === "대표 위시 설정") return onRepresentative;
+    if (action === "목표 포기") return onAbandon;
+    return undefined;
+  };
+
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} title="저축 기록 내역">
       {ACTIONS.map((action) =>
@@ -32,7 +44,12 @@ export function WishBottomSheet({
             {action}
           </Link>
         ) : (
-          <button key={action} type="button" className={ACTION_STYLE}>
+          <button
+            key={action}
+            type="button"
+            onClick={handlerFor(action)}
+            className={ACTION_STYLE}
+          >
             {action}
           </button>
         ),

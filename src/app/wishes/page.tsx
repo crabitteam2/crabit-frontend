@@ -9,7 +9,8 @@ export default async function WishesPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const { inProgress, finished } = resolveWishListData(await searchParams);
+  const query = await searchParams;
+  const { inProgress, finished } = resolveWishListData(query);
 
   if (inProgress.length === 0 && finished.length === 0) {
     return <EmptyWishes />;
@@ -18,7 +19,11 @@ export default async function WishesPage({
   return (
     <div className="flex flex-col">
       <ScreenHeader title="진행중인 위시" backHref="/" />
-      <WishList inProgress={inProgress} finished={finished} />
+      <WishList
+        inProgress={inProgress}
+        finished={finished}
+        hasToast={query.toast !== undefined}
+      />
       <TopButton />
     </div>
   );

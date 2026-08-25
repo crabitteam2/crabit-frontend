@@ -122,6 +122,10 @@ const wishes: Wish[] = [
 
 const FINISHED_STATES: readonly WishState[] = ["COMPLETED", "ABANDONED"];
 
+export function isFinishedWish(wish: Wish) {
+  return FINISHED_STATES.includes(wish.state);
+}
+
 const movements: FundMovement[] = [
   {
     id: "m1",
@@ -167,13 +171,28 @@ function readParam(params: SearchParams, key: string) {
   return Array.isArray(raw) ? raw[0] : raw;
 }
 
+function hoistRepresentative(list: Wish[], params: SearchParams) {
+  const wishId = readParam(params, "representative");
+  if (wishId === undefined) return list;
+
+  const picked = list.filter((wish) => wish.id === wishId);
+  if (picked.length === 0) return list;
+
+  return [...picked, ...list.filter((wish) => wish.id !== wishId)];
+}
+
 export function resolveWishListData(params: SearchParams): WishListData {
   const list = readParam(params, "list");
 
   if (list === "empty") return { inProgress: [], finished: [] };
 
-  const inProgress = wishes.filter((w) => !FINISHED_STATES.includes(w.state));
-  const finished = wishes.filter((w) => FINISHED_STATES.includes(w.state));
+  const deletedId = readParam(params, "deleted");
+  const kept = wishes.filter((w) => w.id !== deletedId);
+  const inProgress = hoistRepresentative(
+    kept.filter((w) => !FINISHED_STATES.includes(w.state)),
+    params,
+  );
+  const finished = kept.filter((w) => FINISHED_STATES.includes(w.state));
 
   if (list === "in-progress-only") return { inProgress, finished: [] };
   if (list === "finished-only") return { inProgress: [], finished };
