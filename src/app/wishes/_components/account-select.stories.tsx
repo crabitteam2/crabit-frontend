@@ -12,7 +12,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {
   args: {
-    wishId: "w3",
+    nextPath: "/wishes/w3/deposit/amount",
     accounts: [
       {
         id: "a1",
@@ -36,5 +36,5 @@ export const Default: Story = {
 };
 
 export const 빈목록: Story = {
-  args: { wishId: "w3", accounts: [], wishes: [] },
+  args: { nextPath: "/wishes/w3/deposit/amount", accounts: [], wishes: [] },
 };

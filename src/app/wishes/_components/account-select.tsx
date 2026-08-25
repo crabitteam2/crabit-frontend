@@ -19,13 +19,13 @@ interface Selection {
 }
 
 interface AccountSelectProps {
-  wishId: string;
+  nextPath: string;
   accounts: CardAccount[];
   wishes: Wish[];
 }
 
 export function AccountSelect({
-  wishId,
+  nextPath,
   accounts,
   wishes,
 }: AccountSelectProps) {
@@ -37,7 +37,7 @@ export function AccountSelect({
     if (selected !== null) return;
     setSelected(choice);
     setTimeout(() => {
-      router.push(`/wishes/${wishId}/deposit/amount?from=${choice.id}`);
+      router.push(`${nextPath}?from=${choice.id}`);
     }, SELECT_DELAY_MS);
   };
 

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { cardAccounts } from "@/lib/mock/accounts";
 import { findWish } from "@/lib/mock/wishes";
-import { DepositAmountForm } from "../../../_components/deposit-amount-form";
+import { AmountForm } from "../../../_components/amount-form";
 
 export default async function DepositAmountPage({
   params,
@@ -21,5 +21,13 @@ export default async function DepositAmountPage({
   const account = cardAccounts[0];
   const available = source?.amount ?? account?.balance ?? 0;
 
-  return <DepositAmountForm wishId={wishId} available={available} />;
+  return (
+    <AmountForm
+      title="얼마를 저축할까요?"
+      backHref={`/wishes/${wishId}/deposit`}
+      nextPath={`/wishes/${wishId}/deposit/coin`}
+      available={available}
+      availableLabel="현재 사용 가능한 금액"
+    />
+  );
 }

@@ -4,7 +4,7 @@ import { findWish, resolveWishListData } from "@/lib/mock/wishes";
 import { AccountSelect } from "../../_components/account-select";
 import { ScreenHeader } from "../../_components/screen-header";
 
-export default async function DepositAccountPage({
+export default async function WithdrawAccountPage({
   params,
   searchParams,
 }: {
@@ -15,9 +15,8 @@ export default async function DepositAccountPage({
   const wish = findWish(wishId);
   if (wish === null) notFound();
 
-  const query = await searchParams;
-  const { inProgress } = resolveWishListData(query);
-  const sources = inProgress.filter((item) => item.id !== wishId);
+  const { inProgress } = resolveWishListData(await searchParams);
+  const targets = inProgress.filter((item) => item.id !== wishId);
 
   return (
     <div className="flex flex-col">
@@ -27,9 +26,9 @@ export default async function DepositAccountPage({
         spacing="loose"
       />
       <AccountSelect
-        nextPath={`/wishes/${wishId}/deposit/amount`}
+        nextPath={`/wishes/${wishId}/withdraw/amount`}
         accounts={cardAccounts}
-        wishes={sources}
+        wishes={targets}
       />
     </div>
   );

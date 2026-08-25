@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { findWish, resolveMovements } from "@/lib/mock/wishes";
 import { HistoryFilterBar } from "../_components/history-filter-bar";
 import { HistoryList } from "../_components/history-list";
@@ -41,9 +40,12 @@ export default async function WishDetailPage({
         >
           저축하기
         </Link>
-        <Button size="large" variant="weak" className="flex-1">
+        <Link
+          href={`/wishes/${wishId}/withdraw`}
+          className="bg-brand-weak text-fg-brand text-b4 inline-flex h-12 flex-1 items-center justify-center rounded-xl px-5 font-semibold"
+        >
           출금하기
-        </Button>
+        </Link>
       </div>
 
       <HistoryFilterBar />
