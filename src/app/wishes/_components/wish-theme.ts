@@ -98,3 +98,11 @@ export const detailWishTheme: WishTheme = {
   fillsTrack: false,
   highlightsGoal: false,
 };
+
+export const sourceWishTheme: WishTheme = {
+  card: "",
+  track: "bg-pink-2",
+  fill: "bg-pink-6",
+  fillsTrack: false,
+  highlightsGoal: false,
+};

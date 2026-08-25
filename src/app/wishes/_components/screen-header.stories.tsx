@@ -15,5 +15,13 @@ export const 목록: Story = {
 };
 
 export const 상세: Story = {
-  args: { title: "저축 기록 내역", backHref: "/wishes", dense: true },
+  args: { title: "저축 기록 내역", backHref: "/wishes", spacing: "tight" },
+};
+
+export const 카드선택: Story = {
+  args: {
+    title: "이체할 카드를 선택해주세요.",
+    backHref: "/wishes/w3",
+    spacing: "loose",
+  },
 };

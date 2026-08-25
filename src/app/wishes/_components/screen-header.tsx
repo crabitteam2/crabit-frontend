@@ -3,22 +3,30 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import arrowLeftIcon from "@/../public/images/wishes/arrow-left.svg";
 
+type ScreenHeaderSpacing = "tight" | "default" | "loose";
+
+const spacingStyles: Record<ScreenHeaderSpacing, string> = {
+  tight: "pb-2",
+  default: "pb-4",
+  loose: "pb-10",
+};
+
 interface ScreenHeaderProps {
   title: string;
   backHref: string;
-  dense?: boolean;
+  spacing?: ScreenHeaderSpacing;
   action?: ReactNode;
 }
 
 export function ScreenHeader({
   title,
   backHref,
-  dense,
+  spacing = "default",
   action,
 }: ScreenHeaderProps) {
   return (
     <header
-      className={`flex items-center gap-1 px-4 pt-[calc(env(safe-area-inset-top)+12px)] ${dense ? "pb-2" : "pb-4"}`}
+      className={`flex items-center gap-1 px-4 pt-[calc(env(safe-area-inset-top)+12px)] ${spacingStyles[spacing]}`}
     >
       <Link
         href={backHref}
@@ -27,9 +35,7 @@ export function ScreenHeader({
       >
         <Image src={arrowLeftIcon} alt="" fill sizes="32px" />
       </Link>
-      <h1 className="text-t1 text-fg-neutral font-bold whitespace-nowrap">
-        {title}
-      </h1>
+      <h1 className="text-t1 text-fg-neutral font-bold">{title}</h1>
       {action ? <div className="ml-auto flex shrink-0">{action}</div> : null}
     </header>
   );
