@@ -20,7 +20,7 @@ const inProgress: WishShareLook = {
     height: 231,
     crop: { size: 305.5, left: -49.9, top: -27.6 },
   },
-  headline: "목표를 향해 전진중이에요!",
+  headline: "위시를 향해 전진중이에요!",
   headlinePaddingTop: 28,
   headlinePaddingBottom: 24,
   theme: {
@@ -34,7 +34,7 @@ const inProgress: WishShareLook = {
 
 const completed: WishShareLook = {
   character: { src: completedImage, width: 310, height: 238 },
-  headline: "목표를 달성했어요!",
+  headline: "위시를 달성했어요!",
   headlinePaddingTop: 22,
   headlinePaddingBottom: 23,
   theme: {
