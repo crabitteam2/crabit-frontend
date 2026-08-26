@@ -25,15 +25,16 @@ export interface FundMovement {
 export interface WishListData {
   inProgress: Wish[];
   finished: Wish[];
+  representativeId: string | null;
 }
 
 const wishes: Wish[] = [
   {
     id: "w1",
     purpose: "산리오 스티커 세트",
-    amount: 12_000,
+    amount: 30_000,
     targetAmount: 30_000,
-    state: "IN_PROGRESS",
+    state: "AMOUNT_REACHED",
     startDate: "26.06.01",
     targetDate: "26.10.31",
   },
@@ -171,9 +172,8 @@ function readParam(params: SearchParams, key: string) {
   return Array.isArray(raw) ? raw[0] : raw;
 }
 
-function hoistRepresentative(list: Wish[], params: SearchParams) {
-  const wishId = readParam(params, "representative");
-  if (wishId === undefined) return list;
+function hoistRepresentative(list: Wish[], wishId: string | null) {
+  if (wishId === null) return list;
 
   const picked = list.filter((wish) => wish.id === wishId);
   if (picked.length === 0) return list;
@@ -181,27 +181,49 @@ function hoistRepresentative(list: Wish[], params: SearchParams) {
   return [...picked, ...list.filter((wish) => wish.id !== wishId)];
 }
 
+/** 목표 금액을 모두 모아 사용 처리한 위시를 완료 상태로 바꿉니다. */
+function completeWish(list: Wish[], wishId: string | undefined) {
+  if (wishId === undefined) return list;
+  return list.map((wish) =>
+    wish.id === wishId ? { ...wish, state: "COMPLETED" as const } : wish,
+  );
+}
+
 export function resolveWishListData(params: SearchParams): WishListData {
   const list = readParam(params, "list");
 
-  if (list === "empty") return { inProgress: [], finished: [] };
+  if (list === "empty")
+    return { inProgress: [], finished: [], representativeId: null };
 
   const deletedId = readParam(params, "deleted");
-  const kept = wishes.filter((w) => w.id !== deletedId);
-  const inProgress = hoistRepresentative(
-    kept.filter((w) => !FINISHED_STATES.includes(w.state)),
-    params,
+  const kept = completeWish(
+    wishes.filter((w) => w.id !== deletedId),
+    readParam(params, "completed"),
   );
+  const active = kept.filter((w) => !FINISHED_STATES.includes(w.state));
+  const picked = readParam(params, "representative") ?? null;
+  const representativeId =
+    active.find((w) => w.id === picked)?.id ?? active[0]?.id ?? null;
+  const inProgress = hoistRepresentative(active, picked);
   const finished = kept.filter((w) => FINISHED_STATES.includes(w.state));
 
-  if (list === "in-progress-only") return { inProgress, finished: [] };
-  if (list === "finished-only") return { inProgress: [], finished };
+  if (list === "in-progress-only")
+    return { inProgress, finished: [], representativeId };
+  if (list === "finished-only")
+    return { inProgress: [], finished, representativeId: null };
 
-  return { inProgress, finished };
+  return { inProgress, finished, representativeId };
 }
 
-export function findWish(wishId: string): Wish | null {
-  return wishes.find((wish) => wish.id === wishId) ?? null;
+export function findWish(
+  wishId: string,
+  params: SearchParams = {},
+): Wish | null {
+  const found = wishes.find((wish) => wish.id === wishId) ?? null;
+  if (found === null) return null;
+  return readParam(params, "completed") === wishId
+    ? { ...found, state: "COMPLETED" }
+    : found;
 }
 
 export function resolveMovements(params: SearchParams): FundMovement[] {

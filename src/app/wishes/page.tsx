@@ -10,7 +10,9 @@ export default async function WishesPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
-  const { inProgress, finished } = resolveWishListData(query);
+  const { inProgress, finished, representativeId } = resolveWishListData(query);
+  const rawToast = query.toast;
+  const toastKey = (Array.isArray(rawToast) ? rawToast[0] : rawToast) ?? null;
 
   if (inProgress.length === 0 && finished.length === 0) {
     return <EmptyWishes />;
@@ -22,7 +24,8 @@ export default async function WishesPage({
       <WishList
         inProgress={inProgress}
         finished={finished}
-        hasToast={query.toast !== undefined}
+        representativeId={representativeId}
+        toastKey={toastKey}
       />
       <TopButton />
     </div>

@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import moreIcon from "@/../public/images/wishes/more.svg";
 import { toProgressPercent } from "@/app/_components/progress-stage";
+import { Badge } from "@/components/ui/badge";
 import type { Wish } from "@/lib/mock/wishes";
 import { WishProgressBar } from "./wish-progress-bar";
 import { getWishTheme, type WishTone } from "./wish-theme";
@@ -9,10 +10,16 @@ import { getWishTheme, type WishTone } from "./wish-theme";
 interface WishCardProps {
   wish: Wish;
   tone: WishTone;
+  isRepresentative?: boolean;
   onMore?: (wish: Wish) => void;
 }
 
-export function WishCard({ wish, tone, onMore }: WishCardProps) {
+export function WishCard({
+  wish,
+  tone,
+  isRepresentative,
+  onMore,
+}: WishCardProps) {
   const percent = toProgressPercent(wish.amount, wish.targetAmount);
   const theme = getWishTheme(wish, tone, percent);
 
@@ -25,11 +32,12 @@ export function WishCard({ wish, tone, onMore }: WishCardProps) {
         className="flex flex-col gap-6 px-9 pt-7 pb-2"
         aria-label={`${wish.purpose} 저축 기록 내역`}
       >
-        <p
-          className={`text-t3 text-fg-neutral h-7 truncate font-medium ${onMore ? "pr-6" : ""}`}
-        >
-          {wish.purpose}
-        </p>
+        <span className={`flex h-7 items-center gap-1 ${onMore ? "pr-6" : ""}`}>
+          <span className="text-t3 text-fg-neutral truncate font-medium">
+            {wish.purpose}
+          </span>
+          {isRepresentative ? <Badge>대표</Badge> : null}
+        </span>
         <WishProgressBar percent={percent} theme={theme} />
       </Link>
       {onMore ? (
