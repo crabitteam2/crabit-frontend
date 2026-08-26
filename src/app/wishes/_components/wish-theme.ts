@@ -99,6 +99,14 @@ export const detailWishTheme: WishTheme = {
   highlightsGoal: false,
 };
 
+export const reachedDetailWishTheme: WishTheme = {
+  card: "",
+  track: "bg-pink-2",
+  fill: "bg-[linear-gradient(to_right,#fdedf4_4.84%,#fb75bb_95.78%)]",
+  fillsTrack: true,
+  highlightsGoal: false,
+};
+
 export const finishedDetailWishTheme: WishTheme = {
   card: "",
   track: "bg-pink-2",

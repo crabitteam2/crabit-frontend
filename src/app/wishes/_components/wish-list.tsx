@@ -23,19 +23,28 @@ interface DialogState {
 }
 
 const TOAST_MESSAGE = "설정이 저장되었습니다.";
+const COMPLETED_TOAST_MESSAGE = "카드 잔액으로 돌아왔어요.";
+
+const toastFor = (key: string | null) => {
+  if (key === null) return null;
+  return key === "completed" ? COMPLETED_TOAST_MESSAGE : TOAST_MESSAGE;
+};
 
 interface WishListProps extends WishListData {
-  hasToast?: boolean;
+  toastKey?: string | null;
 }
 
-export function WishList({ inProgress, finished, hasToast }: WishListProps) {
+export function WishList({
+  inProgress,
+  finished,
+  representativeId,
+  toastKey,
+}: WishListProps) {
   const router = useRouter();
   const [sheetWish, setSheetWish] = useState<Wish | null>(null);
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const [abandonedIds, setAbandonedIds] = useState<string[]>([]);
-  const [toast, setToast] = useState<string | null>(
-    hasToast === true ? TOAST_MESSAGE : null,
-  );
+  const [toast, setToast] = useState<string | null>(toastFor(toastKey ?? null));
   const [inProgressShown, setInProgressShown] = useState(PAGE_SIZE);
   const [finishedShown, setFinishedShown] = useState(PAGE_SIZE);
 
@@ -95,6 +104,7 @@ export function WishList({ inProgress, finished, hasToast }: WishListProps) {
                     <WishCard
                       wish={wish}
                       tone={WISH_TONES[index % WISH_TONES.length]}
+                      isRepresentative={wish.id === representativeId}
                       onMore={setSheetWish}
                     />
                   </li>

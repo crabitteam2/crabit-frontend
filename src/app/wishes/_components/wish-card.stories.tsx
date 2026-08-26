@@ -99,3 +99,19 @@ export const 긴이름: Story = {
     onMore: () => {},
   },
 };
+
+export const 대표위시: Story = {
+  args: {
+    wish: {
+      id: "w1",
+      purpose: "시나모롤 키링",
+      amount: 30_000,
+      targetAmount: 30_000,
+      state: "AMOUNT_REACHED",
+      startDate: "26.06.01",
+      targetDate: "26.10.31",
+    },
+    tone: "pink",
+    isRepresentative: true,
+  },
+};

@@ -5,6 +5,7 @@ import {
   abandonedDetailWishTheme,
   detailWishTheme,
   finishedDetailWishTheme,
+  reachedDetailWishTheme,
 } from "./wish-theme";
 
 interface WishSummaryCardProps {
@@ -14,6 +15,7 @@ interface WishSummaryCardProps {
 function summaryTheme(wish: Wish) {
   if (wish.state === "ABANDONED") return abandonedDetailWishTheme;
   if (wish.state === "COMPLETED") return finishedDetailWishTheme;
+  if (wish.amount >= wish.targetAmount) return reachedDetailWishTheme;
   return detailWishTheme;
 }
 
