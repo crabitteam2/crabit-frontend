@@ -22,12 +22,12 @@ export function WishInfoScreen({
       <ScreenHeader title="기본 정보" backHref={backHref} spacing="loose" />
 
       <div className="px-4 pt-5 pb-[76px]">
-        <Input label="목표" readOnly value={purpose} />
+        <Input label="위시" readOnly value={purpose} />
       </div>
 
       <div className="px-4 py-5">
         <Input
-          label="목표 금액"
+          label="위시 금액"
           readOnly
           value={`${targetAmount.toLocaleString("ko-KR")}원`}
         />
@@ -35,7 +35,7 @@ export function WishInfoScreen({
 
       <div className="px-4 py-5">
         <Input
-          label="목표 기간"
+          label="위시 기간"
           readOnly
           value={period ?? ""}
           placeholder="설정된 기간 없음"

@@ -6,7 +6,7 @@ import { BottomSheet } from "@/components/ui/bottom-sheet";
 const ACTIONS = [
   "정보 수정",
   "대표 위시 설정",
-  "목표 포기",
+  "위시 포기",
   "학원 피드 올리기",
 ] as const;
 
@@ -40,12 +40,12 @@ export function WishBottomSheet({
 
   const handlerFor = (action: WishAction) => {
     if (action === "대표 위시 설정") return onRepresentative;
-    if (action === "목표 포기") return onAbandon;
+    if (action === "위시 포기") return onAbandon;
     return undefined;
   };
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} title="모은 돈 기록">
+    <BottomSheet isOpen={isOpen} onClose={onClose} title="위시 기록 내역">
       {ACTIONS.map((action) =>
         hrefFor(action) !== undefined ? (
           <Link
