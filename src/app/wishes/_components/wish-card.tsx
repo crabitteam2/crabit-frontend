@@ -30,7 +30,7 @@ export function WishCard({
       <Link
         href={`/wishes/${wish.id}`}
         className="flex flex-col gap-6 px-9 pt-7 pb-2"
-        aria-label={`${wish.purpose} 저축 기록 내역`}
+        aria-label={`${wish.purpose} 모은 돈 기록`}
       >
         <span className={`flex h-7 items-center gap-1 ${onMore ? "pr-6" : ""}`}>
           <span className="text-t3 text-fg-neutral truncate font-medium">

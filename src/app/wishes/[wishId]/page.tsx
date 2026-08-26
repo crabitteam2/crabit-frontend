@@ -29,7 +29,7 @@ export default async function WishDetailPage({
   return (
     <div className="flex flex-col">
       <ScreenHeader
-        title="저축 기록 내역"
+        title="모은 돈 기록"
         backHref={isJustCompleted ? `/wishes?completed=${wishId}` : "/wishes"}
         spacing="tight"
         action={
@@ -53,13 +53,13 @@ export default async function WishDetailPage({
             href={`/wishes/${wishId}/deposit`}
             className="bg-brand-solid text-fg-contrast text-b4 inline-flex h-12 flex-1 items-center justify-center rounded-xl px-5 font-semibold"
           >
-            저축하기
+            돈 넣기
           </Link>
           <Link
             href={`/wishes/${wishId}/withdraw`}
             className="bg-brand-weak text-fg-brand text-b4 inline-flex h-12 flex-1 items-center justify-center rounded-xl px-5 font-semibold"
           >
-            출금하기
+            돈 꺼내기
           </Link>
         </div>
       )}

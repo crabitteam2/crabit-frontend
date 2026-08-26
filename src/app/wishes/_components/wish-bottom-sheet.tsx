@@ -45,7 +45,7 @@ export function WishBottomSheet({
   };
 
   return (
-    <BottomSheet isOpen={isOpen} onClose={onClose} title="저축 기록 내역">
+    <BottomSheet isOpen={isOpen} onClose={onClose} title="모은 돈 기록">
       {ACTIONS.map((action) =>
         hrefFor(action) !== undefined ? (
           <Link

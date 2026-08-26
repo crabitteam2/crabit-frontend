@@ -31,7 +31,7 @@ export function WishSummaryCard({ wish }: WishSummaryCardProps) {
         {wish.purpose}
       </p>
       <p className="text-fg-neutral-muted pb-6 text-[14px] leading-7 tracking-[-0.3px]">
-        저축 기간: {wish.startDate} ~ {wish.targetDate}
+        기간: {wish.startDate} ~ {wish.targetDate}
       </p>
       <p className="text-pink-6 flex justify-end font-bold tracking-[-0.3px]">
         <span className="text-[28px] leading-[34px]">
