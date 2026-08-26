@@ -72,7 +72,7 @@ export function WishGoalForm({
       }
     >
       <ScreenHeader
-        title="목표를 입력해주세요."
+        title="위시를 입력해주세요."
         backHref={backHref}
         spacing="loose"
       />
@@ -82,7 +82,7 @@ export function WishGoalForm({
         style={{ height: PURPOSE_FIELD_HEIGHT }}
       >
         <Input
-          label="목표"
+          label="위시"
           variant="filled"
           placeholder="텍스트 작성"
           value={purpose}
@@ -93,9 +93,10 @@ export function WishGoalForm({
 
       <div className="flex flex-col items-start px-4">
         <Input
-          label="목표 금액"
+          label="위시 금액"
           variant="filled"
           inputMode="decimal"
+          placeholder="금액 작성"
           value={formatAmount(amountValue)}
           error={hasAmountError ? FORMAT_ERROR : undefined}
           onChange={(event) =>
