@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -25,12 +26,12 @@ export function WishReachedActions({ wishId }: WishReachedActionsProps) {
         >
           사용하러 가기
         </button>
-        <button
-          type="button"
+        <Link
+          href={`/wishes/${wishId}/share`}
           className={`bg-brand-weak text-fg-brand ${ACTION_STYLE}`}
         >
           공유하기
-        </button>
+        </Link>
       </div>
 
       <ConfirmDialog

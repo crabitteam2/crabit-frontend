@@ -19,6 +19,7 @@ interface WishBottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
   infoHref?: string;
+  shareHref?: string;
   onRepresentative?: () => void;
   onAbandon?: () => void;
 }
@@ -27,9 +28,16 @@ export function WishBottomSheet({
   isOpen,
   onClose,
   infoHref,
+  shareHref,
   onRepresentative,
   onAbandon,
 }: WishBottomSheetProps) {
+  const hrefFor = (action: WishAction) => {
+    if (action === "정보 수정") return infoHref;
+    if (action === "학원 피드 올리기") return shareHref;
+    return undefined;
+  };
+
   const handlerFor = (action: WishAction) => {
     if (action === "대표 위시 설정") return onRepresentative;
     if (action === "목표 포기") return onAbandon;
@@ -39,8 +47,12 @@ export function WishBottomSheet({
   return (
     <BottomSheet isOpen={isOpen} onClose={onClose} title="저축 기록 내역">
       {ACTIONS.map((action) =>
-        action === "정보 수정" && infoHref !== undefined ? (
-          <Link key={action} href={infoHref} className={ACTION_STYLE}>
+        hrefFor(action) !== undefined ? (
+          <Link
+            key={action}
+            href={hrefFor(action) as string}
+            className={ACTION_STYLE}
+          >
             {action}
           </Link>
         ) : (

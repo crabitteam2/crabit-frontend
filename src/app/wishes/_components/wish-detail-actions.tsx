@@ -27,6 +27,7 @@ export function WishDetailActions({ wishId, purpose }: WishDetailActionsProps) {
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         infoHref={`/wishes/${wishId}/info`}
+        shareHref={`/wishes/${wishId}/share`}
       />
     </>
   );

@@ -12,6 +12,7 @@ export interface Wish {
   state: WishState;
   startDate: string;
   targetDate: string;
+  imageUrl?: string;
 }
 
 export interface FundMovement {
@@ -55,6 +56,7 @@ const wishes: Wish[] = [
     state: "IN_PROGRESS",
     startDate: "26.08.24",
     targetDate: "26.10.25",
+    imageUrl: "/images/wishes/deposit-hero.png",
   },
   {
     id: "w4",
@@ -109,6 +111,7 @@ const wishes: Wish[] = [
     state: "COMPLETED",
     startDate: "26.03.02",
     targetDate: "26.06.30",
+    imageUrl: "/images/wishes/deposit-hero.png",
   },
   {
     id: "w10",
@@ -118,6 +121,7 @@ const wishes: Wish[] = [
     state: "ABANDONED",
     startDate: "26.04.01",
     targetDate: "26.07.31",
+    imageUrl: "/images/wishes/deposit-hero.png",
   },
 ];
 
