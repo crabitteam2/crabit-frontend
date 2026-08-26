@@ -6,6 +6,7 @@ const variantStyles: Record<
   InputVariant,
   {
     label: string;
+    value: string;
     box: string;
     border: string;
     invalidBox?: string;
@@ -14,16 +15,19 @@ const variantStyles: Record<
 > = {
   line: {
     label: "text-fg-neutral-muted",
+    value: "text-fg-neutral",
     box: "h-11 border-b-2",
     border: "border-stroke-neutral-solid",
   },
   "line-brand": {
     label: "text-fg-brand",
+    value: "text-fg-neutral",
     box: "h-11 border-b-2",
     border: "border-stroke-brand",
   },
   filled: {
     label: "text-fg-brand",
+    value: "text-fg-neutral-subtle",
     box: "bg-layer-fill h-14 rounded-xl border px-4",
     border: "border-stroke-brand",
     invalidBox: "bg-critical-weak h-14 rounded-xl border px-4",
@@ -63,7 +67,7 @@ export function Input({
       </span>
       <input
         aria-invalid={isInvalid || undefined}
-        className={`text-fg-neutral placeholder:text-fg-neutral-subtle read-only:text-fg-neutral-subtle w-full text-[16px] leading-[23px] tracking-[-0.3px] outline-none ${boxStyle} ${borderStyle} ${className}`}
+        className={`placeholder:text-fg-neutral-subtle read-only:text-fg-neutral-subtle w-full text-[16px] leading-[23px] tracking-[-0.3px] outline-none ${styles.value} ${boxStyle} ${borderStyle} ${className}`}
         {...props}
       />
       {isInvalid ? <span className="text-e1 text-error">{error}</span> : null}
