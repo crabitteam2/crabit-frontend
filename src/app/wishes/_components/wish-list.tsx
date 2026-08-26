@@ -164,6 +164,9 @@ export function WishList({
         infoHref={
           sheetWish === null ? undefined : `/wishes/${sheetWish.id}/info`
         }
+        shareHref={
+          sheetWish === null ? undefined : `/wishes/${sheetWish.id}/share`
+        }
         onRepresentative={() => openDialog("representative")}
         onAbandon={() => openDialog("abandon")}
       />

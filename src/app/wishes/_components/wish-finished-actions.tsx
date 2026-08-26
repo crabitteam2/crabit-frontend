@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -18,12 +19,12 @@ export function WishFinishedActions({ wishId }: WishFinishedActionsProps) {
   return (
     <>
       <div className="flex gap-4 px-4 pt-[22.25px] pb-[6.25px]">
-        <button
-          type="button"
+        <Link
+          href={`/wishes/${wishId}/share`}
           className={`bg-brand-solid text-fg-contrast ${ACTION_STYLE}`}
         >
           공유하기
-        </button>
+        </Link>
         <button
           type="button"
           onClick={() => setIsDialogOpen(true)}
