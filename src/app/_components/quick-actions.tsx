@@ -27,7 +27,7 @@ const cards: QuickActionCard[] = [
     icon: newWishIcon,
     lines: ["새로운 위시", "등록하기"],
     background: "bg-[#f0f3ff]",
-    href: null,
+    href: "/wishes/new",
   },
 ];
 

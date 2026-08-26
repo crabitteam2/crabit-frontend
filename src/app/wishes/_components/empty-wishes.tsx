@@ -2,7 +2,6 @@ import Image from "next/image";
 import Link from "next/link";
 import closeIcon from "@/../public/images/wishes/close-32.svg";
 import emptyImage from "@/../public/images/wishes/empty.png";
-import { Button } from "@/components/ui/button";
 
 export function EmptyWishes() {
   return (
@@ -29,9 +28,12 @@ export function EmptyWishes() {
       </div>
       <div className="flex-1" />
       <div className="pb-[calc(55px+env(safe-area-inset-bottom))]">
-        <Button size="xlarge" className="w-full">
+        <Link
+          href="/wishes/new"
+          className="bg-brand-solid text-fg-contrast text-b3 flex h-14 w-full items-center justify-center rounded-xl px-6 font-semibold"
+        >
           위시리스트 만들기
-        </Button>
+        </Link>
       </div>
     </div>
   );

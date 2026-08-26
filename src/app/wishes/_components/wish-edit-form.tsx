@@ -3,24 +3,11 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Calendar, type DateRange } from "@/components/ui/calendar";
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { useKeyboardViewport } from "@/hooks/use-keyboard-viewport";
 import { ScreenHeader } from "./screen-header";
-
-const EMPTY_RANGE: DateRange = { start: null, end: null };
-
-const toRange = (period: string | null): DateRange => {
-  if (period === null) return EMPTY_RANGE;
-  const [start, end] = period.split("-");
-  return end === undefined ? EMPTY_RANGE : { start, end };
-};
-
-const toPeriod = (range: DateRange) => {
-  if (range.start === null) return "";
-  if (range.end === null) return range.start;
-  return `${range.start}-${range.end}`;
-};
+import { fromPeriodLabel, toPeriodLabel } from "./wish-period-format";
 
 interface WishEditFormProps {
   backHref: string;
@@ -40,14 +27,14 @@ export function WishEditForm({
   const router = useRouter();
   const [nextPurpose, setNextPurpose] = useState("");
   const [nextAmount, setNextAmount] = useState("");
-  const [range, setRange] = useState(() => toRange(period));
+  const [range, setRange] = useState(() => fromPeriodLabel(period));
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const box = useKeyboardViewport();
   const isKeyboardOpen = box?.isKeyboardOpen ?? false;
 
   const digits = nextAmount.replace(/\D/g, "");
   const amount = digits === "" ? 0 : Number(digits);
-  const nextPeriod = toPeriod(range);
+  const nextPeriod = toPeriodLabel(range);
   const canSubmit =
     nextPurpose.trim() !== "" || amount > 0 || nextPeriod !== (period ?? "");
 
