@@ -1,18 +1,26 @@
 "use client";
 
-import Image from "next/image";
+import Image, { type StaticImageData } from "next/image";
 import { useEffect, useState } from "react";
-import avatarIcon from "@/../public/images/home/tab-avatar.svg";
+import collectIcon from "@/../public/images/home/tab-collect.svg";
 import homeIcon from "@/../public/images/home/tab-home.svg";
 import starIcon from "@/../public/images/home/tab-star.svg";
 
 const COLLAPSE_AFTER = 120;
 const SCROLL_THRESHOLD = 8;
 
-/**
- * 홈 하단 탭 바를 렌더링하고 스크롤 방향에 따라 보조 아이콘을 접거나 펼칩니다.
- * 120px 아래에서 8px 이상 내려가면 접히고, 8px 이상 올라가면 다시 펼쳐집니다.
- */
+interface Tab {
+  label: string;
+  icon: StaticImageData;
+  isCurrent?: boolean;
+}
+
+const TABS: Tab[] = [
+  { label: "홈", icon: homeIcon },
+  { label: "위시리스트", icon: starIcon, isCurrent: true },
+  { label: "모으기", icon: collectIcon },
+];
+
 export function TabBar() {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -30,40 +38,46 @@ export function TabBar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const sideIcon = `relative block shrink-0 overflow-hidden transition-all duration-300 motion-reduce:transition-none ${
-    isCollapsed ? "w-0 opacity-0" : "opacity-100"
-  }`;
-
   return (
-    <div className="max-w-app pointer-events-none fixed inset-x-0 bottom-0 z-10 mx-auto h-0 w-full px-4">
+    <div className="max-w-app pointer-events-none fixed inset-x-0 bottom-0 z-10 mx-auto h-0 w-full">
       <nav
         aria-label="주요 화면"
-        className={`bg-layer-default pointer-events-auto absolute bottom-[calc(2rem+env(safe-area-inset-bottom))] flex items-center rounded-full border-2 border-[#d9d9d9] py-4 transition-all duration-300 motion-reduce:transition-none ${
-          isCollapsed
-            ? "left-4 translate-x-0 gap-0 px-4"
-            : "left-1/2 -translate-x-1/2 gap-8 px-[19px]"
+        className={`pointer-events-auto absolute bottom-[max(25px,env(safe-area-inset-bottom))] flex rounded-full bg-white/65 px-[6px] py-1 shadow-[0_8px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-all duration-300 motion-reduce:transition-none ${
+          isCollapsed ? "left-4 translate-x-0" : "left-1/2 -translate-x-1/2"
         }`}
       >
-        <span
-          aria-hidden="true"
-          className={`${sideIcon} h-[34px] ${isCollapsed ? "" : "w-[34px]"}`}
-        >
-          <Image src={homeIcon} alt="" fill sizes="34px" />
-        </span>
-
-        <span className="relative block size-[34px] shrink-0">
-          <Image src={starIcon} alt="위시리스트" fill sizes="34px" />
-        </span>
-
-        <span
-          aria-hidden="true"
-          className={`${sideIcon} h-[29px] ${isCollapsed ? "" : "w-[29px]"}`}
-        >
-          <Image src={avatarIcon} alt="" fill sizes="29px" />
-          <span className="absolute inset-0 flex items-center justify-center text-[19px] font-medium text-[#d9d9d9]">
-            P
+        {TABS.map((tab, index) => (
+          <span
+            key={tab.label}
+            aria-current={tab.isCurrent ? "page" : undefined}
+            className={`relative flex flex-col items-center justify-center gap-px pt-[6px] pb-[7px] transition-all duration-300 motion-reduce:transition-none ${
+              tab.isCurrent ? "" : "overflow-hidden"
+            } ${
+              isCollapsed
+                ? tab.isCurrent
+                  ? "w-10 px-2"
+                  : "w-0 px-0 opacity-0"
+                : "w-[102px] px-2"
+            } ${isCollapsed || index === TABS.length - 1 ? "" : "-mr-2"}`}
+          >
+            {tab.isCurrent ? (
+              <span
+                aria-hidden="true"
+                className="absolute -inset-x-[2px] top-0 -bottom-[0.5px] rounded-full bg-[#ededed]"
+              />
+            ) : null}
+            <span className="relative block size-6 shrink-0">
+              <Image src={tab.icon} alt="" fill sizes="24px" />
+            </span>
+            <span
+              className={`relative overflow-hidden text-[10px] leading-3 font-semibold tracking-[-0.1px] transition-all duration-300 motion-reduce:transition-none ${
+                isCollapsed ? "h-0 opacity-0" : "h-3 opacity-100"
+              } ${tab.isCurrent ? "text-fg-brand" : "text-fg-neutral"}`}
+            >
+              {tab.label}
+            </span>
           </span>
-        </span>
+        ))}
       </nav>
     </div>
   );

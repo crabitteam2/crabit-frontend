@@ -21,23 +21,24 @@ export const DirectionalScroll: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const navigation = canvas.getByRole("navigation", { name: "주요 화면" });
-    const sideIcons = navigation.querySelectorAll<HTMLElement>(
-      ":scope > span[aria-hidden='true']",
-    );
+    const tabs = navigation.querySelectorAll<HTMLElement>(":scope > span");
 
-    await expect(sideIcons).toHaveLength(2);
+    await expect(tabs).toHaveLength(3);
+    await expect(within(navigation).getByText("위시리스트")).toBeVisible();
 
     window.scrollTo(0, 0);
     window.scrollTo(0, 200);
     await waitFor(() => {
-      expect(window.getComputedStyle(sideIcons[0]).width).toBe("0px");
-      expect(window.getComputedStyle(sideIcons[1]).width).toBe("0px");
+      expect(window.getComputedStyle(tabs[0]).width).toBe("0px");
+      expect(window.getComputedStyle(tabs[1]).width).toBe("40px");
+      expect(window.getComputedStyle(tabs[2]).width).toBe("0px");
     });
 
     window.scrollTo(0, 80);
     await waitFor(() => {
-      expect(window.getComputedStyle(sideIcons[0]).width).toBe("34px");
-      expect(window.getComputedStyle(sideIcons[1]).width).toBe("29px");
+      for (const tab of tabs) {
+        expect(window.getComputedStyle(tab).width).toBe("102px");
+      }
     });
   },
 };
