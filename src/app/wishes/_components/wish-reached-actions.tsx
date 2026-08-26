@@ -36,7 +36,7 @@ export function WishReachedActions({ wishId }: WishReachedActionsProps) {
 
       <ConfirmDialog
         isOpen={isDialogOpen}
-        title="목표금액을 모두 모았어요 🎉"
+        title="위시 금액을 모두 모았어요 🎉"
         description={
           <>
             모은 금액을 사용해볼까요?
