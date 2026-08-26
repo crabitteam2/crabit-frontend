@@ -78,7 +78,7 @@ export function WishHeroContent({
         ) : (
           <Image
             src={photoUrl}
-            alt="목표 사진"
+            alt="위시 사진"
             width={PHOTO_SIZE}
             height={PHOTO_SIZE}
             unoptimized

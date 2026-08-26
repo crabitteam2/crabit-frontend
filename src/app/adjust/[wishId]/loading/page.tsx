@@ -19,7 +19,7 @@ export default async function AdjustLoadingPage({
 
   return (
     <LoadingScreen
-      label="출금 처리 중"
+      label="돈 꺼내는 중"
       donePath={`/adjust/${wishId}/done?amount=${amount}`}
     />
   );
