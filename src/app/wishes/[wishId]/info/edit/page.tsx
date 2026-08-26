@@ -1,6 +1,10 @@
 import { notFound } from "next/navigation";
 import { findWish } from "@/lib/mock/wishes";
 import { WishEditForm } from "../../../_components/wish-edit-form";
+import {
+  toFullDate,
+  toPeriodLabel,
+} from "../../../_components/wish-period-format";
 
 export default async function WishEditPage({
   params,
@@ -17,7 +21,10 @@ export default async function WishEditPage({
       donePath={`/wishes/${wishId}/info/done`}
       purpose={wish.purpose}
       targetAmount={wish.targetAmount}
-      period={`20${wish.startDate}-20${wish.targetDate}`}
+      period={toPeriodLabel({
+        start: toFullDate(wish.startDate),
+        end: toFullDate(wish.targetDate),
+      })}
     />
   );
 }

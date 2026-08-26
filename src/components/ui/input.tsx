@@ -4,7 +4,13 @@ export type InputVariant = "line" | "line-brand" | "filled";
 
 const variantStyles: Record<
   InputVariant,
-  { label: string; box: string; border: string }
+  {
+    label: string;
+    box: string;
+    border: string;
+    invalidBox?: string;
+    invalidBorder?: string;
+  }
 > = {
   line: {
     label: "text-fg-neutral-muted",
@@ -20,6 +26,8 @@ const variantStyles: Record<
     label: "text-fg-brand",
     box: "bg-layer-fill h-14 rounded-xl border px-4",
     border: "border-stroke-brand",
+    invalidBox: "bg-critical-weak h-14 rounded-xl border px-4",
+    invalidBorder: "border-stroke-neutral-muted",
   },
 };
 
@@ -41,6 +49,10 @@ export function Input({
 }: InputProps) {
   const isInvalid = error !== undefined && error !== "";
   const styles = variantStyles[variant];
+  const boxStyle = isInvalid ? (styles.invalidBox ?? styles.box) : styles.box;
+  const borderStyle = isInvalid
+    ? (styles.invalidBorder ?? "border-stroke-critical")
+    : styles.border;
 
   return (
     <label className="flex w-full flex-col gap-2">
@@ -51,9 +63,7 @@ export function Input({
       </span>
       <input
         aria-invalid={isInvalid || undefined}
-        className={`text-fg-neutral placeholder:text-fg-neutral-subtle read-only:text-fg-neutral-subtle w-full text-[16px] leading-[23px] tracking-[-0.3px] outline-none ${styles.box} ${
-          isInvalid ? "border-stroke-critical" : styles.border
-        } ${className}`}
+        className={`text-fg-neutral placeholder:text-fg-neutral-subtle read-only:text-fg-neutral-subtle w-full text-[16px] leading-[23px] tracking-[-0.3px] outline-none ${boxStyle} ${borderStyle} ${className}`}
         {...props}
       />
       {isInvalid ? <span className="text-e1 text-error">{error}</span> : null}

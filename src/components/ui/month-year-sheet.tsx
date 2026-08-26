@@ -14,6 +14,8 @@ const LIST_HEIGHT = VISIBLE_ROWS * ROW_HEIGHT + (VISIBLE_ROWS - 1) * ROW_GAP;
 
 const YEARS_BEFORE = 5;
 const YEARS_AFTER = 10;
+const YEAR_WHEEL_WIDTH = 72;
+const MONTH_WHEEL_WIDTH = 44;
 
 const HIDE_SCROLLBAR =
   "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
@@ -70,7 +72,7 @@ export function MonthYearSheet({
             items={years}
             value={year}
             format={(value) => `${value}년`}
-            width={65}
+            width={YEAR_WHEEL_WIDTH}
             onSelect={(next) => onChange({ year: next, month })}
           />
           <Wheel
@@ -78,7 +80,7 @@ export function MonthYearSheet({
             items={months}
             value={month}
             format={(value) => `${value + 1}월`}
-            width={40}
+            width={MONTH_WHEEL_WIDTH}
             onSelect={(next) => onChange({ year, month: next })}
           />
         </div>
@@ -137,7 +139,7 @@ function Wheel({ label, items, value, format, width, onSelect }: WheelProps) {
           role="option"
           aria-selected={item === value}
           onClick={() => onSelect(item)}
-          className={`flex w-full snap-start items-center text-[20px] leading-[28px] font-medium tracking-[-0.3px] ${
+          className={`flex w-full snap-start items-center text-[20px] leading-[28px] font-medium tracking-[-0.3px] whitespace-nowrap tabular-nums ${
             item === value ? "text-gray-10" : "text-gray-5"
           }`}
           style={{ height: ROW_HEIGHT, marginBottom: ROW_GAP }}

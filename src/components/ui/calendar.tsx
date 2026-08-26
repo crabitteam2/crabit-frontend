@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import chevronBrandIcon from "@/../public/images/common/chevron-right-brand.svg";
 import chevronIcon from "@/../public/images/common/chevron-left.svg";
+import { selectDate } from "./calendar-selection";
 import { MonthYearSheet } from "./month-year-sheet";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
@@ -48,6 +49,10 @@ export function Calendar({ value, onChange }: CalendarProps) {
     return { year: base.getFullYear(), month: base.getMonth() };
   });
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [todayKey, setTodayKey] = useState<string | null>(null);
+  const [pendingStart, setPendingStart] = useState<string | null>(null);
+
+  useEffect(() => setTodayKey(toDateKey(new Date())), []);
 
   const moveMonth = (step: number) => {
     const moved = new Date(view.year, view.month + step, 1);
@@ -56,19 +61,15 @@ export function Calendar({ value, onChange }: CalendarProps) {
 
   const select = (day: number) => {
     const key = toDateKey(new Date(view.year, view.month, day));
-    if (key === value.start) {
-      onChange({ start: null, end: null });
-      return;
+    const next = selectDate({ pendingStart, range: value }, key);
+    setPendingStart(next.pendingStart);
+    if (next.range.start !== value.start || next.range.end !== value.end) {
+      onChange(next.range);
     }
-    if (value.start === null || value.end !== null || key < value.start) {
-      onChange({ start: key, end: null });
-      return;
-    }
-    onChange({ start: value.start, end: key });
   };
 
   return (
-    <div className="bg-gray-2 w-full rounded-[10px] p-3">
+    <div className="bg-gray-2 w-full rounded-[13px] p-3">
       <div className="[box-sizing:content-box] flex h-6 items-center justify-between pt-[13px] pb-[3px]">
         <button
           type="button"
@@ -131,7 +132,10 @@ export function Calendar({ value, onChange }: CalendarProps) {
                 }
 
                 const key = toDateKey(new Date(view.year, view.month, day));
-                const isEdge = key === value.start || key === value.end;
+                const isEdge =
+                  key === value.start ||
+                  key === value.end ||
+                  key === pendingStart;
                 const isBetween =
                   value.start !== null &&
                   value.end !== null &&
@@ -148,6 +152,7 @@ export function Calendar({ value, onChange }: CalendarProps) {
                     className={`size-[38px] rounded-full text-[20px] leading-[24px] tracking-[-0.45px] ${dayStyle(
                       isEdge,
                       isBetween,
+                      key === todayKey,
                     )}`}
                   >
                     {day}
@@ -170,8 +175,9 @@ export function Calendar({ value, onChange }: CalendarProps) {
   );
 }
 
-function dayStyle(isEdge: boolean, isBetween: boolean) {
+function dayStyle(isEdge: boolean, isBetween: boolean, isToday: boolean) {
   if (isEdge) return "bg-pink-6 text-white";
   if (isBetween) return "bg-pink-6/12 text-pink-6";
+  if (isToday) return "bg-neutral-inverted text-fg-neutral-inverted";
   return "text-fg-neutral";
 }
