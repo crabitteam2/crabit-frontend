@@ -1,13 +1,29 @@
-const milestones = [10, 30, 60, 100];
+const milestoneRatios = [0.25, 0.5, 0.75];
 
-/** 저축 진행률 막대에 표시할 값입니다. */
-interface ProgressBarProps {
-  /** 호출자가 계산한 진행률입니다. 일반 사용 경로에서는 0에서 100 사이입니다. */
-  percent: number;
+function formatAmountLabel(amount: number) {
+  if (amount % 1000 !== 0) return `${amount.toLocaleString("ko-KR")}원`;
+
+  const man = Math.floor(amount / 10000);
+  const cheon = Math.floor((amount % 10000) / 1000);
+  if (man === 0 && cheon === 0) return "0원";
+
+  return `${man === 0 ? "" : `${man}만`}${cheon === 0 ? "" : `${cheon}천`}원`;
 }
 
-/** 현재 진행률과 10·30·60·100% 이정표를 함께 표시합니다. */
-export function ProgressBar({ percent }: ProgressBarProps) {
+function toMilestoneAmounts(targetAmount: number) {
+  const unit = targetAmount < 8000 ? 100 : 1000;
+  const leading = milestoneRatios.map(
+    (ratio) => Math.floor((targetAmount * ratio) / unit) * unit,
+  );
+  return [...leading, targetAmount];
+}
+
+interface ProgressBarProps {
+  percent: number;
+  targetAmount: number;
+}
+
+export function ProgressBar({ percent, targetAmount }: ProgressBarProps) {
   return (
     <div className="flex h-[75px] flex-col gap-[18px]">
       <div
@@ -22,13 +38,13 @@ export function ProgressBar({ percent }: ProgressBarProps) {
           style={{ width: `${percent}%` }}
         />
       </div>
-      <div className="flex justify-between pr-[10px] pl-[18px]">
-        {milestones.map((milestone) => (
+      <div className="flex justify-between pr-[6px] pl-[28px]">
+        {toMilestoneAmounts(targetAmount).map((amount, index) => (
           <span
-            key={milestone}
-            className="text-b2 text-fg-neutral w-[34.5px] text-center leading-[19px] whitespace-nowrap"
+            key={index}
+            className="text-b2 text-fg-neutral text-center leading-[19px] whitespace-nowrap"
           >
-            {milestone}%
+            {formatAmountLabel(amount)}
           </span>
         ))}
       </div>

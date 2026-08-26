@@ -53,7 +53,10 @@ export default async function Home({
       </CharacterArea>
 
       <main className="relative -mt-[17px] flex flex-col px-4">
-        <ProgressBar percent={percent} />
+        <ProgressBar
+          percent={percent}
+          targetAmount={representativeWish?.targetAmount ?? 0}
+        />
         {hasShortage ? (
           <div className="pt-10">
             <ShortageNotice />

@@ -5,6 +5,7 @@ const meta = {
   title: "Home/ProgressBar",
   component: ProgressBar,
   parameters: { layout: "padded" },
+  args: { targetAmount: 20000 },
   argTypes: {
     percent: { control: { type: "range", min: 0, max: 100, step: 1 } },
   },
