@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import piggyBankImage from "@/../public/images/wishes/piggy-bank.png";
+import filledBankImage from "@/../public/images/wishes/piggy-bank-filled.png";
 
 const DOT_PATTERN =
   "radial-gradient(ellipse 14.13px 17.17px at 14.13px 17.17px, var(--color-pink-2) 0 100%, transparent 0)";
@@ -19,20 +19,20 @@ export function DepositDoneScreen({ amount }: DepositDoneScreenProps) {
         backgroundPosition: "0 -5px",
       }}
     >
-      <h1 className="text-t1 text-fg-neutral relative px-4 pt-[70px] text-center font-bold">
+      <h1 className="text-t1 text-fg-neutral relative px-4 pt-[68px] text-center font-bold">
         {amount.toLocaleString("ko-KR")}원을
         <br />
         저축했어요!
       </h1>
 
       <Image
-        src={piggyBankImage}
+        src={filledBankImage}
         alt=""
         width={207}
         height={277}
         priority
-        className="absolute"
-        style={{ left: 92, top: 310 }}
+        className="absolute left-1/2 h-[277px] w-[207px] -translate-x-1/2 object-cover"
+        style={{ top: 308 }}
       />
 
       <div className="relative mt-auto px-4 pb-[calc(55px+env(safe-area-inset-bottom))]">
