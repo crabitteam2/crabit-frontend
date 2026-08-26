@@ -36,7 +36,7 @@ export function WishFinishedActions({ wishId }: WishFinishedActionsProps) {
 
       <ConfirmDialog
         isOpen={isDialogOpen}
-        title="목표를 정말 삭제할까요?"
+        title="위시를 정말 삭제할까요?"
         description={
           <>
             지금까지 모은 금액은 카드 잔액으로 돌아가요.

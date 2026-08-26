@@ -189,7 +189,7 @@ export function WishList({
 
       <ConfirmDialog
         isOpen={dialog?.kind === "abandon"}
-        title="목표를 정말 포기할까요?"
+        title="위시를 정말 포기할까요?"
         description={
           <>
             포기하면 종료 위시로 이동하고,
