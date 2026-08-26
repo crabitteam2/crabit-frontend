@@ -25,7 +25,7 @@ export function WithdrawDoneScreen({
 
       <div className="relative flex flex-col items-center px-4 pt-3 pb-10">
         <p className="text-t2 text-fg-neutral pb-[10px] font-semibold">
-          출금이 완료되었어요.
+          크래빗 카드로 돌아간 금액
         </p>
         <p className="text-h1 text-fg-neutral font-bold">
           {amount.toLocaleString("ko-KR")}원

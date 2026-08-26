@@ -74,7 +74,7 @@ export function WishEditForm({
         <>
           <div className="px-4 pt-5 pb-[76px]">
             <Input
-              label="목표"
+              label="위시"
               variant="filled"
               placeholder={purpose}
               value={nextPurpose}
@@ -84,7 +84,7 @@ export function WishEditForm({
 
           <div className="px-4 py-5">
             <Input
-              label="목표 금액"
+              label="위시 금액"
               variant="filled"
               inputMode="numeric"
               placeholder={`${targetAmount.toLocaleString("ko-KR")}원`}
@@ -97,7 +97,7 @@ export function WishEditForm({
 
       <div className={`px-4 py-5 ${isCalendarOpen ? "pt-5" : ""}`}>
         <Input
-          label="목표 기간"
+          label="위시 기간"
           variant="filled"
           readOnly
           value={nextPeriod}
@@ -120,12 +120,13 @@ export function WishEditForm({
       >
         <Button
           size="xlarge"
+          variant={isCalendarOpen ? "weak" : "fill"}
           className="w-full"
           disabled={!isCalendarOpen && !canSubmit}
           onPointerDown={(event) => event.preventDefault()}
           onClick={submit}
         >
-          다음
+          {isCalendarOpen ? "넘어가기" : "다음"}
         </Button>
       </div>
     </div>

@@ -56,7 +56,7 @@ export function AccountSelect({
 
       <div
         role="tablist"
-        aria-label="이체할 대상"
+        aria-label="돈 보낼 대상"
         className="flex gap-4 px-4 pt-[26.25px] pb-[26.25px]"
       >
         {TABS.map((item) => (

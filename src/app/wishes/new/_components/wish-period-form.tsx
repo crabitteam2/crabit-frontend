@@ -41,7 +41,7 @@ export function WishPeriodForm({
   return (
     <div className="flex min-h-svh flex-col">
       <ScreenHeader
-        title="목표하는 기간이 있나요?"
+        title="기간을 설정할까요?"
         backHref={backHref}
         spacing="loose"
       />
@@ -52,7 +52,7 @@ export function WishPeriodForm({
 
       <div className="px-4 py-5">
         <Input
-          label="목표 기간"
+          label="위시 기간"
           variant="filled"
           readOnly
           value={toPeriodLabel(range)}

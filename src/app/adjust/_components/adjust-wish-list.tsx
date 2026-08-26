@@ -37,7 +37,7 @@ export function AdjustWishList({ card, wishes }: AdjustWishListProps) {
         </div>
 
         <h2 className="text-t1 text-fg-neutral px-4 pb-4 font-bold">
-          출금할 위시를 선택해주세요.
+          돈을 꺼낼 위시를 선택해주세요.
         </h2>
 
         <ul className="flex flex-col gap-10 px-4 pb-10">

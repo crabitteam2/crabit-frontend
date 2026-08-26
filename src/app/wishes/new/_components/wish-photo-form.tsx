@@ -210,7 +210,7 @@ export function WishPhotoForm({
           <button
             type="button"
             onClick={openPicker}
-            aria-label="목표 사진 선택"
+            aria-label="위시 사진 선택"
             className="bg-pink-1 flex aspect-square w-full flex-col items-center overflow-hidden rounded-[20px] pt-[89px]"
           >
             <Image
@@ -221,7 +221,7 @@ export function WishPhotoForm({
               className="size-[120px] shrink-0"
             />
             <span className="text-gray-6 pt-5 text-[22px] leading-[30px] font-semibold tracking-[-0.3px]">
-              목표 사진을 추가해보세요.
+              위시 사진을 추가해보세요.
             </span>
           </button>
         ) : (
@@ -229,7 +229,7 @@ export function WishPhotoForm({
             ref={boxRef}
             role="button"
             tabIndex={0}
-            aria-label="목표 사진 위치와 크기 조정"
+            aria-label="위시 사진 위치와 크기 조정"
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
@@ -242,7 +242,7 @@ export function WishPhotoForm({
             <Image
               ref={imageRef}
               src={previewUrl}
-              alt="선택한 목표 사진"
+              alt="선택한 위시 사진"
               width={photo?.width ?? 1}
               height={photo?.height ?? 1}
               unoptimized

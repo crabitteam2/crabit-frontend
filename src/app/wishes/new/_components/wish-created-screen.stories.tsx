@@ -9,7 +9,7 @@ const meta = {
     purpose: "위시 텍스트 입력칸(목표 이름)",
     targetAmount: 100_000,
     period: "26.08.24 ~ 26.08.25",
-    depositHref: "/wishes/w1/deposit",
+    depositHref: "/wishes/w1/deposit/amount",
     closeHref: "/",
   },
 } satisfies Meta<typeof WishCreatedScreen>;

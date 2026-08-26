@@ -28,7 +28,7 @@ export default async function NewWishDonePage({
       purpose={read(query, "purpose") ?? ""}
       targetAmount={Number.isFinite(parsed) ? parsed : 0}
       period={period === "" ? null : period}
-      depositHref={`/wishes/${PLACEHOLDER_WISH_ID}/deposit`}
+      depositHref={`/wishes/${PLACEHOLDER_WISH_ID}/deposit/amount`}
       closeHref="/"
     />
   );

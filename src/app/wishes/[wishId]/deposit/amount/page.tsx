@@ -23,7 +23,7 @@ export default async function DepositAmountPage({
 
   return (
     <AmountForm
-      title="얼마를 저축할까요?"
+      title="얼마를 모아볼까요?"
       backHref={`/wishes/${wishId}/deposit`}
       nextPath={`/wishes/${wishId}/deposit/coin`}
       available={available}

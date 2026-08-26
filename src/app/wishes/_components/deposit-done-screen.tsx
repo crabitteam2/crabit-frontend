@@ -22,7 +22,7 @@ export function DepositDoneScreen({ amount }: DepositDoneScreenProps) {
       <h1 className="text-t1 text-fg-neutral relative px-4 pt-[68px] text-center font-bold">
         {amount.toLocaleString("ko-KR")}원을
         <br />
-        저축했어요!
+        저금통에 넣었어요!
       </h1>
 
       <Image

@@ -32,7 +32,7 @@ export const 대표위시: Story = {
 
 export const 목표포기: Story = {
   args: {
-    title: "목표를 정말 포기할까요?",
+    title: "위시를 정말 포기할까요?",
     description: (
       <>
         포기하면 종료 위시로 이동하고,

@@ -13,11 +13,11 @@ export default async function AdjustAmountPage({
 
   return (
     <AmountForm
-      title="얼마를 출금할까요?"
+      title="얼마를 꺼내볼까요?"
       backHref="/adjust"
       nextPath={`/adjust/${wishId}/loading`}
       available={wish.amount}
-      availableLabel="현재 출금 가능한 금액"
+      availableLabel="현재 사용 가능한 금액"
     />
   );
 }

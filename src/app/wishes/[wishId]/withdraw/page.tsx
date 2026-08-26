@@ -21,7 +21,7 @@ export default async function WithdrawAccountPage({
   return (
     <div className="flex flex-col">
       <ScreenHeader
-        title="이체할 카드를 선택해주세요."
+        title="어떤 카드에서 보낼까요?"
         backHref={`/wishes/${wishId}`}
         spacing="loose"
       />

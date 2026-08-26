@@ -30,12 +30,12 @@ export function WishEditDoneScreen({
       </div>
 
       <div className="px-4 pt-[60px] pb-5">
-        <Input label="목표" variant="line-brand" readOnly value={purpose} />
+        <Input label="위시" variant="line-brand" readOnly value={purpose} />
       </div>
 
       <div className="px-4 py-5">
         <Input
-          label="목표 금액"
+          label="위시 금액"
           variant="line-brand"
           readOnly
           value={`${targetAmount.toLocaleString("ko-KR")}원`}
@@ -44,7 +44,7 @@ export function WishEditDoneScreen({
 
       <div className="px-4 py-5">
         <Input
-          label="목표 기간"
+          label="위시 기간"
           variant="line-brand"
           readOnly
           value={period ?? ""}

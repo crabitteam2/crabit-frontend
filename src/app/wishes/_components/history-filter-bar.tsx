@@ -30,7 +30,7 @@ export function HistoryFilterBar() {
     <div className="flex items-center px-4 pt-11 pb-4">
       <button
         type="button"
-        aria-label="저축 기록 검색"
+        aria-label="모은 돈 기록 검색"
         className="relative block size-8 shrink-0"
       >
         <Image src={searchIcon} alt="" fill sizes="32px" />

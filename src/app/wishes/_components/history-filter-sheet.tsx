@@ -33,7 +33,7 @@ export function HistoryFilterSheet({
     <BottomSheet
       isOpen={isOpen}
       onClose={onClose}
-      title="저축 기록 내역"
+      title="모은 돈 기록"
       compactHeader
     >
       <p className="text-t3 text-fg-neutral flex h-[34px] w-full items-start pb-2 font-medium">
