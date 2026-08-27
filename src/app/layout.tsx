@@ -34,7 +34,7 @@ export default function RootLayout({
   return (
     <html lang="ko" className={`${pretendard.variable} overscroll-y-none`}>
       <body className="overscroll-y-none font-sans">
-        <div className="bg-layer-default max-w-app pb-safe mx-auto min-h-svh w-full">
+        <div className="bg-layer-default max-w-app mx-auto min-h-svh w-full">
           {children}
         </div>
       </body>
