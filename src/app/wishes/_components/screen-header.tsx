@@ -26,7 +26,7 @@ export function ScreenHeader({
 }: ScreenHeaderProps) {
   return (
     <header
-      className={`flex items-center gap-1 px-4 pt-[calc(env(safe-area-inset-top)+12px)] ${spacingStyles[spacing]}`}
+      className={`bg-layer-default sticky top-0 z-20 flex items-center gap-1 px-4 pt-[calc(env(safe-area-inset-top)+12px)] ${spacingStyles[spacing]}`}
     >
       {backHref === undefined ? null : (
         <Link
