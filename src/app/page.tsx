@@ -8,6 +8,7 @@ import {
   toProgressPercent,
   toProgressStage,
 } from "./_components/progress-stage";
+import { PullToRefresh } from "./_components/pull-to-refresh";
 import { QuickActions } from "./_components/quick-actions";
 import { RecapSection } from "./_components/recap-section";
 import { ShortageNotice } from "./_components/shortage-notice";
@@ -43,37 +44,39 @@ export default async function Home({
     <div className="flex flex-col">
       <HomeToast toastKey={toastKey} closeHref={closeHref} />
 
-      <CharacterArea
-        stage={representativeWish ? toProgressStage(percent) : null}
-      >
-        <HomeHeader
-          nickname={nickname}
-          wishPurpose={representativeWish?.purpose ?? null}
-        />
-      </CharacterArea>
+      <PullToRefresh>
+        <CharacterArea
+          stage={representativeWish ? toProgressStage(percent) : null}
+        >
+          <HomeHeader
+            nickname={nickname}
+            wishPurpose={representativeWish?.purpose ?? null}
+          />
+        </CharacterArea>
 
-      <main className="relative -mt-[17px] flex flex-col px-4">
-        <ProgressBar
-          percent={percent}
-          targetAmount={representativeWish?.targetAmount ?? 0}
-        />
-        {hasShortage ? (
-          <div className="pt-10">
-            <ShortageNotice />
+        <main className="relative -mt-[17px] flex flex-col px-4">
+          <ProgressBar
+            percent={percent}
+            targetAmount={representativeWish?.targetAmount ?? 0}
+          />
+          {hasShortage ? (
+            <div className="pt-10">
+              <ShortageNotice />
+            </div>
+          ) : null}
+          <div className={hasShortage ? "pt-[68px]" : "pt-10"}>
+            <QuickActions isLocked={hasShortage} />
           </div>
-        ) : null}
-        <div className={hasShortage ? "pt-[68px]" : "pt-10"}>
-          <QuickActions isLocked={hasShortage} />
-        </div>
-        <div className="pt-[68px]">
-          <AcademySection academyName={ACADEMY_NAME} />
-        </div>
-        <div className="pt-[68px]">
-          <RecapSection />
-        </div>
-      </main>
+          <div className="pt-[68px]">
+            <AcademySection academyName={ACADEMY_NAME} />
+          </div>
+          <div className="pt-[68px]">
+            <RecapSection />
+          </div>
+        </main>
 
-      <div className="h-[182px]" />
+        <div className="h-[182px]" />
+      </PullToRefresh>
       <TabBar />
     </div>
   );

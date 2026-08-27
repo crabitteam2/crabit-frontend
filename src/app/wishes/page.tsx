@@ -1,3 +1,4 @@
+import { PullToRefresh } from "@/app/_components/pull-to-refresh";
 import { resolveWishListData } from "@/lib/mock/wishes";
 import { EmptyWishes } from "./_components/empty-wishes";
 import { ScreenHeader } from "./_components/screen-header";
@@ -21,12 +22,14 @@ export default async function WishesPage({
   return (
     <div className="flex flex-col">
       <ScreenHeader title="진행중인 위시" backHref="/" />
-      <WishList
-        inProgress={inProgress}
-        finished={finished}
-        representativeId={representativeId}
-        toastKey={toastKey}
-      />
+      <PullToRefresh>
+        <WishList
+          inProgress={inProgress}
+          finished={finished}
+          representativeId={representativeId}
+          toastKey={toastKey}
+        />
+      </PullToRefresh>
       <TopButton />
     </div>
   );
