@@ -13,6 +13,11 @@ const pretendard = localFont({
 export const metadata: Metadata = {
   title: "Crabit",
   description: "Crabit frontend",
+  appleWebApp: {
+    capable: true,
+    title: "Crabit",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
@@ -20,10 +25,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   interactiveWidget: "resizes-content",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#1f1f1f" },
-  ],
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({
