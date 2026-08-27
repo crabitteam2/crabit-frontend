@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PullToRefresh } from "@/app/_components/pull-to-refresh";
 import { findWish, isFinishedWish, resolveMovements } from "@/lib/mock/wishes";
 import { HistoryFilterBar } from "../_components/history-filter-bar";
 import { HistoryList } from "../_components/history-list";
@@ -39,35 +40,37 @@ export default async function WishDetailPage({
         }
       />
 
-      <div className="px-4">
-        <WishSummaryCard wish={wish} />
-      </div>
-
-      {isFinished ? (
-        <WishFinishedActions wishId={wishId} />
-      ) : hasReachedTarget ? (
-        <WishReachedActions wishId={wishId} />
-      ) : (
-        <div className="flex gap-4 px-4 pt-[22.25px] pb-[6.25px]">
-          <Link
-            href={`/wishes/${wishId}/deposit`}
-            className="bg-brand-solid text-fg-contrast text-b4 inline-flex h-12 flex-1 items-center justify-center rounded-xl px-5 font-semibold"
-          >
-            돈 넣기
-          </Link>
-          <Link
-            href={`/wishes/${wishId}/withdraw`}
-            className="bg-brand-weak text-fg-brand text-b4 inline-flex h-12 flex-1 items-center justify-center rounded-xl px-5 font-semibold"
-          >
-            돈 꺼내기
-          </Link>
+      <PullToRefresh>
+        <div className="px-4">
+          <WishSummaryCard wish={wish} />
         </div>
-      )}
 
-      <HistoryFilterBar />
-      <HistoryList movements={movements} />
+        {isFinished ? (
+          <WishFinishedActions wishId={wishId} />
+        ) : hasReachedTarget ? (
+          <WishReachedActions wishId={wishId} />
+        ) : (
+          <div className="flex gap-4 px-4 pt-[22.25px] pb-[6.25px]">
+            <Link
+              href={`/wishes/${wishId}/deposit`}
+              className="bg-brand-solid text-fg-contrast text-b4 inline-flex h-12 flex-1 items-center justify-center rounded-xl px-5 font-semibold"
+            >
+              돈 넣기
+            </Link>
+            <Link
+              href={`/wishes/${wishId}/withdraw`}
+              className="bg-brand-weak text-fg-brand text-b4 inline-flex h-12 flex-1 items-center justify-center rounded-xl px-5 font-semibold"
+            >
+              돈 꺼내기
+            </Link>
+          </div>
+        )}
 
-      <div className="h-[calc(2.5rem+env(safe-area-inset-bottom))]" />
+        <HistoryFilterBar />
+        <HistoryList movements={movements} />
+
+        <div className="h-[calc(2.5rem+env(safe-area-inset-bottom))]" />
+      </PullToRefresh>
     </div>
   );
 }

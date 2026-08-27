@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ScreenHeader } from "@/app/wishes/_components/screen-header";
+import { PullToRefresh } from "@/app/_components/pull-to-refresh";
 import { Button } from "@/components/ui/button";
 import { Calendar, type DateRange } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -46,19 +47,21 @@ export function WishPeriodForm({
         spacing="loose"
       />
 
-      <div className="px-[10px]">
-        <Calendar value={range} onChange={setRange} />
-      </div>
+      <PullToRefresh>
+        <div className="px-[10px]">
+          <Calendar value={range} onChange={setRange} />
+        </div>
 
-      <div className="px-4 py-5">
-        <Input
-          label="위시 기간"
-          variant="filled"
-          readOnly
-          value={toPeriodLabel(range)}
-          placeholder="필수로 지정하지 않아도 괜찮아요."
-        />
-      </div>
+        <div className="px-4 py-5">
+          <Input
+            label="위시 기간"
+            variant="filled"
+            readOnly
+            value={toPeriodLabel(range)}
+            placeholder="필수로 지정하지 않아도 괜찮아요."
+          />
+        </div>
+      </PullToRefresh>
 
       <div className="flex-1" />
 

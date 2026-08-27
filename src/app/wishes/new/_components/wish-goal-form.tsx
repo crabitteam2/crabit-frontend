@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ScreenHeader } from "@/app/wishes/_components/screen-header";
+import { PullToRefresh } from "@/app/_components/pull-to-refresh";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useKeyboardViewport } from "@/hooks/use-keyboard-viewport";
@@ -77,36 +78,38 @@ export function WishGoalForm({
         spacing="loose"
       />
 
-      <div
-        className="shrink-0 px-4 pt-5"
-        style={{ height: PURPOSE_FIELD_HEIGHT }}
-      >
-        <Input
-          label="위시"
-          variant="filled"
-          placeholder="텍스트 작성"
-          value={purpose}
-          error={hasPurposeError ? FORMAT_ERROR : undefined}
-          onChange={(event) => setPurpose(event.target.value)}
-        />
-      </div>
+      <PullToRefresh>
+        <div
+          className="shrink-0 px-4 pt-5"
+          style={{ height: PURPOSE_FIELD_HEIGHT }}
+        >
+          <Input
+            label="위시"
+            variant="filled"
+            placeholder="텍스트 작성"
+            value={purpose}
+            error={hasPurposeError ? FORMAT_ERROR : undefined}
+            onChange={(event) => setPurpose(event.target.value)}
+          />
+        </div>
 
-      <div className="flex flex-col items-start px-4">
-        <Input
-          label="위시 금액"
-          variant="filled"
-          inputMode="decimal"
-          placeholder="금액 작성"
-          value={formatAmount(amountValue)}
-          error={hasAmountError ? FORMAT_ERROR : undefined}
-          onChange={(event) =>
-            setAmountValue(stripAmountSeparators(event.target.value))
-          }
-        />
-        <span className="text-e1 text-gray-5 py-2">
-          현재 사용 가능한 금액 : {available.toLocaleString("ko-KR")}원
-        </span>
-      </div>
+        <div className="flex flex-col items-start px-4">
+          <Input
+            label="위시 금액"
+            variant="filled"
+            inputMode="decimal"
+            placeholder="금액 작성"
+            value={formatAmount(amountValue)}
+            error={hasAmountError ? FORMAT_ERROR : undefined}
+            onChange={(event) =>
+              setAmountValue(stripAmountSeparators(event.target.value))
+            }
+          />
+          <span className="text-e1 text-gray-5 py-2">
+            현재 사용 가능한 금액 : {available.toLocaleString("ko-KR")}원
+          </span>
+        </div>
+      </PullToRefresh>
 
       <div className="flex-1" />
 

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { PullToRefresh } from "@/app/_components/pull-to-refresh";
 import { cardAccounts } from "@/lib/mock/accounts";
 import { findWish, resolveWishListData } from "@/lib/mock/wishes";
 import { AccountSelect } from "../../_components/account-select";
@@ -25,11 +26,13 @@ export default async function WithdrawAccountPage({
         backHref={`/wishes/${wishId}`}
         spacing="loose"
       />
-      <AccountSelect
-        nextPath={`/wishes/${wishId}/withdraw/amount`}
-        accounts={cardAccounts}
-        wishes={targets}
-      />
+      <PullToRefresh>
+        <AccountSelect
+          nextPath={`/wishes/${wishId}/withdraw/amount`}
+          accounts={cardAccounts}
+          wishes={targets}
+        />
+      </PullToRefresh>
     </div>
   );
 }
