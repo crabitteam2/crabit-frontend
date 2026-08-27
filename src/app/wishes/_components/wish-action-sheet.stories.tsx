@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
 import type { Wish } from "@/lib/mock/wishes";
-import { WishDetailActions } from "./wish-detail-actions";
+import { WishActionSheet } from "./wish-action-sheet";
 
 const wish: Wish = {
   id: "w3",
@@ -14,14 +14,14 @@ const wish: Wish = {
 };
 
 const meta = {
-  title: "Wishes/WishDetailActions",
-  component: WishDetailActions,
-  parameters: { layout: "padded" },
-} satisfies Meta<typeof WishDetailActions>;
+  title: "Wishes/WishActionSheet",
+  component: WishActionSheet,
+  parameters: { layout: "fullscreen" },
+} satisfies Meta<typeof WishActionSheet>;
 
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = {
-  args: { wish },
+export const 열림: Story = {
+  args: { wish, onClose: () => {} },
 };

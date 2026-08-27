@@ -33,11 +33,7 @@ export default async function WishDetailPage({
         title="모은 돈 기록"
         backHref={isJustCompleted ? `/wishes?completed=${wishId}` : "/wishes"}
         spacing="tight"
-        action={
-          isFinished ? undefined : (
-            <WishDetailActions wishId={wishId} purpose={wish.purpose} />
-          )
-        }
+        action={isFinished ? undefined : <WishDetailActions wish={wish} />}
       />
 
       <PullToRefresh>

@@ -44,7 +44,7 @@ export function WishFinishedActions({ wishId }: WishFinishedActionsProps) {
             자금 이동 내역에서 계속 확인할 수 있어요.
           </>
         }
-        primaryLabel="계속하기"
+        primaryLabel="아니요"
         secondaryLabel="삭제하기"
         onPrimary={() => setIsDialogOpen(false)}
         onSecondary={() =>

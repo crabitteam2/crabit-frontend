@@ -58,7 +58,7 @@ export function WithdrawDoneScreen({
 
             <div className="absolute inset-x-0 top-[134px] px-8 pt-10 pb-7">
               <p className="text-gray-6 pb-1 text-[16px] leading-[28px] font-medium tracking-[-0.3px]">
-                출금 후 잔액
+                꺼내기 후 위시에 남은 금액
               </p>
               <p className="text-gray-6 text-[22px] leading-[34px] font-bold tracking-[-0.3px]">
                 {balanceAfter.toLocaleString("ko-KR")} 원
