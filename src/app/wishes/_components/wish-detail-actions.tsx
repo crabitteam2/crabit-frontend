@@ -3,14 +3,14 @@
 import Image from "next/image";
 import { useState } from "react";
 import moreIcon from "@/../public/images/wishes/more.svg";
-import { WishBottomSheet } from "./wish-bottom-sheet";
+import type { Wish } from "@/lib/mock/wishes";
+import { WishActionSheet } from "./wish-action-sheet";
 
 interface WishDetailActionsProps {
-  wishId: string;
-  purpose: string;
+  wish: Wish;
 }
 
-export function WishDetailActions({ wishId, purpose }: WishDetailActionsProps) {
+export function WishDetailActions({ wish }: WishDetailActionsProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -18,16 +18,14 @@ export function WishDetailActions({ wishId, purpose }: WishDetailActionsProps) {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        aria-label={`${purpose} 더보기`}
+        aria-label={`${wish.purpose} 더보기`}
         className="relative block size-8 shrink-0"
       >
         <Image src={moreIcon} alt="" fill sizes="32px" />
       </button>
-      <WishBottomSheet
-        isOpen={isOpen}
+      <WishActionSheet
+        wish={isOpen ? wish : null}
         onClose={() => setIsOpen(false)}
-        infoHref={`/wishes/${wishId}/info`}
-        shareHref={`/wishes/${wishId}/share`}
       />
     </>
   );

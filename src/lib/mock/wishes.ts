@@ -185,11 +185,17 @@ function hoistRepresentative(list: Wish[], wishId: string | null) {
   return [...picked, ...list.filter((wish) => wish.id !== wishId)];
 }
 
-/** 목표 금액을 모두 모아 사용 처리한 위시를 완료 상태로 바꿉니다. */
 function completeWish(list: Wish[], wishId: string | undefined) {
   if (wishId === undefined) return list;
   return list.map((wish) =>
     wish.id === wishId ? { ...wish, state: "COMPLETED" as const } : wish,
+  );
+}
+
+function abandonWish(list: Wish[], wishId: string | undefined) {
+  if (wishId === undefined) return list;
+  return list.map((wish) =>
+    wish.id === wishId ? { ...wish, state: "ABANDONED" as const } : wish,
   );
 }
 
@@ -200,9 +206,12 @@ export function resolveWishListData(params: SearchParams): WishListData {
     return { inProgress: [], finished: [], representativeId: null };
 
   const deletedId = readParam(params, "deleted");
-  const kept = completeWish(
-    wishes.filter((w) => w.id !== deletedId),
-    readParam(params, "completed"),
+  const kept = abandonWish(
+    completeWish(
+      wishes.filter((w) => w.id !== deletedId),
+      readParam(params, "completed"),
+    ),
+    readParam(params, "abandoned"),
   );
   const active = kept.filter((w) => !FINISHED_STATES.includes(w.state));
   const picked = readParam(params, "representative") ?? null;
@@ -225,9 +234,11 @@ export function findWish(
 ): Wish | null {
   const found = wishes.find((wish) => wish.id === wishId) ?? null;
   if (found === null) return null;
-  return readParam(params, "completed") === wishId
-    ? { ...found, state: "COMPLETED" }
-    : found;
+  if (readParam(params, "completed") === wishId)
+    return { ...found, state: "COMPLETED" };
+  if (readParam(params, "abandoned") === wishId)
+    return { ...found, state: "ABANDONED" };
+  return found;
 }
 
 export function resolveMovements(params: SearchParams): FundMovement[] {
