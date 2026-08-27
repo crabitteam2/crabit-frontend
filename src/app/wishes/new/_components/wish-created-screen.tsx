@@ -55,7 +55,7 @@ export function WishCreatedScreen({
         href={depositHref}
         className="bg-brand-solid text-fg-contrast text-b3 flex h-14 w-full items-center justify-center rounded-xl px-6 font-semibold"
       >
-        바로 돈 넣으러 가기
+        바로 돈 넣기
       </Link>
     </WishHeroScreen>
   );

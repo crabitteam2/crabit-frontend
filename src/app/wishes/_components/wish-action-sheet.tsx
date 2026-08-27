@@ -105,7 +105,7 @@ export function WishActionSheet({ wish, onClose }: WishActionSheetProps) {
             지금까지 모은 금액은 카드 잔액으로 돌아가요.
           </>
         }
-        primaryLabel="계속하기"
+        primaryLabel="아니요"
         secondaryLabel="포기하기"
         onPrimary={() => setDialog(null)}
         onSecondary={() =>
