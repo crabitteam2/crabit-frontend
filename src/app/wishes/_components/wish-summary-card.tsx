@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { toProgressPercent } from "@/app/_components/progress-stage";
 import { isFinishedWish, type Wish } from "@/lib/mock/wishes";
 import { WishProgressBar } from "./wish-progress-bar";
@@ -7,6 +8,8 @@ import {
   finishedDetailWishTheme,
   reachedDetailWishTheme,
 } from "./wish-theme";
+
+const PHOTO_SIZE = 64;
 
 interface WishSummaryCardProps {
   wish: Wish;
@@ -27,12 +30,26 @@ export function WishSummaryCard({ wish }: WishSummaryCardProps) {
     <article
       className={`flex flex-col overflow-hidden rounded-[20px] px-8 pt-7 pb-4 ${isFinished ? "bg-gray-1" : "bg-pink-6/5"}`}
     >
-      <p className="text-t3 text-fg-neutral truncate pb-2 font-semibold">
-        {wish.purpose}
-      </p>
-      <p className="text-fg-neutral-muted pb-6 text-[14px] leading-7 tracking-[-0.3px]">
-        기간: {wish.startDate} ~ {wish.targetDate}
-      </p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex min-w-0 flex-col">
+          <p className="text-t3 text-fg-neutral truncate pb-2 font-semibold">
+            {wish.purpose}
+          </p>
+          <p className="text-fg-neutral-muted pb-6 text-[14px] leading-7 tracking-[-0.3px]">
+            기간: {wish.startDate} ~ {wish.targetDate}
+          </p>
+        </div>
+        {wish.imageUrl === undefined ? null : (
+          <Image
+            src={wish.imageUrl}
+            alt=""
+            width={PHOTO_SIZE}
+            height={PHOTO_SIZE}
+            unoptimized
+            className="size-16 shrink-0 rounded-full object-cover"
+          />
+        )}
+      </div>
       <p className="text-pink-6 flex justify-end font-bold tracking-[-0.3px]">
         <span className="text-[28px] leading-[34px]">
           {wish.amount.toLocaleString("ko-KR")}

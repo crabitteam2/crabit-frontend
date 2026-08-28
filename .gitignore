@@ -32,3 +32,6 @@ test-results
 *.njsproj
 *.sln
 *.sw?
+.vercel
+.env*.local
+CLAUDE.md
