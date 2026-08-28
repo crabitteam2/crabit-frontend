@@ -21,6 +21,7 @@ const mutationResult: components["schemas"]["WishMutationResult"] = {
     amount: 40_000,
     balanceAdjustmentInProgress: true,
     cardBalanceAccountId: accountId,
+    closedAt: null,
     completedAt: null,
     createdAt: "2026-08-21T00:00:00Z",
     id: wishId,
