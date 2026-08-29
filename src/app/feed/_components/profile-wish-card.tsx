@@ -44,13 +44,23 @@ export function ProfileWishCard({ wish, tone }: ProfileWishCardProps) {
             기간: {period === "" ? "설정된 기간 없음" : period}
           </p>
         </div>
-        <Image
-          src={thumbnails[wish.state]}
-          alt=""
-          width={60}
-          height={60}
-          className="size-15 shrink-0 rounded-full"
-        />
+        {wish.imageUrl === undefined ? (
+          <Image
+            src={thumbnails[wish.state]}
+            alt=""
+            width={60}
+            height={60}
+            className="size-15 shrink-0 rounded-full"
+          />
+        ) : (
+          <Image
+            src={wish.imageUrl}
+            alt=""
+            width={60}
+            height={60}
+            className="size-15 shrink-0 rounded-full object-cover"
+          />
+        )}
       </div>
       <div className="px-9 pt-6">
         <WishProgressBar percent={percent} theme={theme} />

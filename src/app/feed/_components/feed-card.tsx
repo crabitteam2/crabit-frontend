@@ -34,7 +34,7 @@ export function FeedCard({ card }: FeedCardProps) {
       <div className="bg-pink-1 flex flex-col pb-6">
         <WishHeroContent
           character={look.character}
-          photoUrl={null}
+          photoUrl={wish.imageUrl ?? null}
           headline={look.headline}
           headlinePaddingTop={look.headlinePaddingTop}
           headlinePaddingBottom={look.headlinePaddingBottom}

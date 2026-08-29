@@ -25,6 +25,7 @@ export const 진행중: Story = {
         startDate: "26.08.24",
         targetDate: "26.10.25",
       },
+      sharedAt: "2026-08-26T09:00:00+09:00",
     },
   },
 };
@@ -44,6 +45,7 @@ export const 완료: Story = {
         startDate: "26.01.05",
         targetDate: "26.05.31",
       },
+      sharedAt: "2026-08-28T12:10:00+09:00",
     },
   },
 };
