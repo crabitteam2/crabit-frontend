@@ -21,7 +21,7 @@ export const DirectionalScroll: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const navigation = canvas.getByRole("navigation", { name: "주요 화면" });
-    const tabs = navigation.querySelectorAll<HTMLElement>(":scope > span");
+    const tabs = navigation.querySelectorAll<HTMLElement>(":scope > *");
 
     await expect(tabs).toHaveLength(3);
     await expect(within(navigation).getByText("위시리스트")).toBeVisible();
