@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { findStudentProfile } from "@/lib/mock/feed";
-import { ProfileScreen } from "../_components/profile-screen";
+import { StudentProfile } from "../_components/student-profile";
 
 export default async function StudentProfilePage({
   params,
@@ -11,13 +11,5 @@ export default async function StudentProfilePage({
   const profile = findStudentProfile(studentId);
   if (profile === null) notFound();
 
-  return (
-    <ProfileScreen
-      nickname={profile.nickname}
-      inProgress={profile.inProgress}
-      finished={profile.finished}
-      backHref="/feed"
-      showMore
-    />
-  );
+  return <StudentProfile profile={profile} />;
 }

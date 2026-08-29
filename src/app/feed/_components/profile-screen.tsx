@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import heroImage from "@/../public/images/feed/profile-hero.png";
-import moreIcon from "@/../public/images/feed/more.svg";
 import searchIcon from "@/../public/images/feed/search.svg";
 import arrowLeftIcon from "@/../public/images/wishes/arrow-left.svg";
 import type { Wish } from "@/lib/mock/wishes";
@@ -12,8 +12,8 @@ interface ProfileScreenProps {
   inProgress: Wish[];
   finished: Wish[];
   backHref: string;
-  /** 다른 학생의 프로필에서 더보기 버튼을 보여줄지 정합니다. 기본값은 `false`입니다. */
-  showMore?: boolean;
+  /** 헤더 오른쪽에 놓을 요소이며, 없으면 검색 버튼만 보여줍니다. */
+  actions?: ReactNode;
 }
 
 export function ProfileScreen({
@@ -21,7 +21,7 @@ export function ProfileScreen({
   inProgress,
   finished,
   backHref,
-  showMore = false,
+  actions,
 }: ProfileScreenProps) {
   return (
     <div className="flex flex-col">
@@ -42,7 +42,7 @@ export function ProfileScreen({
           >
             <Image src={arrowLeftIcon} alt="" fill sizes="32px" />
           </Link>
-          <div className="flex shrink-0 items-center gap-3">
+          {actions ?? (
             <button
               type="button"
               aria-label="학생 검색"
@@ -50,16 +50,7 @@ export function ProfileScreen({
             >
               <Image src={searchIcon} alt="" width={32} height={32} />
             </button>
-            {showMore ? (
-              <button
-                type="button"
-                aria-label="더보기"
-                className="block size-8"
-              >
-                <Image src={moreIcon} alt="" width={32} height={32} />
-              </button>
-            ) : null}
-          </div>
+          )}
         </header>
       </div>
 
