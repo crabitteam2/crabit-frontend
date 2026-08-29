@@ -7,9 +7,18 @@ import searchIcon from "@/../public/images/feed/search.svg";
 interface FeedHeaderProps {
   academyName: string;
   backHref: string;
+  /** 현재 정렬 기준의 이름입니다. */
+  sortLabel: string;
+  /** 눌렀을 때 다른 정렬 기준으로 바뀌는 주소입니다. */
+  sortHref: string;
 }
 
-export function FeedHeader({ academyName, backHref }: FeedHeaderProps) {
+export function FeedHeader({
+  academyName,
+  backHref,
+  sortLabel,
+  sortHref,
+}: FeedHeaderProps) {
   return (
     <header className="bg-layer-default sticky top-0 z-20">
       <div className="border-gray-3 flex items-center justify-between border-b px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-4">
@@ -36,7 +45,14 @@ export function FeedHeader({ academyName, backHref }: FeedHeaderProps) {
 
       <div className="border-gray-3 flex items-end justify-between border-b px-4 pt-3 pb-4">
         <h1 className="text-t1 text-fg-neutral font-bold">{academyName}</h1>
-        <p className="text-gray-7 text-b4 font-medium">추천순</p>
+        <Link
+          href={sortHref}
+          replace
+          scroll={false}
+          className="text-gray-7 text-b4 font-medium"
+        >
+          {sortLabel}
+        </Link>
       </div>
     </header>
   );

@@ -5,7 +5,12 @@ const meta = {
   title: "Feed/FeedHeader",
   component: FeedHeader,
   parameters: { layout: "fullscreen" },
-  args: { academyName: "크래빗 영어학원", backHref: "/" },
+  args: {
+    academyName: "크래빗 영어학원",
+    backHref: "/",
+    sortLabel: "추천순",
+    sortHref: "/feed?sort=latest",
+  },
 } satisfies Meta<typeof FeedHeader>;
 
 export default meta;

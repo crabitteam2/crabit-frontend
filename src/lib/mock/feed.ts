@@ -10,6 +10,8 @@ export interface FeedCard {
   ownerNickname: string;
   /** 카드가 보여주는 위시입니다. */
   wish: Wish;
+  /** 카드를 올린 시각이며 최신순 정렬에 씁니다. */
+  sharedAt: string;
 }
 
 const cards: FeedCard[] = [
@@ -26,6 +28,7 @@ const cards: FeedCard[] = [
       startDate: "26.08.24",
       targetDate: "26.10.25",
     },
+    sharedAt: "2026-08-26T09:00:00+09:00",
   },
   {
     id: "f2",
@@ -39,7 +42,9 @@ const cards: FeedCard[] = [
       state: "IN_PROGRESS",
       startDate: "26.07.01",
       targetDate: "26.09.30",
+      imageUrl: "/images/wishes/deposit-hero.png",
     },
+    sharedAt: "2026-08-29T18:30:00+09:00",
   },
   {
     id: "f3",
@@ -54,6 +59,7 @@ const cards: FeedCard[] = [
       startDate: "26.01.05",
       targetDate: "26.05.31",
     },
+    sharedAt: "2026-08-28T12:10:00+09:00",
   },
 ];
 
@@ -64,9 +70,20 @@ function readParam(params: SearchParams, key: string) {
   return Array.isArray(raw) ? raw[0] : raw;
 }
 
+/** 학원 피드가 지원하는 정렬 기준입니다. */
+export type FeedSort = "recommended" | "latest";
+
+/** 쿼리에서 정렬 기준을 읽습니다. 값이 없으면 추천순입니다. */
+export function resolveFeedSort(params: SearchParams): FeedSort {
+  return readParam(params, "sort") === "latest" ? "latest" : "recommended";
+}
+
 /** 학원 피드에 보여줄 공유 카드를 쿼리 조건에 따라 고릅니다. */
 export function resolveFeedCards(params: SearchParams): FeedCard[] {
   if (readParam(params, "feed") === "empty") return [];
+  if (resolveFeedSort(params) === "latest") {
+    return [...cards].sort((a, b) => b.sharedAt.localeCompare(a.sharedAt));
+  }
   return cards;
 }
 
@@ -95,6 +112,7 @@ const profiles: StudentProfile[] = [
         state: "IN_PROGRESS",
         startDate: "26.08.24",
         targetDate: "26.10.25",
+        imageUrl: "/images/wishes/deposit-hero.png",
       },
     ],
     finished: [
