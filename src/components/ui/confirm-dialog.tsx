@@ -6,7 +6,8 @@ import { Button } from "./button";
 interface ConfirmDialogProps {
   isOpen: boolean;
   title: string;
-  description: ReactNode;
+  /** 제목 아래 설명이며, 없으면 그리지 않습니다. */
+  description?: ReactNode;
   primaryLabel: string;
   secondaryLabel: string;
   onPrimary: () => void;
@@ -66,13 +67,15 @@ export function ConfirmDialog({
         >
           <p
             id={titleId}
-            className="pb-5 text-center text-[24px] leading-[29px] font-bold text-black"
+            className="pb-5 text-center text-[24px] leading-[29px] font-bold break-keep text-black"
           >
             {title}
           </p>
-          <p className="text-fg-neutral-muted pb-5 text-center text-[16px] leading-[23px] font-medium tracking-[-0.048px]">
-            {description}
-          </p>
+          {description === undefined ? null : (
+            <p className="text-fg-neutral-muted pb-5 text-center text-[16px] leading-[23px] font-medium tracking-[-0.048px]">
+              {description}
+            </p>
+          )}
           <div className="flex items-center justify-center gap-4">
             <Button size="large" onClick={onPrimary}>
               {primaryLabel}

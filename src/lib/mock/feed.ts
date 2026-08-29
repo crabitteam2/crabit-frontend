@@ -156,3 +156,13 @@ const profiles: StudentProfile[] = [
 export function findStudentProfile(studentId: string): StudentProfile | null {
   return profiles.find((profile) => profile.id === studentId) ?? null;
 }
+
+/** 검색 화면에 처음 보여줄 최근 검색어입니다. */
+export const RECENT_SEARCHES = ["박선형", "권아라", "오지원"];
+
+/** 닉네임에 검색어가 들어간 학생을 찾습니다. */
+export function searchStudents(query: string): StudentProfile[] {
+  const keyword = query.trim();
+  if (keyword === "") return [];
+  return profiles.filter((profile) => profile.nickname.includes(keyword));
+}
