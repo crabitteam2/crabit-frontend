@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { TopButton } from "@/app/wishes/_components/top-button";
 import heroImage from "@/../public/images/feed/profile-hero.png";
 import searchIcon from "@/../public/images/feed/search.svg";
 import arrowLeftIcon from "@/../public/images/wishes/arrow-left.svg";
@@ -43,13 +44,13 @@ export function ProfileScreen({
             <Image src={arrowLeftIcon} alt="" fill sizes="32px" />
           </Link>
           {actions ?? (
-            <button
-              type="button"
+            <Link
+              href="/feed/search"
               aria-label="학생 검색"
               className="block size-8"
             >
               <Image src={searchIcon} alt="" width={32} height={32} />
-            </button>
+            </Link>
           )}
         </header>
       </div>
@@ -74,6 +75,7 @@ export function ProfileScreen({
 
       <ProfileWishSection title="진행중인 위시" wishes={inProgress} />
       <ProfileWishSection title="종료된 위시" wishes={finished} />
+      <TopButton />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import moreIcon from "@/../public/images/feed/more.svg";
 import searchIcon from "@/../public/images/feed/search.svg";
@@ -49,13 +50,13 @@ export function StudentProfile({ profile }: StudentProfileProps) {
             </button>
           ) : (
             <div className="flex shrink-0 items-center gap-3">
-              <button
-                type="button"
+              <Link
+                href="/feed/search"
                 aria-label="학생 검색"
                 className="block size-8"
               >
                 <Image src={searchIcon} alt="" width={32} height={32} />
-              </button>
+              </Link>
               <button
                 type="button"
                 aria-label="더보기"

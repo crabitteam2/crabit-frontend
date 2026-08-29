@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import chipCloseIcon from "@/../public/images/feed/chip-close.svg";
@@ -23,6 +22,14 @@ export function FeedSearch({ recentSearches }: FeedSearchProps) {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const results = searchStudents(query);
+
+  const cancel = () => {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push("/feed");
+  };
 
   const visit = (studentId: string, nickname: string) => {
     setRecent((keywords) => [
@@ -52,12 +59,13 @@ export function FeedSearch({ recentSearches }: FeedSearchProps) {
             className="text-fg-neutral placeholder:text-gray-5 min-w-0 flex-1 bg-transparent pl-4 text-[16px] leading-[23px] tracking-[-0.3px] outline-none"
           />
         </div>
-        <Link
-          href="/feed"
+        <button
+          type="button"
+          onClick={cancel}
           className="text-gray-7 shrink-0 pl-4 text-[16px] leading-[23px] font-medium tracking-[-0.3px]"
         >
           취소
-        </Link>
+        </button>
       </header>
 
       {results.length === 0 ? null : (
