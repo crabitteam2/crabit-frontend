@@ -46,6 +46,7 @@ export default async function WishShareWritePage({
           period={period === "" ? null : period}
           amount={wish.amount}
           targetAmount={wish.targetAmount}
+          showAmount={false}
         />
         <div className="h-5" />
       </div>
