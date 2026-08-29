@@ -24,9 +24,9 @@ export function FeedHeader({ academyName, backHref }: FeedHeaderProps) {
           <button type="button" aria-label="학생 검색" className="block size-8">
             <Image src={searchIcon} alt="" width={32} height={32} />
           </button>
-          <button type="button" aria-label="내 프로필" className="block size-8">
+          <Link href="/feed/me" aria-label="내 프로필" className="block size-8">
             <Image src={personIcon} alt="" width={32} height={32} />
-          </button>
+          </Link>
         </div>
       </div>
 
