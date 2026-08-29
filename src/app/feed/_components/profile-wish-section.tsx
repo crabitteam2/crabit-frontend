@@ -24,23 +24,25 @@ interface ProfileWishSectionProps {
 export function ProfileWishSection({ title, wishes }: ProfileWishSectionProps) {
   const [shown, setShown] = useState(toInitialShown(wishes.length));
 
-  if (wishes.length === 0) return null;
-
   return (
     <section>
       <h2 className="text-t1 text-fg-neutral px-4 pt-8 pb-4 font-bold">
         {title}
       </h2>
-      <ul className="flex flex-col gap-6 px-4 pb-10">
-        {wishes.slice(0, shown).map((wish, index) => (
-          <li key={wish.id}>
-            <ProfileWishCard
-              wish={wish}
-              tone={WISH_TONES[index % WISH_TONES.length]}
-            />
-          </li>
-        ))}
-      </ul>
+      {wishes.length === 0 ? (
+        <div className="h-[226px]" />
+      ) : (
+        <ul className="flex flex-col gap-10 px-4 pb-10">
+          {wishes.slice(0, shown).map((wish, index) => (
+            <li key={wish.id}>
+              <ProfileWishCard
+                wish={wish}
+                tone={WISH_TONES[index % WISH_TONES.length]}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
       {shown < wishes.length ? (
         <div className="px-4 pb-10">
           <Button

@@ -14,6 +14,7 @@ export const 진행중: Story = {
   args: {
     card: {
       id: "f1",
+      studentId: "s1",
       ownerNickname: "선형",
       wish: {
         id: "fw1",
@@ -32,6 +33,7 @@ export const 완료: Story = {
   args: {
     card: {
       id: "f3",
+      studentId: "s3",
       ownerNickname: "도윤",
       wish: {
         id: "fw3",

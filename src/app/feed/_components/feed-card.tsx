@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { toProgressPercent } from "@/app/_components/progress-stage";
 import { WishHeroContent } from "@/app/wishes/_components/wish-hero-screen";
 import { toSavingPeriodLabel } from "@/app/wishes/_components/wish-period-format";
@@ -9,7 +10,7 @@ interface FeedCardProps {
 }
 
 export function FeedCard({ card }: FeedCardProps) {
-  const { ownerNickname, wish } = card;
+  const { ownerNickname, studentId, wish } = card;
   const look = getWishShareLook(wish);
   const period = toSavingPeriodLabel({
     start: wish.startDate,
@@ -22,12 +23,12 @@ export function FeedCard({ card }: FeedCardProps) {
         <p className="text-b2 text-fg-neutral truncate font-medium">
           {ownerNickname}의 위시리스트
         </p>
-        <button
-          type="button"
+        <Link
+          href={`/feed/${studentId}`}
           className="bg-brand-weak text-fg-brand text-b4 flex h-10 shrink-0 items-center rounded-xl px-4 font-semibold"
         >
           방문하기
-        </button>
+        </Link>
       </div>
 
       <div className="bg-pink-1 flex flex-col pb-6">
