@@ -13,12 +13,6 @@ import { WISH_TONES } from "./wish-theme";
 const PAGE_SIZE = 2;
 
 const TOAST_MESSAGE = "설정이 저장되었습니다.";
-const COMPLETED_TOAST_MESSAGE = "카드 잔액으로 돌아왔어요.";
-
-const toastFor = (key: string | null) => {
-  if (key === null) return null;
-  return key === "completed" ? COMPLETED_TOAST_MESSAGE : TOAST_MESSAGE;
-};
 
 interface WishListProps extends WishListData {
   toastKey?: string | null;
@@ -31,7 +25,9 @@ export function WishList({
   toastKey,
 }: WishListProps) {
   const [sheetWish, setSheetWish] = useState<Wish | null>(null);
-  const [toast, setToast] = useState<string | null>(toastFor(toastKey ?? null));
+  const [toast, setToast] = useState<string | null>(
+    toastKey === null || toastKey === undefined ? null : TOAST_MESSAGE,
+  );
   const [inProgressShown, setInProgressShown] = useState(PAGE_SIZE);
   const [finishedShown, setFinishedShown] = useState(PAGE_SIZE);
 
