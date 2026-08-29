@@ -2,6 +2,18 @@ import { findWish } from "./wishes";
 
 export const ACADEMY_NAME = "크래빗 영어학원";
 
+export interface HomeCard {
+  ownerName: string;
+  balance: number;
+  wishAvailableBalance: number;
+}
+
+export const homeCard: HomeCard = {
+  ownerName: "권아라",
+  balance: 100_000,
+  wishAvailableBalance: 100_000,
+};
+
 export interface RepresentativeWish {
   purpose: string;
   amount: number;

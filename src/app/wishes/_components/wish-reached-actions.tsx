@@ -48,9 +48,7 @@ export function WishReachedActions({ wishId }: WishReachedActionsProps) {
         }
         primaryLabel="사용하기"
         secondaryLabel="미루기"
-        onPrimary={() =>
-          router.replace(`/wishes?completed=${wishId}&toast=completed`)
-        }
+        onPrimary={() => router.replace("/home?toast=completed")}
         onSecondary={() => setIsDialogOpen(false)}
         onDismiss={() => setIsDialogOpen(false)}
       />

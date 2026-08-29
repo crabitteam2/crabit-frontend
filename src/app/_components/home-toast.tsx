@@ -5,6 +5,7 @@ import { Toast } from "@/components/ui/toast";
 
 const MESSAGES: Record<string, string> = {
   representative: "설정이 저장되었습니다.",
+  completed: "카드 잔액으로 돌아왔어요.",
 };
 
 interface HomeToastProps {
