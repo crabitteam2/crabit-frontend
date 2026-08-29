@@ -11,6 +11,7 @@ export default defineConfig({
   test: {
     projects: [
       {
+        resolve: { tsconfigPaths: true },
         test: {
           name: "node",
           include: ["src/**/*.test.{ts,mts,mjs}"],

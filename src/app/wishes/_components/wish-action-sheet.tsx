@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import type { Wish } from "@/lib/mock/wishes";
+import type { WishItem } from "./wish-item";
 
 const SHEET_CLOSE_MS = 300;
 
@@ -15,12 +15,12 @@ const ACTION_STYLE =
 type DialogKind = "representative" | "abandon";
 
 interface PendingDialog {
-  wish: Wish;
+  wish: WishItem;
   kind: DialogKind;
 }
 
 interface WishActionSheetProps {
-  wish: Wish | null;
+  wish: WishItem | null;
   onClose: () => void;
 }
 
@@ -35,7 +35,7 @@ export function WishActionSheet({ wish, onClose }: WishActionSheetProps) {
     setTimeout(() => setDialog({ wish: opened, kind }), SHEET_CLOSE_MS);
   };
 
-  const confirm = (toHref: (wish: Wish) => string) => {
+  const confirm = (toHref: (wish: WishItem) => string) => {
     if (dialog === null) return;
     const target = dialog.wish;
     setDialog(null);

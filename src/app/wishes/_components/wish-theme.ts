@@ -1,4 +1,4 @@
-import type { Wish } from "@/lib/mock/wishes";
+import type { WishItem } from "./wish-item";
 
 export type WishTone = "pink" | "yellow" | "blue";
 
@@ -84,7 +84,7 @@ export const emptyWishTheme: WishTheme = {
   highlightsGoal: false,
 };
 
-export function getWishTheme(wish: Wish, tone: WishTone, percent: number) {
+export function getWishTheme(wish: WishItem, tone: WishTone, percent: number) {
   if (wish.state === "ABANDONED") return abandoned;
   if (wish.state === "COMPLETED") return completed;
   if (percent >= 100) return reached[tone];
