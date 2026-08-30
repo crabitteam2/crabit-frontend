@@ -4,17 +4,20 @@ import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Toast } from "@/components/ui/toast";
-import type { Wish, WishListData } from "@/lib/mock/wishes";
 import { EmptyWishCard } from "./empty-wish-card";
 import { WishActionSheet } from "./wish-action-sheet";
 import { WishCard } from "./wish-card";
+import type { WishItem } from "./wish-item";
 import { WISH_TONES } from "./wish-theme";
 
 const PAGE_SIZE = 2;
 
 const TOAST_MESSAGE = "설정이 저장되었습니다.";
 
-interface WishListProps extends WishListData {
+interface WishListProps {
+  inProgress: WishItem[];
+  finished: WishItem[];
+  representativeId: string | null;
   toastKey?: string | null;
 }
 
@@ -24,7 +27,7 @@ export function WishList({
   representativeId,
   toastKey,
 }: WishListProps) {
-  const [sheetWish, setSheetWish] = useState<Wish | null>(null);
+  const [sheetWish, setSheetWish] = useState<WishItem | null>(null);
   const [toast, setToast] = useState<string | null>(
     toastKey === null || toastKey === undefined ? null : TOAST_MESSAGE,
   );

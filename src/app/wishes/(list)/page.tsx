@@ -1,9 +1,9 @@
 import { PullToRefresh } from "@/app/_components/pull-to-refresh";
-import { resolveWishListData } from "@/lib/mock/wishes";
-import { EmptyWishes } from "./_components/empty-wishes";
-import { ScreenHeader } from "./_components/screen-header";
-import { TopButton } from "./_components/top-button";
-import { WishList } from "./_components/wish-list";
+import { EmptyWishes } from "../_components/empty-wishes";
+import { ScreenHeader } from "../_components/screen-header";
+import { TopButton } from "../_components/top-button";
+import { WishList } from "../_components/wish-list";
+import { loadWishList } from "./load-wish-list";
 
 export default async function WishesPage({
   searchParams,
@@ -11,7 +11,7 @@ export default async function WishesPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
-  const { inProgress, finished, representativeId } = resolveWishListData(query);
+  const { inProgress, finished, representativeId } = await loadWishList();
   const rawToast = query.toast;
   const toastKey = (Array.isArray(rawToast) ? rawToast[0] : rawToast) ?? null;
 

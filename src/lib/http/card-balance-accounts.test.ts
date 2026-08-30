@@ -1,7 +1,10 @@
 import createClient from "openapi-fetch";
 import { describe, expect, it } from "vitest";
 
-import { getCardBalanceAccount } from "./card-balance-accounts";
+import {
+  getCardBalanceAccount,
+  listMyCardBalanceAccounts,
+} from "./card-balance-accounts";
 import type { paths } from "./generated/crabit-backend";
 
 const accountId = "11111111-1111-4111-8111-111111111111";
@@ -82,6 +85,40 @@ describe("Card Balance Account typed request helper", () => {
         details: {},
       },
     });
+  });
+
+  it("requests the authenticated student's account page", async () => {
+    const page = {
+      items: [
+        {
+          cardBalanceAccountId: accountId,
+          academyId: "22222222-2222-4222-8222-222222222222",
+          balanceKnowledge: "UNKNOWN",
+          actualCardBalance: null,
+          ledgerAvailableBalance: null,
+          displayAvailableBalance: null,
+          unresolvedShortage: null,
+          lastRefreshStatus: null,
+          lastRefreshedAt: null,
+          balanceAdjustmentInProgress: false,
+        },
+      ],
+      nextCursor: null,
+    } as const;
+    let captured: Request | undefined;
+    const client = createClient<paths>({
+      baseUrl: "https://backend.test",
+      fetch: async (request) => {
+        captured = request;
+        return jsonResponse(200, page);
+      },
+    });
+
+    await expect(listMyCardBalanceAccounts(client)).resolves.toEqual({
+      ok: true,
+      data: page,
+    });
+    expect(captured?.url).toBe("https://backend.test/v1/me/card-balance-accounts");
   });
 });
 

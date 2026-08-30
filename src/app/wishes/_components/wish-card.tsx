@@ -3,15 +3,15 @@ import Link from "next/link";
 import moreIcon from "@/../public/images/wishes/more.svg";
 import { toProgressPercent } from "@/app/_components/progress-stage";
 import { Badge } from "@/components/ui/badge";
-import type { Wish } from "@/lib/mock/wishes";
+import type { WishItem } from "./wish-item";
 import { WishProgressBar } from "./wish-progress-bar";
 import { getWishTheme, type WishTone } from "./wish-theme";
 
 interface WishCardProps {
-  wish: Wish;
+  wish: WishItem;
   tone: WishTone;
   isRepresentative?: boolean;
-  onMore?: (wish: Wish) => void;
+  onMore?: (wish: WishItem) => void;
 }
 
 export function WishCard({

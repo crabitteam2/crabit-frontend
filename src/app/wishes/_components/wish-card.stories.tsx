@@ -1,15 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import type { Wish } from "@/lib/mock/wishes";
+import type { WishItem } from "./wish-item";
 import { WishCard } from "./wish-card";
 
-const wish: Wish = {
+const wish: WishItem = {
   id: "w1",
   purpose: "포켓몬 카드 부스터팩",
   amount: 12_000,
   targetAmount: 30_000,
   state: "IN_PROGRESS",
-  startDate: "26.06.01",
-  targetDate: "26.10.31",
 };
 
 const meta = {
@@ -108,8 +106,6 @@ export const 대표위시: Story = {
       amount: 30_000,
       targetAmount: 30_000,
       state: "AMOUNT_REACHED",
-      startDate: "26.06.01",
-      targetDate: "26.10.31",
     },
     tone: "pink",
     isRepresentative: true,
