@@ -26,10 +26,10 @@ function summaryTheme(wish: WishDetail) {
 export function WishSummaryCard({ wish }: WishSummaryCardProps) {
   const percent = toProgressPercent(wish.amount, wish.targetAmount);
   const isFinished = isFinishedState(wish.state);
-  const period = toSavingPeriodLabel({
-    start: wish.startDate,
-    end: wish.targetDate === "" ? null : wish.targetDate,
-  });
+  const period =
+    wish.targetDate === ""
+      ? ""
+      : toSavingPeriodLabel({ start: wish.startDate, end: wish.targetDate });
 
   return (
     <article
@@ -40,9 +40,11 @@ export function WishSummaryCard({ wish }: WishSummaryCardProps) {
           <p className="text-t3 text-fg-neutral truncate pb-2 font-semibold">
             {wish.purpose}
           </p>
-          <p className="text-fg-neutral-muted pb-6 text-[14px] leading-7 tracking-[-0.3px]">
-            기간: {period}
-          </p>
+          {period === "" ? null : (
+            <p className="text-fg-neutral-muted pb-6 text-[14px] leading-7 tracking-[-0.3px]">
+              기간: {period}
+            </p>
+          )}
         </div>
         {wish.imageUrl === undefined ? null : (
           <Image
