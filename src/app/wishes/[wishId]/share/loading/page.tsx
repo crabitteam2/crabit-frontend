@@ -10,5 +10,5 @@ export default async function WishShareLoadingPage({
   const { wishId } = await params;
   if (findWish(wishId) === null) notFound();
 
-  return <LoadingScreen label="학원 피드 공유 중" donePath="/wishes" />;
+  return <LoadingScreen label="학원 피드 공유 중" donePath="/feed" />;
 }

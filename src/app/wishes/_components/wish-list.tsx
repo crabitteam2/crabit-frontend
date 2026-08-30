@@ -10,7 +10,15 @@ import { WishCard } from "./wish-card";
 import type { WishItem } from "./wish-item";
 import { WISH_TONES } from "./wish-theme";
 
-const PAGE_SIZE = 2;
+const FULL_LIST_MAX = 3;
+
+const COLLAPSED_SHOWN = 2;
+
+const MORE_STEP = 2;
+
+function toInitialShown(total: number) {
+  return total <= FULL_LIST_MAX ? total : COLLAPSED_SHOWN;
+}
 
 const TOAST_MESSAGE = "설정이 저장되었습니다.";
 
@@ -31,8 +39,12 @@ export function WishList({
   const [toast, setToast] = useState<string | null>(
     toastKey === null || toastKey === undefined ? null : TOAST_MESSAGE,
   );
-  const [inProgressShown, setInProgressShown] = useState(PAGE_SIZE);
-  const [finishedShown, setFinishedShown] = useState(PAGE_SIZE);
+  const [inProgressShown, setInProgressShown] = useState(
+    toInitialShown(inProgress.length),
+  );
+  const [finishedShown, setFinishedShown] = useState(
+    toInitialShown(finished.length),
+  );
 
   return (
     <>
@@ -72,7 +84,7 @@ export function WishList({
                   color="dark"
                   size="xlarge"
                   className="w-full"
-                  onClick={() => setInProgressShown((n) => n + PAGE_SIZE)}
+                  onClick={() => setInProgressShown((n) => n + MORE_STEP)}
                 >
                   더보기
                 </Button>
@@ -103,7 +115,7 @@ export function WishList({
                   color="dark"
                   size="xlarge"
                   className="w-full"
-                  onClick={() => setFinishedShown((n) => n + PAGE_SIZE)}
+                  onClick={() => setFinishedShown((n) => n + MORE_STEP)}
                 >
                   더보기
                 </Button>

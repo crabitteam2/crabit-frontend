@@ -26,6 +26,8 @@ interface WishHeroContentProps {
   period: string | null;
   amount: number;
   targetAmount: number;
+  /** 모은 금액과 목표 금액을 함께 보여줄지 정합니다. 기본값은 `true`입니다. */
+  showAmount?: boolean;
 }
 
 export function WishHeroContent({
@@ -40,6 +42,7 @@ export function WishHeroContent({
   period,
   amount,
   targetAmount,
+  showAmount = true,
 }: WishHeroContentProps) {
   const headlineTop =
     photoUrl === null
@@ -110,15 +113,19 @@ export function WishHeroContent({
         <p className="text-gray-6 pb-6 text-[14px] leading-7 tracking-[-0.3px]">
           기간: {period ?? "설정된 기간 없음"}
         </p>
-        <p className="text-pink-6 flex justify-end font-bold tracking-[-0.3px]">
-          <span className="text-[28px] leading-[34px]">
-            {amount.toLocaleString("ko-KR")}
-          </span>
-          <span className="text-[26px] leading-[34px]">&nbsp;원</span>
-        </p>
-        <p className="text-gray-6 flex justify-end pb-3 text-[14px] leading-[34px] tracking-[-0.3px]">
-          {targetAmount.toLocaleString("ko-KR")} 원
-        </p>
+        {showAmount ? (
+          <>
+            <p className="text-pink-6 flex justify-end font-bold tracking-[-0.3px]">
+              <span className="text-[28px] leading-[34px]">
+                {amount.toLocaleString("ko-KR")}
+              </span>
+              <span className="text-[26px] leading-[34px]">&nbsp;원</span>
+            </p>
+            <p className="text-gray-6 flex justify-end pb-3 text-[14px] leading-[34px] tracking-[-0.3px]">
+              {targetAmount.toLocaleString("ko-KR")} 원
+            </p>
+          </>
+        ) : null}
       </div>
     </>
   );
