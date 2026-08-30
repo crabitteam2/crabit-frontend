@@ -90,6 +90,39 @@ export function listWishes(
   );
 }
 
+/** 위시 자금 이동 이력 조회의 페이지 조건입니다. */
+export interface ListWishFundMovementsOptions {
+  /** 위시가 속한 카드잔액계좌 식별자입니다. */
+  readonly cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+  /** 이력을 조회할 위시 식별자입니다. */
+  readonly wishId: components["parameters"]["WishId"];
+  /** 다음 페이지를 이어서 조회할 커서입니다. */
+  readonly cursor?: components["parameters"]["Cursor"];
+  /** 한 번에 조회할 최대 항목 수입니다. */
+  readonly limit?: components["parameters"]["Limit"];
+}
+
+/** 위시 한 건의 자금 이동 이력을 조회합니다. */
+export function listWishFundMovements(
+  client: CrabitApiClient,
+  options: ListWishFundMovementsOptions,
+): Promise<ApiResult<components["schemas"]["WishFundMovementPage"]>> {
+  return apiResult<components["schemas"]["WishFundMovementPage"]>(() =>
+    client.GET(
+      "/v1/card-balance-accounts/{cardBalanceAccountId}/wishes/{wishId}/fund-movements",
+      {
+        params: {
+          path: {
+            cardBalanceAccountId: options.cardBalanceAccountId,
+            wishId: options.wishId,
+          },
+          query: { cursor: options.cursor, limit: options.limit },
+        },
+      },
+    ),
+  );
+}
+
 /** 카드잔액계좌의 위시 한 건을 조회합니다. */
 export function getWish(
   client: CrabitApiClient,

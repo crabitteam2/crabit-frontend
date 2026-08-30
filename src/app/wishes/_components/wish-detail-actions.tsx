@@ -3,11 +3,11 @@
 import Image from "next/image";
 import { useState } from "react";
 import moreIcon from "@/../public/images/wishes/more.svg";
-import type { Wish } from "@/lib/mock/wishes";
 import { WishActionSheet } from "./wish-action-sheet";
+import type { WishItem } from "./wish-item";
 
 interface WishDetailActionsProps {
-  wish: Wish;
+  wish: WishItem;
 }
 
 export function WishDetailActions({ wish }: WishDetailActionsProps) {
