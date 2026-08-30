@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { toProgressPercent } from "@/app/_components/progress-stage";
-import { isFinishedWish, type Wish } from "@/lib/mock/wishes";
+import { toSavingPeriodLabel } from "./wish-period-format";
+import { isFinishedState, type WishDetail } from "./wish-detail";
 import { WishProgressBar } from "./wish-progress-bar";
 import {
   abandonedDetailWishTheme,
@@ -12,10 +13,10 @@ import {
 const PHOTO_SIZE = 64;
 
 interface WishSummaryCardProps {
-  wish: Wish;
+  wish: WishDetail;
 }
 
-function summaryTheme(wish: Wish) {
+function summaryTheme(wish: WishDetail) {
   if (wish.state === "ABANDONED") return abandonedDetailWishTheme;
   if (wish.state === "COMPLETED") return finishedDetailWishTheme;
   if (wish.amount >= wish.targetAmount) return reachedDetailWishTheme;
@@ -24,7 +25,11 @@ function summaryTheme(wish: Wish) {
 
 export function WishSummaryCard({ wish }: WishSummaryCardProps) {
   const percent = toProgressPercent(wish.amount, wish.targetAmount);
-  const isFinished = isFinishedWish(wish);
+  const isFinished = isFinishedState(wish.state);
+  const period = toSavingPeriodLabel({
+    start: wish.startDate,
+    end: wish.targetDate === "" ? null : wish.targetDate,
+  });
 
   return (
     <article
@@ -36,7 +41,7 @@ export function WishSummaryCard({ wish }: WishSummaryCardProps) {
             {wish.purpose}
           </p>
           <p className="text-fg-neutral-muted pb-6 text-[14px] leading-7 tracking-[-0.3px]">
-            기간: {wish.startDate} ~ {wish.targetDate}
+            기간: {period}
           </p>
         </div>
         {wish.imageUrl === undefined ? null : (

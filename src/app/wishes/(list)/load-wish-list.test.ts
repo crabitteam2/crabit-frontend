@@ -20,8 +20,9 @@ vi.mock("@/lib/http/wishes", () => ({
   getRepresentativeWish: (...args: unknown[]) => getRepresentativeWish(...args),
 }));
 
-const { CardBalanceAccountMissingError, loadWishList } =
-  await import("./load-wish-list");
+const { CardBalanceAccountMissingError } = await import("../load-account");
+
+const { loadWishList } = await import("./load-wish-list");
 
 const accountId = "11111111-1111-4111-8111-111111111111";
 

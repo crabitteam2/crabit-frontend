@@ -10,15 +10,27 @@ import {
   type HistorySort,
 } from "./history-filter-sheet";
 
-const DEFAULT_PERIOD: HistoryPeriod = "3개월";
-const DEFAULT_SORT: HistorySort = "최신순";
+export const DEFAULT_PERIOD: HistoryPeriod = "3개월";
 
-export function HistoryFilterBar() {
+export const DEFAULT_SORT: HistorySort = "최신순";
+
+interface HistoryFilterBarProps {
+  /** 현재 조회 기간입니다. */
+  period: HistoryPeriod;
+  /** 현재 정렬 기준입니다. */
+  sort: HistorySort;
+  /** 적용 버튼을 눌렀을 때 호출됩니다. */
+  onApply: (period: HistoryPeriod, sort: HistorySort) => void;
+}
+
+export function HistoryFilterBar({
+  period,
+  sort,
+  onApply,
+}: HistoryFilterBarProps) {
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [period, setPeriod] = useState<HistoryPeriod>(DEFAULT_PERIOD);
-  const [sort, setSort] = useState<HistorySort>(DEFAULT_SORT);
-  const [draftPeriod, setDraftPeriod] = useState<HistoryPeriod>(DEFAULT_PERIOD);
-  const [draftSort, setDraftSort] = useState<HistorySort>(DEFAULT_SORT);
+  const [draftPeriod, setDraftPeriod] = useState<HistoryPeriod>(period);
+  const [draftSort, setDraftSort] = useState<HistorySort>(sort);
 
   const openSheet = () => {
     setDraftPeriod(period);
@@ -72,8 +84,7 @@ export function HistoryFilterBar() {
           setDraftSort(DEFAULT_SORT);
         }}
         onApply={() => {
-          setPeriod(draftPeriod);
-          setSort(draftSort);
+          onApply(draftPeriod, draftSort);
           setIsSheetOpen(false);
         }}
       />

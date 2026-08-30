@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PullToRefresh } from "@/app/_components/pull-to-refresh";
-import { findWish, isFinishedWish, resolveMovements } from "@/lib/mock/wishes";
-import { HistoryFilterBar } from "../_components/history-filter-bar";
-import { HistoryList } from "../_components/history-list";
-import { ScreenHeader } from "../_components/screen-header";
-import { WishDetailActions } from "../_components/wish-detail-actions";
-import { WishFinishedActions } from "../_components/wish-finished-actions";
-import { WishReachedActions } from "../_components/wish-reached-actions";
-import { WishSummaryCard } from "../_components/wish-summary-card";
+import { HistorySection } from "../../_components/history-section";
+import { ScreenHeader } from "../../_components/screen-header";
+import { WishDetailActions } from "../../_components/wish-detail-actions";
+import { isFinishedState } from "../../_components/wish-detail";
+import { WishFinishedActions } from "../../_components/wish-finished-actions";
+import { WishReachedActions } from "../../_components/wish-reached-actions";
+import { WishSummaryCard } from "../../_components/wish-summary-card";
+import { loadWishDetail } from "./load-wish-detail";
 
 export default async function WishDetailPage({
   params,
@@ -19,12 +19,13 @@ export default async function WishDetailPage({
 }) {
   const { wishId } = await params;
   const query = await searchParams;
-  const wish = findWish(wishId, query);
-  if (wish === null) notFound();
+  const view = await loadWishDetail(wishId);
+  if (view === null) notFound();
+
+  const { wish, movements } = view;
 
   const isJustCompleted = query.completed === wishId;
-  const movements = resolveMovements(query);
-  const isFinished = isFinishedWish(wish);
+  const isFinished = isFinishedState(wish.state);
   const hasReachedTarget = !isFinished && wish.amount >= wish.targetAmount;
 
   return (
@@ -62,8 +63,7 @@ export default async function WishDetailPage({
           </div>
         )}
 
-        <HistoryFilterBar />
-        <HistoryList movements={movements} />
+        <HistorySection movements={movements} />
 
         <div className="h-[calc(2.5rem+env(safe-area-inset-bottom))]" />
       </PullToRefresh>

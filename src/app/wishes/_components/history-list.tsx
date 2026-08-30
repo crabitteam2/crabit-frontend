@@ -1,4 +1,4 @@
-import type { FundMovement } from "@/lib/mock/wishes";
+import type { FundMovementItem } from "./wish-detail";
 
 const TIME_ZONE = "Asia/Seoul";
 
@@ -30,11 +30,11 @@ function toOccurredLabel(parts: Record<string, string>) {
 }
 
 interface HistoryListProps {
-  movements: FundMovement[];
+  movements: FundMovementItem[];
 }
 
 export function HistoryList({ movements }: HistoryListProps) {
-  const months: { key: string; items: FundMovement[] }[] = [];
+  const months: { key: string; items: FundMovementItem[] }[] = [];
   for (const movement of movements) {
     const key = toMonthKey(toParts(movement.occurredAt));
     const last = months.at(-1);
