@@ -2,7 +2,11 @@ import "server-only";
 
 import { unwrapResult } from "@/lib/http/result";
 import { getRepresentativeWish, listWishes } from "@/lib/http/wishes";
-import type { OwnedWishItem, WishItemState } from "../_components/wish-item";
+import {
+  toOwnedWishItem,
+  type OwnedWishItem,
+  type WishItemState,
+} from "../_components/wish-item";
 import { loadAccountContext } from "../load-account";
 
 const WISH_PAGE_LIMIT = 100;
@@ -29,7 +33,7 @@ export async function loadWishList(): Promise<WishListView> {
     getRepresentativeWish(client, { cardBalanceAccountId }),
   ]);
 
-  const wishes = unwrapResult(page).items;
+  const wishes = unwrapResult(page).items.map(toOwnedWishItem);
   const representativeId = unwrapResult(representative)?.id ?? null;
   const active = wishes.filter((wish) => !FINISHED_STATES.includes(wish.state));
 

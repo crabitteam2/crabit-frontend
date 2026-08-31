@@ -3,6 +3,7 @@ import Link from "next/link";
 import moreIcon from "@/../public/images/wishes/more.svg";
 import { toProgressPercent } from "@/app/_components/progress-stage";
 import { Badge } from "@/components/ui/badge";
+import { toWishDisplayAmount } from "./wish-display-amount";
 import type { WishItem } from "./wish-item";
 import { WishProgressBar } from "./wish-progress-bar";
 import { getWishTheme, type WishTone } from "./wish-theme";
@@ -20,7 +21,8 @@ export function WishCard({
   isRepresentative,
   onMore,
 }: WishCardProps) {
-  const percent = toProgressPercent(wish.amount, wish.targetAmount);
+  const displayAmount = toWishDisplayAmount(wish);
+  const percent = toProgressPercent(displayAmount.amount, wish.targetAmount);
   const theme = getWishTheme(wish, tone, percent);
 
   return (
@@ -38,6 +40,14 @@ export function WishCard({
           </span>
           {isRepresentative ? <Badge>대표</Badge> : null}
         </span>
+        {displayAmount.label === null ? null : (
+          <span className="text-fg-neutral-muted -mb-3 flex items-baseline justify-between gap-3 text-[13px] leading-5 tracking-[-0.3px]">
+            <span>{displayAmount.label}</span>
+            <span className="text-fg-neutral font-semibold">
+              {displayAmount.amount.toLocaleString("ko-KR")}원
+            </span>
+          </span>
+        )}
         <WishProgressBar percent={percent} theme={theme} />
       </Link>
       {onMore ? (

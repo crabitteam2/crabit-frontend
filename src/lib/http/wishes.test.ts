@@ -18,11 +18,13 @@ const wishId = "22222222-2222-4222-8222-222222222222";
 const mutationResult: components["schemas"]["WishMutationResult"] = {
   eventId: "33333333-3333-4333-8333-333333333333",
   wish: {
+    abandonmentAmount: null,
     actualDurationSeconds: null,
     amount: 40_000,
     balanceAdjustmentInProgress: true,
     cardBalanceAccountId: accountId,
     completedAt: null,
+    closedAt: null,
     createdAt: "2026-08-21T00:00:00Z",
     id: wishId,
     purpose: "노트북",

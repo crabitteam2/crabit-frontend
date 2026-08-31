@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { toProgressPercent } from "@/app/_components/progress-stage";
+import { toWishDisplayAmount } from "./wish-display-amount";
 import { toSavingPeriodLabel } from "./wish-period-format";
 import { isFinishedState, type WishDetail } from "./wish-detail";
 import { WishProgressBar } from "./wish-progress-bar";
@@ -24,7 +25,8 @@ function summaryTheme(wish: WishDetail) {
 }
 
 export function WishSummaryCard({ wish }: WishSummaryCardProps) {
-  const percent = toProgressPercent(wish.amount, wish.targetAmount);
+  const displayAmount = toWishDisplayAmount(wish);
+  const percent = toProgressPercent(displayAmount.amount, wish.targetAmount);
   const isFinished = isFinishedState(wish.state);
   const period =
     wish.targetDate === ""
@@ -57,9 +59,14 @@ export function WishSummaryCard({ wish }: WishSummaryCardProps) {
           />
         )}
       </div>
+      {displayAmount.label === null ? null : (
+        <p className="text-fg-neutral-muted flex justify-end text-[14px] leading-6 tracking-[-0.3px]">
+          {displayAmount.label}
+        </p>
+      )}
       <p className="text-pink-6 flex justify-end font-bold tracking-[-0.3px]">
         <span className="text-[28px] leading-[34px]">
-          {wish.amount.toLocaleString("ko-KR")}
+          {displayAmount.amount.toLocaleString("ko-KR")}
         </span>
         <span className="text-[26px] leading-[34px]">&nbsp;원</span>
       </p>
