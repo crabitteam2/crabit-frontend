@@ -74,6 +74,12 @@ export function WishEditForm({
   const digits = nextAmount.replace(/\D/g, "");
   const amount = digits === "" ? 0 : Number(digits);
   const nextPeriod = toPeriodLabel(range);
+  const displayedPhotoUrl = removeCurrentPhoto
+    ? null
+    : (previewUrl ??
+      pendingPhoto?.variants.medium ??
+      photo?.variants.medium ??
+      null);
   const canSubmit =
     nextPurpose.trim() !== "" ||
     amount > 0 ||
@@ -214,7 +220,7 @@ export function WishEditForm({
       {isCalendarOpen ? null : (
         <>
           <div className="flex flex-col items-center gap-3 px-4 pb-5">
-            {removeCurrentPhoto || (photo === null && previewUrl === null) ? (
+            {displayedPhotoUrl === null ? (
               <button
                 type="button"
                 onClick={() => photoInputRef.current?.click()}
@@ -229,7 +235,7 @@ export function WishEditForm({
                 aria-label="위시 사진 변경"
               >
                 <Image
-                  src={previewUrl ?? photo?.variants.medium ?? ""}
+                  src={displayedPhotoUrl}
                   alt="위시 사진"
                   width={96}
                   height={96}

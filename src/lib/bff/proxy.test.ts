@@ -222,6 +222,71 @@ describe("proxyBackendRequest", () => {
     expect(response.headers.get("retry-after")).toBe("17");
   });
 
+  it("rejects a declared oversized Wish photo body before reading or contacting upstream", async () => {
+    const request = frontendRequest("POST", "/v1/wish-photos", {
+      headers: {
+        "Content-Length": "9",
+        "Content-Type": "multipart/form-data; boundary=x",
+      },
+      body: "123456789",
+    });
+    const bodyRead = vi.spyOn(request, "arrayBuffer");
+    const fetchImpl = vi.fn<typeof fetch>();
+
+    const response = await proxy(request, ["v1", "wish-photos"], {
+      fetchImpl,
+      wishPhotoUploadMaxBytes: 8,
+    });
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toEqual({
+      code: "BFF_PAYLOAD_TOO_LARGE",
+      message: "BFF request body is too large",
+    });
+    expect(bodyRead).not.toHaveBeenCalled();
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("stops a chunked Wish photo body when its streamed bytes exceed the limit", async () => {
+    const request = streamedFrontendRequest([
+      new Uint8Array([1, 2, 3, 4, 5]),
+      new Uint8Array([6, 7, 8, 9]),
+    ]);
+    const fetchImpl = vi.fn<typeof fetch>();
+
+    const response = await proxy(request, ["v1", "wish-photos"], {
+      fetchImpl,
+      wishPhotoUploadMaxBytes: 8,
+    });
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toEqual({
+      code: "BFF_PAYLOAD_TOO_LARGE",
+      message: "BFF request body is too large",
+    });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("includes slow Wish photo body receipt in the upload deadline", async () => {
+    vi.useFakeTimers();
+    try {
+      const request = streamedFrontendRequest([], false);
+      const fetchImpl = vi.fn<typeof fetch>();
+      const responsePromise = proxy(request, ["v1", "wish-photos"], {
+        fetchImpl,
+        wishPhotoUploadMaxBytes: 8,
+        wishPhotoUploadTimeoutMilliseconds: 25,
+      });
+
+      await vi.advanceTimersByTimeAsync(25);
+
+      expect((await responsePromise).status).toBe(408);
+      expect(fetchImpl).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("re-encodes decoded path segments and preserves the raw ordered query", async () => {
     const query = "?state=OPEN&state=CLOSED&cursor=a%2fb&empty=";
     const request = frontendRequest("GET", `/ignored${query}`);
@@ -668,6 +733,27 @@ function frontendRequest(
     headers: options.headers,
     ...(options.body === undefined ? {} : { body: options.body }),
   });
+}
+
+function streamedFrontendRequest(
+  chunks: readonly Uint8Array[],
+  close = true,
+) {
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(chunk);
+      if (close) controller.close();
+    },
+  });
+  return new Request(
+    "http://frontend.test/api/backend/v1/wish-photos",
+    {
+      method: "POST",
+      headers: { "Content-Type": "multipart/form-data; boundary=x" },
+      body,
+      duplex: "half",
+    } as RequestInit & { duplex: "half" },
+  );
 }
 
 function environment(backendProfile: BackendProfile): BffEnvironment {
