@@ -43,7 +43,7 @@ export default async function WishDetailPage({
         </div>
 
         {isFinished ? (
-          <WishFinishedActions wishId={wishId} />
+          <WishFinishedActions wishId={wishId} version={wish.version} />
         ) : hasReachedTarget ? (
           <WishReachedActions wishId={wishId} />
         ) : (

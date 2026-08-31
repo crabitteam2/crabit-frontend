@@ -4,10 +4,10 @@ import Image from "next/image";
 import { useState } from "react";
 import moreIcon from "@/../public/images/wishes/more.svg";
 import { WishActionSheet } from "./wish-action-sheet";
-import type { WishItem } from "./wish-item";
+import type { OwnedWishItem } from "./wish-item";
 
 interface WishDetailActionsProps {
-  wish: WishItem;
+  wish: OwnedWishItem;
 }
 
 export function WishDetailActions({ wish }: WishDetailActionsProps) {

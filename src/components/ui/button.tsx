@@ -46,7 +46,7 @@ export interface ButtonProps extends Omit<
   size?: ButtonSize;
   /** 로딩 스피너를 표시하고 버튼을 비활성화할지 여부입니다. */
   isLoading?: boolean;
-  /** 평상시에 표시하고 로딩 중에는 스크린 리더에만 남기는 레이블입니다. */
+  /** 버튼 레이블입니다. */
   children?: ReactNode;
 }
 
@@ -69,16 +69,16 @@ export function Button({
       type="button"
       disabled={disabled || isLoading}
       aria-busy={isLoading || undefined}
-      className={`inline-flex items-center justify-center rounded-xl font-semibold disabled:opacity-40 ${sizeStyles[size]} ${toneStyles[variant][color]} ${className}`}
+      className={`relative inline-flex items-center justify-center rounded-xl font-semibold ${isLoading ? "" : "disabled:opacity-40"} ${sizeStyles[size]} ${toneStyles[variant][color]} ${className}`}
       {...props}
     >
       {isLoading ? (
         <>
           <span
             aria-hidden="true"
-            className={`animate-spin rounded-full border-2 border-current border-t-transparent ${spinnerStyles[size]}`}
+            className={`absolute animate-spin rounded-full border-2 border-current border-t-transparent ${spinnerStyles[size]}`}
           />
-          <span className="sr-only">{children}</span>
+          <span className="opacity-0">{children}</span>
         </>
       ) : (
         children

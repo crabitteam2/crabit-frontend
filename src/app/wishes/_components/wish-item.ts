@@ -16,3 +16,9 @@ export interface WishItem {
   /** 위시의 진행 단계입니다. */
   readonly state: WishItemState;
 }
+
+/** 쓰기 요청에 필요한 낙관적 동시성 버전까지 담은 내 위시입니다. */
+export interface OwnedWishItem extends WishItem {
+  /** 서버가 내려준 위시 스냅샷 버전입니다. */
+  readonly version: number;
+}
