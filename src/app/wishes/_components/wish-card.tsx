@@ -38,6 +38,16 @@ export function WishCard({
           </span>
           {isRepresentative ? <Badge>대표</Badge> : null}
         </span>
+        {wish.imageUrl === undefined ? null : (
+          <Image
+            src={wish.imageUrl}
+            alt=""
+            width={96}
+            height={96}
+            unoptimized
+            className="mx-auto size-24 rounded-full object-cover"
+          />
+        )}
         <WishProgressBar percent={percent} theme={theme} />
       </Link>
       {onMore ? (

@@ -21,9 +21,11 @@ const mutationResult: components["schemas"]["WishMutationResult"] = {
     amount: 40_000,
     balanceAdjustmentInProgress: true,
     cardBalanceAccountId: accountId,
+    closedAt: null,
     completedAt: null,
     createdAt: "2026-08-21T00:00:00Z",
     id: wishId,
+    photo: null,
     purpose: "노트북",
     state: "IN_PROGRESS",
     targetAmount: 100_000,
@@ -70,7 +72,12 @@ describe("Wish typed request helpers", () => {
     await expect(createWish(client, {
       cardBalanceAccountId: accountId,
       idempotencyKey: "create-key",
-      body: { purpose: "노트북", targetAmount: 100_000, targetDate: null },
+      body: {
+        purpose: "노트북",
+        targetAmount: 100_000,
+        targetDate: null,
+        photoId: "9a8b7c6d-5e4f-4321-9876-1234567890ab",
+      },
     })).resolves.toEqual({ ok: true, data: mutationResult });
 
     expect(captured[0].method).toBe("POST");
@@ -79,6 +86,9 @@ describe("Wish typed request helpers", () => {
     );
     expect(captured[0].headers.get("idempotency-key")).toBe("create-key");
     expect(captured[0].headers.get("content-type")).toBe("application/json");
+    await expect(captured[0].clone().json()).resolves.toMatchObject({
+      photoId: "9a8b7c6d-5e4f-4321-9876-1234567890ab",
+    });
   });
 
   it("fixes merge patch to application/merge-patch+json behind the typed helper", async () => {
@@ -88,7 +98,7 @@ describe("Wish typed request helpers", () => {
     await expect(patchWish(client, {
       cardBalanceAccountId: accountId,
       wishId,
-      body: { expectedVersion: 3, targetDate: null },
+      body: { expectedVersion: 3, targetDate: null, photoId: null },
     })).resolves.toEqual({ ok: true, data: mutationResult });
 
     expect(captured[0].method).toBe("PATCH");
@@ -98,6 +108,7 @@ describe("Wish typed request helpers", () => {
     await expect(captured[0].clone().json()).resolves.toEqual({
       expectedVersion: 3,
       targetDate: null,
+      photoId: null,
     });
   });
 

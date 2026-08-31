@@ -97,6 +97,16 @@ describe("proxyBackendRequest", () => {
         return;
       }
 
+      if (pathname === "/v1/wish-photos") {
+        response.writeHead(201, {
+          "Content-Type": "application/json",
+          "Idempotency-Replayed": "true",
+          "Retry-After": "17",
+        });
+        response.end(JSON.stringify({ uploaded: true }));
+        return;
+      }
+
       const body = record.body.byteLength > 0 ? record.body : Buffer.from("ok");
       response.writeHead(200, {
         "Content-Type": request.headers["content-type"] ?? "text/plain",
@@ -184,6 +194,32 @@ describe("proxyBackendRequest", () => {
 
     expect(response.status).toBe(200);
     expect(Array.from(received[0].body)).toEqual(Array.from(body));
+  });
+
+  it("preserves Wish photo multipart bytes and boundary and exposes upload headers", async () => {
+    const boundary = "----crabit-boundary-875c11ef";
+    const body = Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="wish-photo.jpg"\r\nContent-Type: image/jpeg\r\n\r\nphoto-bytes\r\n--${boundary}--\r\n`,
+    );
+    const contentType = `multipart/form-data; boundary=${boundary}`;
+
+    const response = await proxy(
+      frontendRequest("POST", "/v1/wish-photos", {
+        headers: {
+          "Content-Type": contentType,
+          "Idempotency-Key": "stable-upload-key",
+        },
+        body,
+      }),
+      ["v1", "wish-photos"],
+    );
+
+    expect(response.status).toBe(201);
+    expect(received[0].headers["content-type"]).toBe(contentType);
+    expect(received[0].headers["idempotency-key"]).toBe("stable-upload-key");
+    expect(received[0].body).toEqual(body);
+    expect(response.headers.get("idempotency-replayed")).toBe("true");
+    expect(response.headers.get("retry-after")).toBe("17");
   });
 
   it("re-encodes decoded path segments and preserves the raw ordered query", async () => {
@@ -560,6 +596,48 @@ describe("proxyBackendRequest", () => {
       code: "BFF_UPSTREAM_UNAVAILABLE",
       message: "Backend service is unavailable",
     });
+  });
+
+  it("uses the bounded upload-specific deadline for Wish photo processing", async () => {
+    vi.useFakeTimers();
+    try {
+      const captured: { signal?: AbortSignal } = {};
+      const fetchImpl = vi.fn(async (
+        _input: RequestInfo | URL,
+        init?: RequestInit,
+      ) => {
+        captured.signal = init?.signal ?? undefined;
+        return await new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            "abort",
+            () => reject(new DOMException("upload timeout", "AbortError")),
+            { once: true },
+          );
+        });
+      });
+      const responsePromise = proxyBackendRequest(
+        frontendRequest("POST", "/v1/wish-photos", {
+          headers: { "Content-Type": "multipart/form-data; boundary=x" },
+          body: "--x--\r\n",
+        }),
+        ["v1", "wish-photos"],
+        {
+          fetchImpl: fetchImpl as typeof fetch,
+          loadEnvironment: () => environment("prod"),
+          loadTokens: () => emptyTokenConfiguration(),
+          timeoutMilliseconds: 5,
+          wishPhotoUploadTimeoutMilliseconds: 25,
+        },
+      );
+
+      await vi.advanceTimersByTimeAsync(5);
+      expect(captured.signal?.aborted).toBe(false);
+      await vi.advanceTimersByTimeAsync(20);
+      expect((await responsePromise).status).toBe(502);
+      expect(captured.signal?.aborted).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   function proxy(

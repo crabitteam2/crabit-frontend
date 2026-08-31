@@ -2,6 +2,7 @@ import "server-only";
 
 import { unwrapResult } from "@/lib/http/result";
 import { getRepresentativeWish, listWishes } from "@/lib/http/wishes";
+import type { components } from "@/lib/http/generated/crabit-backend";
 import type { WishItem, WishItemState } from "../_components/wish-item";
 import { loadAccountContext } from "../load-account";
 
@@ -29,7 +30,7 @@ export async function loadWishList(): Promise<WishListView> {
     getRepresentativeWish(client, { cardBalanceAccountId }),
   ]);
 
-  const wishes = unwrapResult(page).items;
+  const wishes = unwrapResult(page).items.map(toWishItem);
   const representativeId = unwrapResult(representative)?.id ?? null;
   const active = wishes.filter((wish) => !FINISHED_STATES.includes(wish.state));
 
@@ -37,6 +38,17 @@ export async function loadWishList(): Promise<WishListView> {
     inProgress: hoistRepresentative(active, representativeId),
     finished: wishes.filter((wish) => FINISHED_STATES.includes(wish.state)),
     representativeId,
+  };
+}
+
+function toWishItem(wish: components["schemas"]["Wish"]): WishItem {
+  return {
+    id: wish.id,
+    purpose: wish.purpose,
+    amount: wish.amount,
+    targetAmount: wish.targetAmount,
+    state: wish.state,
+    ...(wish.photo == null ? {} : { imageUrl: wish.photo.variants.medium }),
   };
 }
 

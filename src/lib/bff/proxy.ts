@@ -20,9 +20,11 @@ const RESPONSE_HEADER_ALLOWLIST = [
   "content-type",
   "www-authenticate",
   "idempotency-replayed",
+  "retry-after",
 ] as const;
 const METHOD_ALLOW_HEADER = "GET, POST, PUT, PATCH, DELETE";
 const UPSTREAM_TIMEOUT_MILLISECONDS = 10_000;
+const WISH_PHOTO_UPLOAD_TIMEOUT_MILLISECONDS = 30_000;
 
 /** BFF 프록시의 외부 경계를 테스트 가능하게 주입하는 선택 의존성입니다. */
 export interface ProxyDependencies {
@@ -36,6 +38,8 @@ export interface ProxyDependencies {
   ) => PersonaTokenConfiguration;
   /** 업스트림 요청 제한 시간이며 기본값은 10초입니다. */
   readonly timeoutMilliseconds?: number;
+  /** 동기 사진 처리 요청의 별도 제한 시간이며 기본값은 30초입니다. */
+  readonly wishPhotoUploadTimeoutMilliseconds?: number;
 }
 
 /**
@@ -91,7 +95,7 @@ export async function proxyBackendRequest(
   const abortController = new AbortController();
   const timeout = setTimeout(
     () => abortController.abort(),
-    dependencies.timeoutMilliseconds ?? UPSTREAM_TIMEOUT_MILLISECONDS,
+    requestTimeout(request, pathSegments, dependencies),
   );
 
   let upstreamResponse: Response;
@@ -140,6 +144,22 @@ export async function proxyBackendRequest(
       headers,
     },
   );
+}
+
+function requestTimeout(
+  request: Request,
+  pathSegments: readonly string[],
+  dependencies: ProxyDependencies,
+) {
+  const isWishPhotoUpload =
+    request.method === "POST" &&
+    pathSegments.length === 2 &&
+    pathSegments[0] === "v1" &&
+    pathSegments[1] === "wish-photos";
+  return isWishPhotoUpload
+    ? (dependencies.wishPhotoUploadTimeoutMilliseconds ??
+        WISH_PHOTO_UPLOAD_TIMEOUT_MILLISECONDS)
+    : (dependencies.timeoutMilliseconds ?? UPSTREAM_TIMEOUT_MILLISECONDS);
 }
 
 function defaultLoadTokens(environment: BffEnvironment) {

@@ -15,4 +15,6 @@ export interface WishItem {
   readonly targetAmount: number;
   /** 위시의 진행 단계입니다. */
   readonly state: WishItemState;
+  /** 현재 권한으로 발급된 짧은 사진 URL이며 사진이 없으면 생략합니다. */
+  readonly imageUrl?: string;
 }
