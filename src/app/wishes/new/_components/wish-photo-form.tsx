@@ -24,6 +24,7 @@ import {
   type PhotoSize,
 } from "./photo-crop";
 import { digestWishPhotoFile, renderWishPhotoJpeg } from "./photo-jpeg";
+import { wishPhotoErrorMessage } from "./wish-photo-error";
 import {
   clearPendingWishPhoto,
   clearWishPhotoUploadState,
@@ -238,7 +239,7 @@ export function WishPhotoForm({
           photo: jpeg,
         });
         if (!upload.ok) {
-          setError(photoErrorMessage(upload.error.code));
+          setError(wishPhotoErrorMessage(upload.error.code));
           return;
         }
         uploaded = upload.data;
@@ -263,7 +264,7 @@ export function WishPhotoForm({
         body,
       });
       if (!created.ok) {
-        setError(photoErrorMessage(created.error.code));
+        setError(wishPhotoErrorMessage(created.error.code));
         return;
       }
 
@@ -412,29 +413,4 @@ export function WishPhotoForm({
       </div>
     </div>
   );
-}
-
-function photoErrorMessage(code: string) {
-  switch (code) {
-    case "PHOTO_TOO_LARGE":
-      return "사진 파일이 너무 커요.";
-    case "UNSUPPORTED_PHOTO_TYPE":
-    case "INVALID_PHOTO":
-      return "사용할 수 없는 사진이에요. 다른 사진을 선택해주세요.";
-    case "PHOTO_CONTENT_NOT_ALLOWED":
-      return "이 사진은 위시에 사용할 수 없어요.";
-    case "PHOTO_UPLOAD_RATE_LIMITED":
-      return "사진 업로드 횟수를 초과했어요. 잠시 후 다시 시도해주세요.";
-    case "PHOTO_PROCESSING_UNAVAILABLE":
-    case "PHOTO_DELIVERY_UNAVAILABLE":
-    case "NETWORK_ERROR":
-    case "BFF_UPSTREAM_UNAVAILABLE":
-      return "사진 서비스에 잠시 연결할 수 없어요. 다시 시도해주세요.";
-    case "WISH_PHOTO_EXPIRED":
-      return "사진 업로드 시간이 만료됐어요. 사진을 다시 선택해주세요.";
-    case "WISH_PHOTO_ALREADY_ATTACHED":
-      return "이미 다른 위시에 사용된 사진이에요.";
-    default:
-      return "위시를 만들지 못했어요. 입력을 확인하고 다시 시도해주세요.";
-  }
 }
