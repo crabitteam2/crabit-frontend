@@ -33,6 +33,7 @@ interface WishActionSheetProps {
 export function WishActionSheet({ wish, onClose }: WishActionSheetProps) {
   const router = useRouter();
   const [dialog, setDialog] = useState<PendingDialog | null>(null);
+  const [pending, setPending] = useState<DialogKind | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const openDialog = (kind: DialogKind) => {
@@ -46,16 +47,24 @@ export function WishActionSheet({ wish, onClose }: WishActionSheetProps) {
     request: (target: OwnedWishItem) => Promise<WishActionResult>,
     toHref: (target: OwnedWishItem) => string,
   ) => {
-    if (dialog === null) return;
+    if (dialog === null || pending !== null) return;
     const target = dialog.wish;
-    setDialog(null);
+    setPending(dialog.kind);
 
     const result = await request(target);
+    setPending(null);
+    setDialog(null);
+
     if (result.ok) {
       router.push(toHref(target));
       return;
     }
     setError(result.message);
+  };
+
+  const dismiss = () => {
+    if (pending !== null) return;
+    setDialog(null);
   };
 
   return (
@@ -108,8 +117,9 @@ export function WishActionSheet({ wish, onClose }: WishActionSheetProps) {
             (target) => `/?representative=${target.id}&toast=representative`,
           )
         }
-        onSecondary={() => setDialog(null)}
-        onDismiss={() => setDialog(null)}
+        onSecondary={dismiss}
+        onDismiss={dismiss}
+        loadingButton={pending === "representative" ? "primary" : undefined}
       />
 
       <ConfirmDialog
@@ -124,14 +134,15 @@ export function WishActionSheet({ wish, onClose }: WishActionSheetProps) {
         }
         primaryLabel="아니요"
         secondaryLabel="포기하기"
-        onPrimary={() => setDialog(null)}
+        onPrimary={dismiss}
         onSecondary={() =>
           void confirm(
             (target) => abandonWishAction(target.id, target.version),
             () => "/wishes?toast=abandon",
           )
         }
-        onDismiss={() => setDialog(null)}
+        onDismiss={dismiss}
+        loadingButton={pending === "abandon" ? "secondary" : undefined}
       />
 
       {error === null ? null : (

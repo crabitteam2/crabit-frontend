@@ -21,17 +21,27 @@ export function WishFinishedActions({
 }: WishFinishedActionsProps) {
   const router = useRouter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const remove = async () => {
-    setIsDialogOpen(false);
+    if (isDeleting) return;
+    setIsDeleting(true);
 
     const result = await deleteWishAction(wishId, version);
+    setIsDeleting(false);
+    setIsDialogOpen(false);
+
     if (result.ok) {
       router.push("/wishes?toast=delete");
       return;
     }
     setError(result.message);
+  };
+
+  const dismiss = () => {
+    if (isDeleting) return;
+    setIsDialogOpen(false);
   };
 
   return (
@@ -64,9 +74,10 @@ export function WishFinishedActions({
         }
         primaryLabel="아니요"
         secondaryLabel="삭제하기"
-        onPrimary={() => setIsDialogOpen(false)}
+        onPrimary={dismiss}
         onSecondary={() => void remove()}
-        onDismiss={() => setIsDialogOpen(false)}
+        onDismiss={dismiss}
+        loadingButton={isDeleting ? "secondary" : undefined}
       />
 
       {error === null ? null : (

@@ -13,6 +13,11 @@ interface ConfirmDialogProps {
   onPrimary: () => void;
   onSecondary: () => void;
   onDismiss: () => void;
+  /**
+   * 요청을 보내는 중인 버튼입니다. 지정하면 그 버튼에 스피너를 띄우고
+   * 두 버튼과 Escape 닫기를 모두 잠급니다.
+   */
+  loadingButton?: "primary" | "secondary";
 }
 
 export function ConfirmDialog({
@@ -24,10 +29,12 @@ export function ConfirmDialog({
   onPrimary,
   onSecondary,
   onDismiss,
+  loadingButton,
 }: ConfirmDialogProps) {
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
+  const isBusy = loadingButton !== undefined;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -36,7 +43,7 @@ export function ConfirmDialog({
     dialogRef.current?.querySelector("button")?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onDismiss();
+      if (event.key === "Escape" && !isBusy) onDismiss();
     };
     const { overflow } = document.body.style;
     document.body.style.overflow = "hidden";
@@ -47,7 +54,7 @@ export function ConfirmDialog({
       document.body.style.overflow = overflow;
       previouslyFocused.current?.focus();
     };
-  }, [isOpen, onDismiss]);
+  }, [isOpen, isBusy, onDismiss]);
 
   if (!isOpen) return null;
 
@@ -77,10 +84,21 @@ export function ConfirmDialog({
             </p>
           )}
           <div className="flex items-center justify-center gap-4">
-            <Button size="large" onClick={onPrimary}>
+            <Button
+              size="large"
+              onClick={onPrimary}
+              isLoading={loadingButton === "primary"}
+              disabled={isBusy}
+            >
               {primaryLabel}
             </Button>
-            <Button size="large" variant="weak" onClick={onSecondary}>
+            <Button
+              size="large"
+              variant="weak"
+              onClick={onSecondary}
+              isLoading={loadingButton === "secondary"}
+              disabled={isBusy}
+            >
               {secondaryLabel}
             </Button>
           </div>
