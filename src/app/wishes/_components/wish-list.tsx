@@ -7,7 +7,7 @@ import { Toast } from "@/components/ui/toast";
 import { EmptyWishCard } from "./empty-wish-card";
 import { WishActionSheet } from "./wish-action-sheet";
 import { WishCard } from "./wish-card";
-import type { WishItem } from "./wish-item";
+import type { OwnedWishItem } from "./wish-item";
 import { WISH_TONES } from "./wish-theme";
 
 const FULL_LIST_MAX = 3;
@@ -23,8 +23,8 @@ function toInitialShown(total: number) {
 const TOAST_MESSAGE = "설정이 저장되었습니다.";
 
 interface WishListProps {
-  inProgress: WishItem[];
-  finished: WishItem[];
+  inProgress: OwnedWishItem[];
+  finished: OwnedWishItem[];
   representativeId: string | null;
   toastKey?: string | null;
 }
@@ -35,7 +35,7 @@ export function WishList({
   representativeId,
   toastKey,
 }: WishListProps) {
-  const [sheetWish, setSheetWish] = useState<WishItem | null>(null);
+  const [sheetWish, setSheetWish] = useState<OwnedWishItem | null>(null);
   const [toast, setToast] = useState<string | null>(
     toastKey === null || toastKey === undefined ? null : TOAST_MESSAGE,
   );
@@ -72,7 +72,7 @@ export function WishList({
                     wish={wish}
                     tone={WISH_TONES[index % WISH_TONES.length]}
                     isRepresentative={wish.id === representativeId}
-                    onMore={setSheetWish}
+                    onMore={() => setSheetWish(wish)}
                   />
                 </li>
               ))}

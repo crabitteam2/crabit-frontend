@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BottomSheet } from "@/components/ui/bottom-sheet";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import type { WishItem } from "./wish-item";
+import { Toast } from "@/components/ui/toast";
+import {
+  abandonWishAction,
+  selectRepresentativeWishAction,
+  type WishActionResult,
+} from "../wish-actions";
+import type { OwnedWishItem } from "./wish-item";
 
 const SHEET_CLOSE_MS = 300;
 
@@ -15,18 +21,19 @@ const ACTION_STYLE =
 type DialogKind = "representative" | "abandon";
 
 interface PendingDialog {
-  wish: WishItem;
+  wish: OwnedWishItem;
   kind: DialogKind;
 }
 
 interface WishActionSheetProps {
-  wish: WishItem | null;
+  wish: OwnedWishItem | null;
   onClose: () => void;
 }
 
 export function WishActionSheet({ wish, onClose }: WishActionSheetProps) {
   const router = useRouter();
   const [dialog, setDialog] = useState<PendingDialog | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const openDialog = (kind: DialogKind) => {
     const opened = wish;
@@ -35,11 +42,20 @@ export function WishActionSheet({ wish, onClose }: WishActionSheetProps) {
     setTimeout(() => setDialog({ wish: opened, kind }), SHEET_CLOSE_MS);
   };
 
-  const confirm = (toHref: (wish: WishItem) => string) => {
+  const confirm = async (
+    request: (target: OwnedWishItem) => Promise<WishActionResult>,
+    toHref: (target: OwnedWishItem) => string,
+  ) => {
     if (dialog === null) return;
     const target = dialog.wish;
     setDialog(null);
-    router.push(toHref(target));
+
+    const result = await request(target);
+    if (result.ok) {
+      router.push(toHref(target));
+      return;
+    }
+    setError(result.message);
   };
 
   return (
@@ -87,7 +103,8 @@ export function WishActionSheet({ wish, onClose }: WishActionSheetProps) {
         primaryLabel="선택하기"
         secondaryLabel="괜찮아요"
         onPrimary={() =>
-          confirm(
+          void confirm(
+            (target) => selectRepresentativeWishAction(target.id),
             (target) => `/?representative=${target.id}&toast=representative`,
           )
         }
@@ -109,10 +126,17 @@ export function WishActionSheet({ wish, onClose }: WishActionSheetProps) {
         secondaryLabel="포기하기"
         onPrimary={() => setDialog(null)}
         onSecondary={() =>
-          confirm((target) => `/wishes?abandoned=${target.id}&toast=abandon`)
+          void confirm(
+            (target) => abandonWishAction(target.id, target.version),
+            () => "/wishes?toast=abandon",
+          )
         }
         onDismiss={() => setDialog(null)}
       />
+
+      {error === null ? null : (
+        <Toast message={error} tone="danger" onClose={() => setError(null)} />
+      )}
     </>
   );
 }
