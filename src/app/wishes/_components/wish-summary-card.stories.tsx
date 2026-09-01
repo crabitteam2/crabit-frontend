@@ -18,6 +18,7 @@ export const Default: Story = {
       amount: 4_500,
       targetAmount: 30_000,
       state: "IN_PROGRESS",
+      version: 3,
       startDate: "26.08.24",
       targetDate: "26.10.25",
     },

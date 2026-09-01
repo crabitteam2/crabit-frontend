@@ -59,6 +59,7 @@ function toWishDetail(wish: components["schemas"]["Wish"]): WishDetail {
     amount: wish.amount,
     targetAmount: wish.targetAmount,
     state: wish.state,
+    version: wish.version,
     startDate: toShortDate(wish.createdAt),
     targetDate: wish.targetDate === null ? "" : toShortDate(wish.targetDate),
     ...(wish.photo == null ? {} : { imageUrl: wish.photo.variants.large }),

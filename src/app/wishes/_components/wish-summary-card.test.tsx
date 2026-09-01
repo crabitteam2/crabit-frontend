@@ -12,6 +12,7 @@ describe("WishSummaryCard", () => {
           amount: 10_000,
           targetAmount: 100_000,
           state: "IN_PROGRESS",
+          version: 3,
           startDate: "26.08.31",
           targetDate: "26.12.31",
           imageUrl: "https://storage.test/signed/large",

@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { components, paths } from "./generated/crabit-backend";
 import {
+  abandonWish,
   createWish,
   deleteWish,
   getRepresentativeWish,
@@ -127,6 +128,27 @@ describe("Wish typed request helpers", () => {
     expect(captured[0].method).toBe("DELETE");
     expect(captured[0].headers.get("idempotency-key")).toBe("delete-key");
     expect(captured[0].headers.get("if-match")).toBe("7");
+  });
+
+  it("posts the expected version and Idempotency-Key to the abandonment sub-resource", async () => {
+    const captured: Request[] = [];
+    const client = testClient(captured, mutationResult);
+
+    await expect(abandonWish(client, {
+      cardBalanceAccountId: accountId,
+      wishId,
+      idempotencyKey: "abandon-key",
+      body: { expectedVersion: 3 },
+    })).resolves.toEqual({ ok: true, data: mutationResult });
+
+    expect(captured[0].method).toBe("POST");
+    expect(captured[0].url).toBe(
+      `https://backend.test/v1/card-balance-accounts/${accountId}/wishes/${wishId}/abandonment`,
+    );
+    expect(captured[0].headers.get("idempotency-key")).toBe("abandon-key");
+    await expect(captured[0].clone().json()).resolves.toEqual({
+      expectedVersion: 3,
+    });
   });
 
   it("reads an optional representative Wish and selects one without mutation headers", async () => {

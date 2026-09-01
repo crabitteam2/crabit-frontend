@@ -18,3 +18,9 @@ export interface WishItem {
   /** 현재 권한으로 발급된 짧은 사진 URL이며 사진이 없으면 생략합니다. */
   readonly imageUrl?: string;
 }
+
+/** 쓰기 요청에 필요한 낙관적 동시성 버전까지 담은 내 위시입니다. */
+export interface OwnedWishItem extends WishItem {
+  /** 서버가 내려준 위시 스냅샷 버전입니다. */
+  readonly version: number;
+}

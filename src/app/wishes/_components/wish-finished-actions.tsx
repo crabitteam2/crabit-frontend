@@ -4,17 +4,45 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Toast } from "@/components/ui/toast";
+import { deleteWishAction } from "../wish-actions";
 
 const ACTION_STYLE =
   "inline-flex h-12 flex-1 items-center justify-center rounded-xl px-5 text-[16px] leading-[19px] font-semibold tracking-[-0.3px]";
 
 interface WishFinishedActionsProps {
   wishId: string;
+  version: number;
 }
 
-export function WishFinishedActions({ wishId }: WishFinishedActionsProps) {
+export function WishFinishedActions({
+  wishId,
+  version,
+}: WishFinishedActionsProps) {
   const router = useRouter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const remove = async () => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+
+    const result = await deleteWishAction(wishId, version);
+    setIsDeleting(false);
+    setIsDialogOpen(false);
+
+    if (result.ok) {
+      router.push("/wishes?toast=delete");
+      return;
+    }
+    setError(result.message);
+  };
+
+  const dismiss = () => {
+    if (isDeleting) return;
+    setIsDialogOpen(false);
+  };
 
   return (
     <>
@@ -46,12 +74,15 @@ export function WishFinishedActions({ wishId }: WishFinishedActionsProps) {
         }
         primaryLabel="아니요"
         secondaryLabel="삭제하기"
-        onPrimary={() => setIsDialogOpen(false)}
-        onSecondary={() =>
-          router.push(`/wishes?deleted=${wishId}&toast=delete`)
-        }
-        onDismiss={() => setIsDialogOpen(false)}
+        onPrimary={dismiss}
+        onSecondary={() => void remove()}
+        onDismiss={dismiss}
+        loadingButton={isDeleting ? "secondary" : undefined}
       />
+
+      {error === null ? null : (
+        <Toast message={error} tone="danger" onClose={() => setError(null)} />
+      )}
     </>
   );
 }
