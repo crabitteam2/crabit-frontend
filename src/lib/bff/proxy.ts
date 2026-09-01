@@ -86,6 +86,7 @@ export async function proxyBackendRequest(
   }
 
   const fetchImpl = dependencies.fetchImpl ?? globalThis.fetch;
+  const wishPhotoUpload = isWishPhotoUpload(request, pathSegments);
   const abortController = new AbortController();
   const timeout = setTimeout(
     () => abortController.abort(),
@@ -94,7 +95,7 @@ export async function proxyBackendRequest(
 
   let body: ArrayBuffer | undefined;
   if (METHODS_WITH_BODY.has(request.method)) {
-    if (isWishPhotoUpload(request, pathSegments)) {
+    if (wishPhotoUpload) {
       const bodyResult = await readBoundedRequestBody(
         request,
         dependencies.wishPhotoUploadMaxBytes ?? WISH_PHOTO_UPLOAD_MAX_BYTES,
@@ -142,11 +143,13 @@ export async function proxyBackendRequest(
     });
     upstreamBody = await upstreamResponse.arrayBuffer();
   } catch {
-    return errorResponse(
-      502,
-      "BFF_UPSTREAM_UNAVAILABLE",
-      "Backend service is unavailable",
-    );
+    return wishPhotoUpload && abortController.signal.aborted
+      ? requestTimeoutResponse()
+      : errorResponse(
+          502,
+          "BFF_UPSTREAM_UNAVAILABLE",
+          "Backend service is unavailable",
+        );
   } finally {
     clearTimeout(timeout);
   }

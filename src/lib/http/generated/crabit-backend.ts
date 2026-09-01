@@ -375,7 +375,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 동일 계정의 두 위시 간 자금 원자적 이체 */
+        /**
+         * 동일 계정의 두 위시 간 자금 원자적 이체
+         * @description 출발·도착 Wish snapshot과 각각의 private photo replay state를 이체 성공 결과와 함께 원자적으로 캡처합니다. 일치 재생은 두 상태를 URL 발급 전에 함께 평가합니다. 각 NO_PHOTO는 이후 현재 attachment와 무관하게 null을 유지하고, 각 ACTIVE_PHOTO는 캡처된 정확한 photoId가 같은 소유자와 정확한 위시에 유효하게 ATTACHED인 경우에만 새 5분 URL을 받습니다. 어느 한쪽이라도 PHOTO_REVOKED이면 다른 쪽 URL을 발급하거나 부분 본문을 반환하지 않고 전체 재생이 409 WISH_PHOTO_EXPIRED로 실패합니다. 모든 필요한 URL 중 하나라도 발급하지 못하면 receipt를 바꾸지 않고 전체 재생이 503 PHOTO_DELIVERY_UNAVAILABLE로 실패합니다. 성공 재생에만 Idempotency-Replayed true를 보냅니다.
+         */
         post: operations["transferWishFunds"];
         delete?: never;
         options?: never;
@@ -400,7 +403,7 @@ export interface paths {
         put?: never;
         /**
          * 초기 적립금이 0인 비공개 위시 생성
-         * @description 잔액 정보가 UNKNOWN이거나 OPEN 잔액 불일치가 없을 때 amount 0, state IN_PROGRESS, visibility PRIVATE인 위시를 생성합니다. photoId가 생략되거나 null이면 사진 없이 만들고, UUID이면 인증된 학생 소유의 만료되지 않은 미첨부 Pending 사진을 새 위시에 원자적으로 첨부합니다. 성공한 첨부는 사진 업로드 receipt의 ACTIVE_SUCCESS를 유지하며 24시간 retainUntil을 소비·연장·교체하지 않습니다. 첨부 실패 시 위시와 attachment 모두 생성하지 않습니다. 일치하는 Idempotency-Key의 이전 성공 결과는 현재 불일치 방어 조건보다 먼저 재생하며, domain snapshot identity·상태·version은 최초 결과를 유지하되 signed URL은 저장하지 않고 재생 때 새 5분 URL을 발급합니다. 응답 capability 발급은 commit 전에 완료하므로 signing 실패가 비멱등 commit을 모호하게 만들지 않습니다. 그 밖의 경우 OPEN 잔액 조정 건이 있으면 새 위시를 저장하기 전에 409 BALANCE_MISMATCH_LOCKED로 생성을 거부합니다.
+         * @description 잔액 정보가 UNKNOWN이거나 OPEN 잔액 불일치가 없을 때 amount 0, state IN_PROGRESS, visibility PRIVATE인 위시를 생성합니다. photoId가 생략되거나 null이면 사진 없이 만들고, UUID이면 인증된 학생 소유의 만료되지 않은 미첨부 Pending 사진을 새 위시에 원자적으로 첨부합니다. 성공한 첨부는 사진 업로드 receipt의 ACTIVE_SUCCESS를 유지하며 24시간 retainUntil을 소비·연장·교체하지 않습니다. 첨부 실패 시 위시와 attachment 모두 생성하지 않습니다. 일치하는 Idempotency-Key의 이전 성공 결과는 현재 불일치 방어 조건보다 먼저 재생합니다. 최초 성공에 사진이 있으면 private ACTIVE_PHOTO 상태가 그 정확한 photoId를 유효한 동안만 보존하고 재생 때 소유권과 같은 위시 attachment를 재검증하여 새 5분 URL을 발급합니다. 최초 성공에 사진이 없던 NO_PHOTO는 이후 현재 사진이 붙어도 대체하지 않고 photo null을 반환합니다. 원래 사진이 교체·제거·revocation·Wish 삭제·cleanup으로 무효화되면 식별자 없는 PHOTO_REVOKED가 되어 Wish 성공 본문 없이 409 WISH_PHOTO_EXPIRED를 반환합니다. 새 URL 발급만 실패하면 receipt를 바꾸지 않고 부분 성공 본문 없이 503 PHOTO_DELIVERY_UNAVAILABLE을 반환합니다. 성공 재생에만 Idempotency-Replayed true를 보냅니다. 응답 capability 발급은 commit 전에 완료하므로 signing 실패가 비멱등 commit을 모호하게 만들지 않습니다. 그 밖의 경우 OPEN 잔액 조정 건이 있으면 새 위시를 저장하기 전에 409 BALANCE_MISMATCH_LOCKED로 생성을 거부합니다.
          */
         post: operations["createWish"];
         delete?: never;
@@ -428,7 +431,7 @@ export interface paths {
         post?: never;
         /**
          * 위시 논리 삭제
-         * @description 최종 변경 결과를 반환합니다. 첨부 사진은 같은 domain transaction에서 즉시 접근 불가능한 DELETE_PENDING으로 바꾸고, 보존 중인 성공 업로드 receipt를 파괴적 정리 전에 REVOKED_SUCCESS로 변경하여 retainUntil까지 남깁니다. tombstone과 불변 이력에는 사진 identity나 URL을 남기지 않습니다. 응답 capability 발급은 commit 전에 완료합니다. 이후의 모든 조회는 WISH_NOT_FOUND로 숨깁니다. OPEN 잔액 조정 건이 있어도 삭제를 차단하지 않습니다.
+         * @description 최종 변경 결과를 반환합니다. 첨부 사진은 같은 domain transaction에서 즉시 접근 불가능한 DELETE_PENDING으로 바꾸고, 보존 중인 성공 업로드 receipt를 파괴적 정리 전에 REVOKED_SUCCESS로 변경하여 retainUntil까지 남깁니다. 동시에 소유자의 모든 Wish mutation receipt에서 그 photoId인 ACTIVE_PHOTO를 식별자 없는 PHOTO_REVOKED로 원자적으로 바꾼 뒤 삭제 성공 snapshot을 캡처합니다. 따라서 deleteWish 자체의 성공 receipt는 항상 NO_PHOTO를 저장하고 일치 재생은 이후 사진 상태를 조회하지 않은 채 원래 photo null 결과를 반환하므로 DeleteConflict에는 WISH_PHOTO_EXPIRED가 없습니다. redaction이 실패하면 삭제와 사진 revocation도 rollback합니다. tombstone과 불변 이력에는 사진 identity나 URL을 남기지 않습니다. 응답 capability 발급은 commit 전에 완료합니다. 이후의 모든 조회는 WISH_NOT_FOUND로 숨깁니다. OPEN 잔액 조정 건이 있어도 삭제를 차단하지 않습니다.
          */
         delete: operations["deleteWish"];
         options?: never;
@@ -454,7 +457,7 @@ export interface paths {
         put?: never;
         /**
          * 위시를 포기하고 영구 비공개로 전환
-         * @description OPEN 잔액 조정 건이 있어도 포기를 차단하지 않습니다. 첨부 사진은 보존되지만 이후 사진 변경은 허용하지 않습니다. 반환된 위시는 변경 커밋 후의 잔액 조정 플래그를 담고 응답 capability는 commit 전에 발급합니다.
+         * @description OPEN 잔액 조정 건이 있어도 포기를 차단하지 않습니다. 첨부 사진은 보존되지만 이후 사진 변경은 허용하지 않습니다. 일치하는 멱등 재생은 최초 포기 snapshot의 NO_PHOTO를 그대로 null로 유지하거나 유효한 ACTIVE_PHOTO의 정확한 photoId에만 새 5분 URL을 발급합니다. 이후 Wish 삭제 등으로 원래 사진이 PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, URL 발급만 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다. 반환된 위시는 변경 커밋 후의 잔액 조정 플래그를 담고 응답 capability는 commit 전에 발급합니다.
          */
         post: operations["abandonWish"];
         delete?: never;
@@ -477,7 +480,7 @@ export interface paths {
         put?: never;
         /**
          * 목표 금액에 도달한 위시 완료
-         * @description OPEN 잔액 조정 건이 있어도 완료를 차단하지 않습니다. 첨부 사진은 보존되지만 이후 사진 변경은 허용하지 않습니다. 반환된 위시는 변경 커밋 후의 잔액 조정 플래그를 담고 응답 capability는 commit 전에 발급합니다.
+         * @description OPEN 잔액 조정 건이 있어도 완료를 차단하지 않습니다. 첨부 사진은 보존되지만 이후 사진 변경은 허용하지 않습니다. 일치하는 멱등 재생은 최초 완료 snapshot의 NO_PHOTO를 그대로 null로 유지하거나 유효한 ACTIVE_PHOTO의 정확한 photoId에만 새 5분 URL을 발급합니다. 이후 Wish 삭제 등으로 원래 사진이 PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, URL 발급만 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다. 반환된 위시는 변경 커밋 후의 잔액 조정 플래그를 담고 응답 capability는 commit 전에 발급합니다.
          */
         post: operations["completeWish"];
         delete?: never;
@@ -500,7 +503,7 @@ export interface paths {
         put?: never;
         /**
          * 카드 잔액 계정 자금을 위시에 적립
-         * @description 내부에서 PRE_DEPOSIT 조회를 수행합니다. 외부 제공자 조회가 실패하면 위시는 변경되지 않습니다. 저장된 불일치 관측 결과는 이 입금 작업만 잠그고 거부합니다.
+         * @description 내부에서 PRE_DEPOSIT 조회를 수행합니다. 외부 제공자 조회가 실패하면 위시는 변경되지 않습니다. 저장된 불일치 관측 결과는 이 입금 작업만 잠그고 거부합니다. 일치하는 멱등 재생은 최초 Wish snapshot의 NO_PHOTO를 그대로 null로 유지하거나, 유효한 ACTIVE_PHOTO의 정확한 photoId에만 새 5분 URL을 발급합니다. 원래 사진이 PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, URL 발급만 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다.
          */
         post: operations["depositToWish"];
         delete?: never;
@@ -544,7 +547,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 위시에서 자금 인출 */
+        /**
+         * 위시에서 자금 인출
+         * @description 일치하는 멱등 재생은 최초 Wish snapshot의 identity·상태·version·event identity를 유지합니다. NO_PHOTO는 이후 현재 attachment가 있어도 null이고, ACTIVE_PHOTO는 캡처된 정확한 photoId가 같은 소유자와 위시에 유효하게 ATTACHED인 경우에만 새 5분 URL로 성공합니다. PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, 유효한 사진의 URL 발급만 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다.
+         */
         post: operations["withdrawFromWish"];
         delete?: never;
         options?: never;
@@ -1615,7 +1621,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description BALANCE_MISMATCH_LOCKED, IDEMPOTENCY_KEY_REUSED, WISH_PHOTO_EXPIRED 또는 WISH_PHOTO_ALREADY_ATTACHED입니다. 일치하는 성공 결과의 멱등 재생을 현재 불일치 방어 조건보다 먼저 처리합니다. 사진 첨부 실패는 위시를 생성하지 않습니다. */
+        /** @description BALANCE_MISMATCH_LOCKED, IDEMPOTENCY_KEY_REUSED, WISH_PHOTO_EXPIRED 또는 WISH_PHOTO_ALREADY_ATTACHED입니다. 일치하는 성공 결과의 멱등 재생을 현재 불일치 방어 조건보다 먼저 처리합니다. 캡처된 사진 상태가 식별자 없는 PHOTO_REVOKED이면 Wish 성공 본문, photoId, URL, Idempotency-Replayed 없이 WISH_PHOTO_EXPIRED입니다. 사진 첨부 실패는 위시를 생성하지 않습니다. */
         CreateConflict: {
             headers: {
                 [name: string]: unknown;
@@ -1651,7 +1657,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, INSUFFICIENT_AVAILABLE_BALANCE, TARGET_AMOUNT_EXCEEDED 또는 IDEMPOTENCY_KEY_REUSED. */
+        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, INSUFFICIENT_AVAILABLE_BALANCE, TARGET_AMOUNT_EXCEEDED, IDEMPOTENCY_KEY_REUSED 또는 WISH_PHOTO_EXPIRED. 일치하는 성공 receipt의 사진 상태가 PHOTO_REVOKED이면 Wish 성공 본문과 photo capability 없이 WISH_PHOTO_EXPIRED입니다. */
         DepositConflict: {
             headers: {
                 [name: string]: unknown;
@@ -1859,7 +1865,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description PHOTO_DELIVERY_UNAVAILABLE — 기존 사진의 새 5분 비공개 URL을 모두 발급할 수 없어 부분 representation이나 거짓 null 없이 실패했습니다. */
+        /** @description PHOTO_DELIVERY_UNAVAILABLE — 기존 사진 또는 일치하는 Wish mutation 재생의 유효한 ACTIVE_PHOTO에 필요한 새 5분 비공개 URL을 모두 발급할 수 없습니다. 이 오류는 retryable true이고 receipt의 ACTIVE_PHOTO 또는 NO_PHOTO 상태를 바꾸지 않으며, 부분 Wish·transfer representation, 현재 사진 대체, 거짓 null, photoId, URL 또는 Idempotency-Replayed를 반환하지 않습니다. */
         PhotoDeliveryUnavailable: {
             headers: {
                 [name: string]: unknown;
@@ -1914,7 +1920,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION 또는 IDEMPOTENCY_KEY_REUSED. OPEN 잔액 불일치는 완료 또는 포기를 차단하지 않습니다. */
+        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, IDEMPOTENCY_KEY_REUSED 또는 WISH_PHOTO_EXPIRED. 일치하는 완료·포기 성공 receipt의 사진 상태가 PHOTO_REVOKED이면 Wish 성공 본문과 photo capability 없이 WISH_PHOTO_EXPIRED입니다. OPEN 잔액 불일치는 완료 또는 포기를 차단하지 않습니다. */
         StateMutationConflict: {
             headers: {
                 [name: string]: unknown;
@@ -1959,7 +1965,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, CROSS_ACCOUNT_TRANSFER_FORBIDDEN, INSUFFICIENT_WISH_AMOUNT, TARGET_AMOUNT_EXCEEDED, BALANCE_MISMATCH_LOCKED 또는 IDEMPOTENCY_KEY_REUSED. */
+        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, CROSS_ACCOUNT_TRANSFER_FORBIDDEN, INSUFFICIENT_WISH_AMOUNT, TARGET_AMOUNT_EXCEEDED, BALANCE_MISMATCH_LOCKED, IDEMPOTENCY_KEY_REUSED 또는 WISH_PHOTO_EXPIRED. 일치하는 이체 성공 receipt의 출발 또는 도착 사진 상태 중 하나라도 PHOTO_REVOKED이면 양쪽 URL을 발급하기 전에 전체 재생을 WISH_PHOTO_EXPIRED로 실패시키고 부분 본문을 반환하지 않습니다. */
         TransferConflict: {
             headers: {
                 [name: string]: unknown;
@@ -2004,7 +2010,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description 위시 변경이 완료되었습니다. 동일 요청 재생은 최초 domain snapshot identity·상태·event identity·version을 유지하지만 ephemeral photo URL은 새로 발급합니다. 사진 응답 capability는 state-changing command가 commit하기 전에 발급되어야 합니다. */
+        /** @description 위시 변경이 완료되었습니다. 동일 요청 재생은 최초 domain snapshot identity·상태·event identity·occurrence time·version을 유지합니다. 최초 사진 상태가 NO_PHOTO이면 이후 현재 attachment를 조회하거나 대체하지 않고 photo null을 반환합니다. ACTIVE_PHOTO이면 인증 학생 소유이고 최초 snapshot의 정확한 위시에 ATTACHED인 같은 photoId를 재검증한 뒤 새 5분 URL만 발급합니다. PHOTO_REVOKED이면 이 성공 응답 대신 409 WISH_PHOTO_EXPIRED를 반환하고, 유효한 ACTIVE_PHOTO의 URL 발급만 실패하면 이 성공 응답 대신 503 PHOTO_DELIVERY_UNAVAILABLE을 반환합니다. Idempotency-Replayed는 성공 재생에만 true이고, 사진 응답 capability는 state-changing command가 commit하기 전에 발급되어야 합니다. */
         WishMutationSuccess: {
             headers: {
                 "Cache-Control": components["headers"]["CacheControlNoStore"];
@@ -2051,7 +2057,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, INSUFFICIENT_WISH_AMOUNT 또는 IDEMPOTENCY_KEY_REUSED. */
+        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, INSUFFICIENT_WISH_AMOUNT, IDEMPOTENCY_KEY_REUSED 또는 WISH_PHOTO_EXPIRED. 일치하는 성공 receipt의 사진 상태가 PHOTO_REVOKED이면 Wish 성공 본문과 photo capability 없이 WISH_PHOTO_EXPIRED입니다. */
         WithdrawalConflict: {
             headers: {
                 [name: string]: unknown;
@@ -2086,7 +2092,7 @@ export interface components {
     headers: {
         /** @description 짧은 수명의 비공개 signed URL이 포함될 수 있으므로 JSON 응답을 저장하지 않습니다. */
         CacheControlNoStore: "no-store";
-        /** @description 동일한 요청의 종결 성공 domain 결과가 재생되는 경우에만 true입니다. 사진 identity는 유지하지만 ephemeral signed URL은 재생할 때 새로 발급합니다. */
+        /** @description 동일한 요청의 종결 성공 domain 결과가 재생되는 경우에만 true입니다. ACTIVE_PHOTO는 최초 결과의 정확한 photoId만 유지하고 ephemeral signed URL을 새로 발급하며, NO_PHOTO는 이후 현재 attachment와 무관하게 null을 유지합니다. PHOTO_REVOKED의 409 WISH_PHOTO_EXPIRED 또는 URL 발급 실패의 503 PHOTO_DELIVERY_UNAVAILABLE에는 이 header를 보내지 않습니다. */
         IdempotencyReplayed: boolean;
         /** @description 가장 이른 적용 quota 해제까지 기다릴 양의 정수 초입니다. */
         RetryAfter: number;
@@ -2619,7 +2625,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 원자적 이체가 완료되었습니다. 동일 요청 재생은 최초 domain 결과를 유지하지만 ephemeral photo URL은 새로 발급합니다. */
+            /** @description 원자적 이체가 완료되었습니다. 동일 요청 재생은 출발·도착의 최초 domain 결과와 각 ACTIVE_PHOTO의 정확한 photoId 또는 NO_PHOTO의 null을 유지하고, 양쪽을 모두 검증한 뒤 ephemeral photo URL만 새로 발급합니다. */
             200: {
                 headers: {
                     "Cache-Control": components["headers"]["CacheControlNoStore"];
@@ -2690,7 +2696,7 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 위시가 생성되었습니다. 동일 요청 재생은 최초 domain 결과를 유지하지만 ephemeral photo URL은 새로 발급합니다. */
+            /** @description 위시가 생성되었습니다. 동일 요청 재생은 최초 domain 결과와 ACTIVE_PHOTO의 정확한 photoId 또는 NO_PHOTO의 null을 유지하고, 유효한 ACTIVE_PHOTO의 ephemeral URL만 새로 발급합니다. */
             201: {
                 headers: {
                     "Cache-Control": components["headers"]["CacheControlNoStore"];

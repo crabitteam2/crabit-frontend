@@ -24,6 +24,8 @@ import type {
   PersonaTokenRegistry,
 } from "../../config/persona-tokens";
 import { resolveProfilePolicy, type BackendProfile } from "../../config/profile-policy";
+import { wishPhotoErrorMessage } from "../../app/wishes/new/_components/wish-photo-error";
+import { normalizeErrorResponse } from "../http/errors";
 import { PERSONAS } from "../persona/persona";
 import {
   proxyBackendRequest,
@@ -663,15 +665,21 @@ describe("proxyBackendRequest", () => {
     });
   });
 
-  it("uses the bounded upload-specific deadline for Wish photo processing", async () => {
+  it("maps an upstream Wish photo deadline through normalization to same-photo retry guidance", async () => {
     vi.useFakeTimers();
     try {
-      const captured: { signal?: AbortSignal } = {};
+      const captured: {
+        signal?: AbortSignal;
+        headers?: Headers;
+        body?: ArrayBuffer;
+      } = {};
       const fetchImpl = vi.fn(async (
         _input: RequestInfo | URL,
         init?: RequestInit,
       ) => {
         captured.signal = init?.signal ?? undefined;
+        captured.headers = new Headers(init?.headers);
+        captured.body = init?.body as ArrayBuffer | undefined;
         return await new Promise<Response>((_resolve, reject) => {
           init?.signal?.addEventListener(
             "abort",
@@ -682,7 +690,10 @@ describe("proxyBackendRequest", () => {
       });
       const responsePromise = proxyBackendRequest(
         frontendRequest("POST", "/v1/wish-photos", {
-          headers: { "Content-Type": "multipart/form-data; boundary=x" },
+          headers: {
+            "Content-Type": "multipart/form-data; boundary=x",
+            "Idempotency-Key": "stable-upload-key",
+          },
           body: "--x--\r\n",
         }),
         ["v1", "wish-photos"],
@@ -698,8 +709,33 @@ describe("proxyBackendRequest", () => {
       await vi.advanceTimersByTimeAsync(5);
       expect(captured.signal?.aborted).toBe(false);
       await vi.advanceTimersByTimeAsync(20);
-      expect((await responsePromise).status).toBe(502);
+      const response = await responsePromise;
+
+      expect(response.status).toBe(408);
+      expect(response.headers.get("cache-control")).toBe("no-store");
       expect(captured.signal?.aborted).toBe(true);
+      expect(captured.headers?.get("idempotency-key")).toBe(
+        "stable-upload-key",
+      );
+      expect(new Uint8Array(captured.body ?? new ArrayBuffer(0))).toEqual(
+        new TextEncoder().encode("--x--\r\n"),
+      );
+      await expect(response.clone().json()).resolves.toEqual({
+        code: "BFF_REQUEST_TIMEOUT",
+        message: "BFF request timed out",
+      });
+
+      const normalized = await normalizeErrorResponse(response);
+      expect(normalized).toEqual({
+        kind: "bff",
+        status: 408,
+        code: "BFF_REQUEST_TIMEOUT",
+        message: "BFF request timed out",
+        retryable: true,
+      });
+      expect(wishPhotoErrorMessage(normalized.code)).toBe(
+        "사진 업로드 시간이 초과됐어요. 같은 사진으로 다시 시도해주세요.",
+      );
     } finally {
       vi.useRealTimers();
     }
