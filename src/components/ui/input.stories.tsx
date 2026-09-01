@@ -11,7 +11,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const 기본: Story = {
-  args: { label: "금액", placeholder: "입력하세요" },
+  args: { label: "금액", placeholder: "금액을 입력하세요." },
 };
 
 export const 값있음: Story = {
