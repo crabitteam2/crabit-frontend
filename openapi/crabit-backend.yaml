@@ -1905,13 +1905,18 @@ components:
     Wish:
       type: object
       additionalProperties: false
-      required: [id, cardBalanceAccountId, purpose, targetAmount, amount, targetDate, state, visibility, photo, balanceAdjustmentInProgress, createdAt, updatedAt, completedAt, closedAt, actualDurationSeconds, version]
+      required: [id, cardBalanceAccountId, purpose, targetAmount, amount, abandonmentAmount, targetDate, state, visibility, photo, balanceAdjustmentInProgress, createdAt, updatedAt, completedAt, closedAt, actualDurationSeconds, version]
       properties:
         id: {$ref: '#/components/schemas/Uuid', description: "이 위시의 안정적인 UUID입니다."}
         cardBalanceAccountId: {$ref: '#/components/schemas/Uuid', description: "이 위시가 영구적으로 연결된 소유자의 카드 잔액 계정 UUID입니다."}
         purpose: {$ref: '#/components/schemas/Purpose', description: "이 위시에 저장된, NFC로 정규화되고 앞뒤 경계 공백이 없는 목적 텍스트입니다."}
         targetAmount: {$ref: '#/components/schemas/KrwPositive', description: "이 위시에 대한 양의 정수 KRW 목표입니다."}
         amount: {$ref: '#/components/schemas/KrwNonNegative', description: "현재 이 위시에 할당된 음수가 아닌 정수 KRW입니다. 실제 카드 잔액과 다르며 targetAmount를 초과하지 않습니다."}
+        abandonmentAmount:
+          description: "성공적으로 포기하기 직전에 이 위시에 할당되어 있던 불변의 소유자 전용 금액입니다. ABANDONED에서는 0을 포함해 targetAmount 이하의 정확한 정수 KRW이고, IN_PROGRESS, AMOUNT_REACHED, COMPLETED에서는 명시적인 null입니다. 현재 할당액, 실제 카드 잔액, 반환 합계, targetAmount 또는 삭제 값이 아닙니다. 포기 후 논리 삭제와 멱등 재생에서도 최초 값을 그대로 보존합니다."
+          oneOf:
+            - $ref: '#/components/schemas/KrwNonNegative'
+            - type: 'null'
         targetDate:
           type: [string, 'null']
           format: date
@@ -2921,6 +2926,7 @@ components:
           purpose: 새 노트북
           targetAmount: 1500000
           amount: 0
+          abandonmentAmount: null
           targetDate: '2026-12-31'
           state: IN_PROGRESS
           visibility: PRIVATE
@@ -2935,7 +2941,7 @@ components:
         eventId: null
     IdempotentReplay:
       summary: "멱등 재생"
-      description: "최초 성공 domain snapshot을 Idempotency-Replayed true와 함께 반환합니다. balanceAdjustmentInProgress와 closedAt은 현재 조회 시점 값이 아니라 최초 결과에 캡처된 값을 사용하지만 ephemeral photo signed URL은 receipt에 저장하지 않고 재생할 때 새로 발급합니다."
+      description: "최초 성공 domain snapshot을 Idempotency-Replayed true와 함께 반환합니다. balanceAdjustmentInProgress, closedAt, abandonmentAmount는 현재 조회 시점 값이 아니라 최초 결과에 캡처된 값을 사용하지만 ephemeral photo signed URL은 receipt에 저장하지 않고 재생할 때 새로 발급합니다."
       x-schema-ref: '#/components/schemas/WishMutationResult'
       x-response-headers:
         Idempotency-Replayed: true
@@ -2946,6 +2952,7 @@ components:
           purpose: 새 노트북
           targetAmount: 1500000
           amount: 200000
+          abandonmentAmount: null
           targetDate: '2026-12-31'
           state: IN_PROGRESS
           visibility: PRIVATE
@@ -2973,6 +2980,7 @@ components:
           purpose: 새 노트북
           targetAmount: 1500000
           amount: 200000
+          abandonmentAmount: null
           targetDate: '2026-12-31'
           state: IN_PROGRESS
           visibility: PRIVATE
@@ -3007,6 +3015,7 @@ components:
           purpose: 새 노트북
           targetAmount: 1500000
           amount: 200000
+          abandonmentAmount: null
           targetDate: '2026-12-31'
           state: IN_PROGRESS
           visibility: PRIVATE
@@ -3052,6 +3061,104 @@ components:
           traceId: tr_wish_transfer_photo_revoked_001
           fieldErrors: []
           details: {}
+    WishAbandonedFunded:
+      summary: "자금이 있던 위시 포기"
+      description: "포기 직전 470000원은 불변 역사 금액으로 남고 현재 할당액은 0원이 되며, 기존의 0이 아닌 반환 원장 이벤트를 식별합니다."
+      x-schema-ref: '#/components/schemas/WishMutationResult'
+      value:
+        wish:
+          id: 7813e439-0d37-4ce3-98a9-c4acfe483c5b
+          cardBalanceAccountId: 09551375-f69a-4e69-8587-a0d590cbf092
+          purpose: 새 노트북
+          targetAmount: 1500000
+          amount: 0
+          abandonmentAmount: 470000
+          targetDate: '2026-12-31'
+          state: ABANDONED
+          visibility: PRIVATE
+          photo: null
+          balanceAdjustmentInProgress: false
+          createdAt: '2026-08-16T02:10:00Z'
+          updatedAt: '2026-08-31T07:30:00Z'
+          completedAt: null
+          closedAt: '2026-08-31T07:30:00Z'
+          actualDurationSeconds: null
+          version: 2
+        eventId: 7369e569-c495-4939-aa34-1f440947eb8d
+    WishAbandonedZeroFunded:
+      summary: "적립금 0인 위시 포기"
+      description: "포기 직전 금액 0을 null과 구별해 보존하며 0원 반환 원장 이벤트는 만들지 않습니다."
+      x-schema-ref: '#/components/schemas/WishMutationResult'
+      value:
+        wish:
+          id: 3373347d-8128-43f7-a113-90c2f9fb1802
+          cardBalanceAccountId: 09551375-f69a-4e69-8587-a0d590cbf092
+          purpose: 비상금
+          targetAmount: 500000
+          amount: 0
+          abandonmentAmount: 0
+          targetDate: null
+          state: ABANDONED
+          visibility: PRIVATE
+          photo: null
+          balanceAdjustmentInProgress: false
+          createdAt: '2026-08-18T01:00:00Z'
+          updatedAt: '2026-08-31T07:31:00Z'
+          completedAt: null
+          closedAt: '2026-08-31T07:31:00Z'
+          actualDurationSeconds: null
+          version: 1
+        eventId: null
+    DeletedAbandonedWish:
+      summary: "포기 후 논리 삭제된 위시"
+      description: "포기한 위시를 논리 삭제해도 최종 변경 스냅샷은 포기 당시 금액과 종료 시점을 정확히 보존합니다."
+      x-schema-ref: '#/components/schemas/WishMutationResult'
+      value:
+        wish:
+          id: 7813e439-0d37-4ce3-98a9-c4acfe483c5b
+          cardBalanceAccountId: 09551375-f69a-4e69-8587-a0d590cbf092
+          purpose: 새 노트북
+          targetAmount: 1500000
+          amount: 0
+          abandonmentAmount: 470000
+          targetDate: '2026-12-31'
+          state: ABANDONED
+          visibility: PRIVATE
+          photo: null
+          balanceAdjustmentInProgress: false
+          createdAt: '2026-08-16T02:10:00Z'
+          updatedAt: '2026-08-31T07:32:00Z'
+          completedAt: null
+          closedAt: '2026-08-31T07:30:00Z'
+          actualDurationSeconds: null
+          version: 3
+        eventId: null
+    AbandonmentIdempotentReplay:
+      summary: "포기 응답 멱등 재생"
+      description: "동일한 포기 요청은 최초 성공의 상태, 이벤트, 시각, 버전, 현재 금액과 abandonmentAmount를 그대로 재생하며 추가 변경이나 이벤트를 만들지 않습니다."
+      x-schema-ref: '#/components/schemas/WishMutationResult'
+      x-response-headers:
+        Idempotency-Replayed: true
+      value:
+        wish:
+          id: 7813e439-0d37-4ce3-98a9-c4acfe483c5b
+          cardBalanceAccountId: 09551375-f69a-4e69-8587-a0d590cbf092
+          purpose: 새 노트북
+          targetAmount: 1500000
+          amount: 0
+          abandonmentAmount: 470000
+          targetDate: '2026-12-31'
+          state: ABANDONED
+          visibility: PRIVATE
+          photo: null
+          balanceAdjustmentInProgress: false
+          createdAt: '2026-08-16T02:10:00Z'
+          updatedAt: '2026-08-31T07:30:00Z'
+          completedAt: null
+          closedAt: '2026-08-31T07:30:00Z'
+          actualDurationSeconds: null
+          version: 2
+        eventId: 7369e569-c495-4939-aa34-1f440947eb8d
     KnownBalanceAdjustmentOpen:
       summary: "잔액 조정 건이 열린 KNOWN 잔액"
       x-schema-ref: '#/components/schemas/KnownCardBalanceAccount'
@@ -3075,6 +3182,7 @@ components:
         purpose: 새 노트북
         targetAmount: 1500000
         amount: 200000
+        abandonmentAmount: null
         targetDate: '2026-12-31'
         state: IN_PROGRESS
         visibility: PRIVATE
@@ -3096,6 +3204,7 @@ components:
         purpose: 비상금
         targetAmount: 500000
         amount: 200000
+        abandonmentAmount: null
         targetDate: null
         state: IN_PROGRESS
         visibility: PRIVATE
@@ -3117,6 +3226,7 @@ components:
         purpose: 새 노트북
         targetAmount: 1500000
         amount: 1500000
+        abandonmentAmount: null
         targetDate: '2026-12-31'
         state: AMOUNT_REACHED
         visibility: PRIVATE
@@ -3138,6 +3248,7 @@ components:
         purpose: 새 노트북
         targetAmount: 1500000
         amount: 1500000
+        abandonmentAmount: null
         targetDate: '2026-12-31'
         state: AMOUNT_REACHED
         visibility: PRIVATE

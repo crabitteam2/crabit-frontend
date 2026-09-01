@@ -1237,6 +1237,8 @@ export interface components {
         /** Format: uuid */
         Uuid: string;
         Wish: {
+            /** @description 성공적으로 포기하기 직전에 이 위시에 할당되어 있던 불변의 소유자 전용 금액입니다. ABANDONED에서는 0을 포함해 targetAmount 이하의 정확한 정수 KRW이고, IN_PROGRESS, AMOUNT_REACHED, COMPLETED에서는 명시적인 null입니다. 현재 할당액, 실제 카드 잔액, 반환 합계, targetAmount 또는 삭제 값이 아닙니다. 포기 후 논리 삭제와 멱등 재생에서도 최초 값을 그대로 보존합니다. */
+            abandonmentAmount: components["schemas"]["KrwNonNegative"] | null;
             /**
              * Format: int64
              * @description 완료된 위시의 경우 createdAt부터 completedAt까지 경과된 전체 초입니다. 그렇지 않으면 null입니다.
