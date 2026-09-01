@@ -29,7 +29,8 @@ const accountId = "11111111-1111-4111-8111-111111111111";
 const wish = (id: string, state: string) => ({
   id,
   purpose: `위시 ${id}`,
-  amount: 1_000,
+  amount: state === "ABANDONED" ? 0 : 1_000,
+  abandonmentAmount: state === "ABANDONED" ? 1_000 : null,
   targetAmount: 10_000,
   state,
 });
@@ -69,6 +70,10 @@ describe("위시 목록 화면 데이터 조회", () => {
 
     expect(view.inProgress.map((item) => item.id)).toEqual(["w3", "w1"]);
     expect(view.finished.map((item) => item.id)).toEqual(["w2", "w4"]);
+    expect(view.finished[1]).toMatchObject({
+      amount: 0,
+      abandonmentAmount: 1_000,
+    });
     expect(view.representativeId).toBe("w3");
     expect(listWishes).toHaveBeenCalledWith(expect.anything(), {
       cardBalanceAccountId: accountId,
@@ -107,5 +112,33 @@ describe("위시 목록 화면 데이터 조회", () => {
     });
 
     await expect(loadWishList()).rejects.toThrow("실패");
+  });
+
+  it("포기 위시의 역사 금액이 없으면 계약 오류로 실패한다", async () => {
+    listWishes.mockResolvedValue({
+      ok: true,
+      data: {
+        items: [{ ...wish("w4", "ABANDONED"), abandonmentAmount: null }],
+        nextCursor: null,
+      },
+    });
+
+    await expect(loadWishList()).rejects.toThrow(
+      "ABANDONED Wish must have a valid abandonmentAmount",
+    );
+  });
+
+  it("포기하지 않은 위시의 역사 금액이 있으면 계약 오류로 실패한다", async () => {
+    listWishes.mockResolvedValue({
+      ok: true,
+      data: {
+        items: [{ ...wish("w1", "IN_PROGRESS"), abandonmentAmount: 500 }],
+        nextCursor: null,
+      },
+    });
+
+    await expect(loadWishList()).rejects.toThrow(
+      "Active or completed Wish must not have abandonmentAmount",
+    );
   });
 });

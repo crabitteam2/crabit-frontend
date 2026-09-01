@@ -7,6 +7,7 @@ import type {
   FundMovementItem,
   WishDetail,
 } from "../../_components/wish-detail";
+import { toOwnedWishItem } from "../../_components/wish-item";
 import { loadAccountContext } from "../../load-account";
 
 const MOVEMENT_PAGE_LIMIT = 100;
@@ -54,12 +55,7 @@ function isNotFound(result: ApiResult<unknown>) {
 
 function toWishDetail(wish: components["schemas"]["Wish"]): WishDetail {
   return {
-    id: wish.id,
-    purpose: wish.purpose,
-    amount: wish.amount,
-    targetAmount: wish.targetAmount,
-    state: wish.state,
-    version: wish.version,
+    ...toOwnedWishItem(wish),
     startDate: toShortDate(wish.createdAt),
     targetDate: wish.targetDate === null ? "" : toShortDate(wish.targetDate),
   };
