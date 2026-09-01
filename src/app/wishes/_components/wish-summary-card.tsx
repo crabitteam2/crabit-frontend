@@ -26,7 +26,7 @@ function summaryTheme(wish: WishDetail) {
 
 export function WishSummaryCard({ wish }: WishSummaryCardProps) {
   const displayAmount = toWishDisplayAmount(wish);
-  const percent = toProgressPercent(displayAmount.amount, wish.targetAmount);
+  const percent = toProgressPercent(displayAmount, wish.targetAmount);
   const isFinished = isFinishedState(wish.state);
   const period =
     wish.targetDate === ""
@@ -59,14 +59,9 @@ export function WishSummaryCard({ wish }: WishSummaryCardProps) {
           />
         )}
       </div>
-      {displayAmount.label === null ? null : (
-        <p className="text-fg-neutral-muted flex justify-end text-[14px] leading-6 tracking-[-0.3px]">
-          {displayAmount.label}
-        </p>
-      )}
       <p className="text-pink-6 flex justify-end font-bold tracking-[-0.3px]">
         <span className="text-[28px] leading-[34px]">
-          {displayAmount.amount.toLocaleString("ko-KR")}
+          {displayAmount.toLocaleString("ko-KR")}
         </span>
         <span className="text-[26px] leading-[34px]">&nbsp;원</span>
       </p>

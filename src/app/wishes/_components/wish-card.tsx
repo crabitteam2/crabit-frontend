@@ -21,8 +21,10 @@ export function WishCard({
   isRepresentative,
   onMore,
 }: WishCardProps) {
-  const displayAmount = toWishDisplayAmount(wish);
-  const percent = toProgressPercent(displayAmount.amount, wish.targetAmount);
+  const percent = toProgressPercent(
+    toWishDisplayAmount(wish),
+    wish.targetAmount,
+  );
   const theme = getWishTheme(wish, tone, percent);
 
   return (
@@ -40,14 +42,6 @@ export function WishCard({
           </span>
           {isRepresentative ? <Badge>대표</Badge> : null}
         </span>
-        {displayAmount.label === null ? null : (
-          <span className="text-fg-neutral-muted -mb-3 flex items-baseline justify-between gap-3 text-[13px] leading-5 tracking-[-0.3px]">
-            <span>{displayAmount.label}</span>
-            <span className="text-fg-neutral font-semibold">
-              {displayAmount.amount.toLocaleString("ko-KR")}원
-            </span>
-          </span>
-        )}
         <WishProgressBar percent={percent} theme={theme} />
       </Link>
       {onMore ? (

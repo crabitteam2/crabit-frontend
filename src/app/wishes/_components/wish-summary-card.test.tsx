@@ -19,7 +19,6 @@ describe("위시 상세 요약 카드", () => {
   it("포기 위시의 역사 금액과 당시 진행률을 표시한다", () => {
     render(<WishSummaryCard wish={abandonedWish} />);
 
-    expect(screen.getByText("포기 당시 모은 금액")).toBeInTheDocument();
     expect(screen.getByText("12,000")).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toHaveAttribute(
       "aria-valuenow",
@@ -39,7 +38,6 @@ describe("위시 상세 요약 카드", () => {
       />,
     );
 
-    expect(screen.queryByText("포기 당시 모은 금액")).not.toBeInTheDocument();
     expect(screen.getByText("4,500")).toBeInTheDocument();
     expect(screen.getByRole("progressbar")).toHaveAttribute(
       "aria-valuenow",

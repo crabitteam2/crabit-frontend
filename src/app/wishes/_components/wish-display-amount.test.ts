@@ -9,14 +9,14 @@ describe("위시 표시 금액", () => {
         amount: 7_000,
         abandonmentAmount: null,
       }),
-    ).toEqual({ amount: 7_000, label: null });
+    ).toBe(7_000);
     expect(
       toWishDisplayAmount({
         state: "COMPLETED",
         amount: 30_000,
         abandonmentAmount: null,
       }),
-    ).toEqual({ amount: 30_000, label: null });
+    ).toBe(30_000);
   });
 
   it("포기 위시는 현재 0원이 아니라 포기 직전 역사 금액을 사용한다", () => {
@@ -26,7 +26,7 @@ describe("위시 표시 금액", () => {
         amount: 0,
         abandonmentAmount: 12_000,
       }),
-    ).toEqual({ amount: 12_000, label: "포기 당시 모은 금액" });
+    ).toBe(12_000);
   });
 
   it("포기 직전 0원도 null과 구분해 표시한다", () => {
@@ -36,7 +36,7 @@ describe("위시 표시 금액", () => {
         amount: 0,
         abandonmentAmount: 0,
       }),
-    ).toEqual({ amount: 0, label: "포기 당시 모은 금액" });
+    ).toBe(0);
   });
 
   it("상태와 역사 금액의 잘못된 조합을 거절한다", () => {
