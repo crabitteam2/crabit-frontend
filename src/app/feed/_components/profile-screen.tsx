@@ -13,8 +13,16 @@ interface ProfileScreenProps {
   inProgress: Wish[];
   finished: Wish[];
   backHref: string;
+  /** 팔로우한 사람 수입니다. */
+  followingCount: number;
+  /** 팔로우한 사람에게서 받은 팔로워 수입니다. */
+  followerCount: number;
+  /** 팔로잉과 팔로워 수를 눌렀을 때 갈 목록 경로입니다. */
+  followsHref: string;
   /** 헤더 오른쪽에 놓을 요소이며, 없으면 검색 버튼만 보여줍니다. */
   actions?: ReactNode;
+  /** 별명 오른쪽에 놓을 팔로우 버튼이며, 내 프로필에서는 없습니다. */
+  followAction?: ReactNode;
 }
 
 export function ProfileScreen({
@@ -22,7 +30,11 @@ export function ProfileScreen({
   inProgress,
   finished,
   backHref,
+  followingCount,
+  followerCount,
+  followsHref,
   actions,
+  followAction,
 }: ProfileScreenProps) {
   return (
     <div className="flex flex-col">
@@ -57,19 +69,26 @@ export function ProfileScreen({
 
       <div className="border-gray-3 flex items-center justify-between border-b px-4 py-3">
         <h1 className="text-t2 text-fg-neutral font-semibold">{nickname}</h1>
-        <div className="flex items-center gap-5 text-[17px] leading-6 tracking-[-0.3px]">
-          <p className="flex items-center gap-1">
-            <span className="text-fg-neutral">진행중</span>
-            <span className="text-pink-6 font-semibold">
-              {toCountLabel(inProgress.length)}
-            </span>
-          </p>
-          <p className="flex items-center gap-1">
-            <span className="text-fg-neutral">종료</span>
-            <span className="text-pink-6 font-semibold">
-              {toCountLabel(finished.length)}
-            </span>
-          </p>
+        {followAction}
+      </div>
+
+      <div className="border-gray-3 flex items-center border-b px-4 py-5">
+        <div className="flex flex-1 items-center justify-between text-[17px] leading-6 tracking-[-0.3px]">
+          <ProfileCount
+            label="팔로잉"
+            value={String(followingCount)}
+            href={followsHref}
+          />
+          <ProfileCount
+            label="팔로워"
+            value={String(followerCount)}
+            href={`${followsHref}?tab=followers`}
+          />
+          <ProfileCount
+            label="진행중"
+            value={toCountLabel(inProgress.length)}
+          />
+          <ProfileCount label="종료" value={toCountLabel(finished.length)} />
         </div>
       </div>
 
@@ -77,6 +96,33 @@ export function ProfileScreen({
       <ProfileWishSection title="종료된 위시" wishes={finished} />
       <TopButton />
     </div>
+  );
+}
+
+function ProfileCount({
+  label,
+  value,
+  href,
+}: {
+  label: string;
+  value: string;
+  href?: string;
+}) {
+  const body = (
+    <>
+      <span className="text-fg-neutral">{label}</span>
+      <span className="text-pink-6 font-semibold">{value}</span>
+    </>
+  );
+
+  if (href === undefined) {
+    return <p className="flex items-center gap-1">{body}</p>;
+  }
+
+  return (
+    <Link href={href} className="flex items-center gap-1">
+      {body}
+    </Link>
   );
 }
 
