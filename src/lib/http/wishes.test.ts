@@ -80,6 +80,7 @@ describe("Wish typed request helpers", () => {
         startDate: "2026-09-01",
         targetAmount: 100_000,
         targetDate: "2027-01-15",
+        photoId: "9a8b7c6d-5e4f-4321-9876-1234567890ab",
       },
     })).resolves.toEqual({ ok: true, data: mutationResult });
 
@@ -94,6 +95,7 @@ describe("Wish typed request helpers", () => {
       startDate: "2026-09-01",
       targetAmount: 100_000,
       targetDate: "2027-01-15",
+      photoId: "9a8b7c6d-5e4f-4321-9876-1234567890ab",
     });
   });
 
@@ -108,6 +110,7 @@ describe("Wish typed request helpers", () => {
         expectedVersion: 3,
         startDate: null,
         targetDate: "2027-01-15",
+        photoId: null,
       },
     })).resolves.toEqual({ ok: true, data: mutationResult });
 
@@ -119,6 +122,7 @@ describe("Wish typed request helpers", () => {
       expectedVersion: 3,
       startDate: null,
       targetDate: "2027-01-15",
+      photoId: null,
     });
   });
 
