@@ -107,11 +107,6 @@ export function AccountSelect({
                   isSelected={selected?.id === card.id}
                 />
               </button>
-              {canSelectCard ? null : (
-                <p className="text-e1 text-gray-5 px-1 pt-3">
-                  화면을 당겨서 새로고침하면 잔액을 다시 확인해요.
-                </p>
-              )}
             </li>
           ) : (
             wishes.map((wish) => (

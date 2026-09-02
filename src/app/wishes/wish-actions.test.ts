@@ -125,8 +125,7 @@ describe("위시 쓰기 액션", () => {
     ],
     ["INVALID_STATE_TRANSITION", "지금은 처리할 수 없는 위시예요."],
     ["WISH_NOT_FOUND", "이미 사라진 위시예요."],
-    ["BALANCE_MISMATCH_LOCKED", "잔액 조정을 끝낸 뒤에 다시 시도해주세요."],
-    ["FORBIDDEN", "잠시 후 다시 시도해주세요."],
+    ["BALANCE_MISMATCH_LOCKED", "잠시 후 다시 시도해주세요."],
   ])(
     "실패한 %s는 화면 문구로 바꾸고 다시 그리지 않는다",
     async (code, message) => {

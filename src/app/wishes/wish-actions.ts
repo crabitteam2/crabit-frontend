@@ -31,7 +31,6 @@ const MESSAGES: Partial<Record<FrontendHttpError["code"], string>> = {
   INSUFFICIENT_WISH_AMOUNT:
     "위시에 모인 금액보다 많아요. 금액을 다시 확인해주세요.",
   TARGET_AMOUNT_EXCEEDED: "목표 금액을 넘게는 넣을 수 없어요.",
-  BALANCE_MISMATCH_LOCKED: "잔액 조정을 끝낸 뒤에 다시 시도해주세요.",
   BALANCE_SYNC_FAILED:
     "카드 잔액을 확인하지 못했어요. 잠시 후 다시 시도해주세요.",
   CROSS_ACCOUNT_TRANSFER_FORBIDDEN: "다른 카드의 위시로는 보낼 수 없어요.",
