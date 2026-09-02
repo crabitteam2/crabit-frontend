@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useState } from "react";
 import moreIcon from "@/../public/images/feed/more.svg";
 import searchIcon from "@/../public/images/feed/search.svg";
+import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Toast } from "@/components/ui/toast";
 import {
   toggleProfileBlock,
@@ -18,6 +20,8 @@ const BLOCKED_MESSAGE = "학생을 차단했어요. 서로의 팔로우가 해�
 const UNBLOCKED_MESSAGE =
   "차단을 해제했어요. 팔로우는 자동으로 복원되지 않아요.";
 
+const UNFOLLOWED_MESSAGE = "팔로우 취소가 완료되었어요.";
+
 interface StudentProfileProps {
   profile: StudentProfileData;
 }
@@ -28,14 +32,21 @@ export function StudentProfile({ profile }: StudentProfileProps) {
 
 function StudentProfileContent({ profile }: StudentProfileProps) {
   const [relationship, setRelationship] = useState(profile.relationship);
-  const { isBlocked } = relationship;
+  const { isBlocked, isBlockedBy, isFollowing, isFollowedBy } = relationship;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isUnfollowAsked, setIsUnfollowAsked] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const toggleBlock = () => {
     setIsMenuOpen(false);
     setRelationship(toggleProfileBlock);
     setToast(isBlocked ? UNBLOCKED_MESSAGE : BLOCKED_MESSAGE);
+  };
+
+  const unfollow = () => {
+    setIsUnfollowAsked(false);
+    setRelationship((current) => ({ ...current, isFollowing: false }));
+    setToast(UNFOLLOWED_MESSAGE);
   };
 
   return (
@@ -45,6 +56,36 @@ function StudentProfileContent({ profile }: StudentProfileProps) {
         inProgress={visibleProfileWishes(profile.inProgress, relationship)}
         finished={visibleProfileWishes(profile.finished, relationship)}
         backHref="/feed"
+        followingCount={Math.max(
+          0,
+          profile.followingCount +
+            Number(isFollowedBy) -
+            Number(profile.relationship.isFollowedBy),
+        )}
+        followerCount={Math.max(
+          0,
+          profile.followerCount +
+            Number(isFollowing) -
+            Number(profile.relationship.isFollowing),
+        )}
+        followsHref={`/feed/${profile.id}/follows`}
+        followAction={
+          <Button
+            size="medium"
+            variant={isFollowing ? "weak" : "fill"}
+            disabled={isBlocked || isBlockedBy}
+            onClick={() =>
+              isFollowing
+                ? setIsUnfollowAsked(true)
+                : setRelationship((current) => ({
+                    ...current,
+                    isFollowing: true,
+                  }))
+            }
+          >
+            {isFollowing ? "팔로잉" : "팔로우"}
+          </Button>
+        }
         actions={
           isMenuOpen ? (
             <button
@@ -88,6 +129,16 @@ function StudentProfileContent({ profile }: StudentProfileProps) {
           className="fixed inset-0 z-10 cursor-default"
         />
       ) : null}
+
+      <ConfirmDialog
+        isOpen={isUnfollowAsked}
+        title="이 학생을 팔로우 취소할까요?"
+        primaryLabel="팔로우 취소"
+        secondaryLabel="아니요"
+        onPrimary={unfollow}
+        onSecondary={() => setIsUnfollowAsked(false)}
+        onDismiss={() => setIsUnfollowAsked(false)}
+      />
 
       {toast === null ? null : (
         <Toast message={toast} onClose={() => setToast(null)} />

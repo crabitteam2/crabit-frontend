@@ -138,6 +138,10 @@ export interface StudentProfile {
   finished: SharedProfileWish[];
   /** 현재 학원의 독립적인 양방향 팔로우 상태입니다. */
   relationship: ProfileRelationship;
+  /** 이 학생이 팔로우한 사람 수입니다. */
+    followingCount: number;
+  /** 이 학생을 팔로우한 사람 수입니다. */
+    followerCount: number;
 }
 
 const profiles: StudentProfile[] = [
@@ -185,6 +189,8 @@ const profiles: StudentProfile[] = [
         targetDate: "26.04.30",
       },
     ],
+    followingCount: 12,
+    followerCount: 128,
   },
   {
     id: "s2",
@@ -208,6 +214,8 @@ const profiles: StudentProfile[] = [
       },
     ],
     finished: [],
+    followingCount: 3,
+    followerCount: 7,
   },
   {
     id: "s3",
@@ -231,6 +239,8 @@ const profiles: StudentProfile[] = [
         targetDate: "26.05.31",
       },
     ],
+    followingCount: 0,
+    followerCount: 1,
   },
 ];
 
@@ -248,3 +258,27 @@ export function searchStudents(query: string): StudentProfile[] {
   if (keyword === "") return [];
   return profiles.filter((profile) => profile.nickname.includes(keyword));
 }
+
+/** 팔로우 목록 한 줄에 필요한 학생 정보입니다. */
+export interface FollowEntry {
+  id: string;
+  nickname: string;
+  isFollowing: boolean;
+}
+
+const followEntries: FollowEntry[] = [
+  { id: "s1", nickname: "박선형", isFollowing: true },
+  { id: "s2", nickname: "권아라", isFollowing: false },
+  { id: "s3", nickname: "오지원", isFollowing: false },
+  { id: "s4", nickname: "김도윤", isFollowing: true },
+  { id: "s5", nickname: "이하준", isFollowing: false },
+  { id: "s6", nickname: "최서아", isFollowing: true },
+];
+
+/** 팔로잉 목록입니다. 내가 팔로우한 학생만 담습니다. */
+export const FOLLOWING_ENTRIES = followEntries.filter(
+  (entry) => entry.isFollowing,
+);
+
+/** 팔로워 목록입니다. 나를 팔로우한 학생을 담습니다. */
+export const FOLLOWER_ENTRIES = followEntries;

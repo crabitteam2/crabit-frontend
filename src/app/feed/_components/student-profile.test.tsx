@@ -7,16 +7,89 @@ import { StudentProfile } from "./student-profile";
 const profile = findStudentProfile("s1")!;
 
 describe("mock profile directional visibility", () => {
+  it("keeps upstream follow controls and counts consistent with outgoing visibility", async () => {
+    const user = userEvent.setup();
+    render(<StudentProfile profile={profile} />);
+    expect(screen.getByRole("link", { name: /^팔로잉\s*12$/ })).toHaveAttribute(
+      "href",
+      "/feed/s1/follows",
+    );
+    expect(
+      screen.getByRole("link", { name: /^팔로워\s*128$/ }),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "팔로잉" }));
+    await user.click(
+      screen.getByRole("button", { name: "팔로우 취소" }),
+    );
+    expect(screen.queryByText("여름 방학 캠프")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^팔로잉\s*12$/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /^팔로워\s*127$/ }),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "팔로우" }),
+    );
+    expect(screen.getByText("여름 방학 캠프")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /^팔로워\s*128$/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("uses the initial outgoing state for counts and disables follow in either block direction", async () => {
+    const user = userEvent.setup();
+    const incoming = {
+      ...profile,
+      relationship: { ...profile.relationship, isFollowing: false },
+    };
+    const { rerender } = render(<StudentProfile profile={incoming} />);
+    expect(
+      screen.getByRole("link", { name: /^팔로워\s*128$/ }),
+    ).toBeInTheDocument();
+    await user.click(
+      screen.getByRole("button", { name: "팔로우" }),
+    );
+    expect(
+      screen.getByRole("link", { name: /^팔로워\s*129$/ }),
+    ).toBeInTheDocument();
+    rerender(
+      <StudentProfile
+        profile={{
+          ...incoming,
+          id: "blocked-by",
+          relationship: { ...incoming.relationship, isBlockedBy: true },
+        }}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "팔로우" }),
+    ).toBeDisabled();
+    expect(screen.queryByText("여름 방학 캠프")).not.toBeInTheDocument();
+  });
+
   it("keeps follower-only wishes hidden after block and unblock while academy wishes can return", async () => {
     const user = userEvent.setup();
     render(<StudentProfile profile={profile} />);
     expect(screen.getByText("여름 방학 캠프")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "더보기" }));
     await user.click(screen.getByRole("button", { name: "차단하기" }));
+    expect(
+      screen.getByRole("button", { name: "팔로우" }),
+    ).toBeDisabled();
+    expect(screen.getByRole("link", { name: /^팔로잉\s*11$/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /^팔로워\s*127$/ }),
+    ).toBeInTheDocument();
     expect(screen.queryByText("여름 방학 캠프")).not.toBeInTheDocument();
     expect(screen.queryByText("보드게임")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "더보기" }));
     await user.click(screen.getByRole("button", { name: "해제하기" }));
+    expect(
+      screen.getByRole("button", { name: "팔로우" }),
+    ).toBeEnabled();
+    expect(screen.getByRole("link", { name: /^팔로잉\s*11$/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /^팔로워\s*127$/ }),
+    ).toBeInTheDocument();
     expect(screen.queryByText("여름 방학 캠프")).not.toBeInTheDocument();
     expect(screen.queryByText("농구공")).not.toBeInTheDocument();
     expect(screen.getByText("보드게임")).toBeInTheDocument();
