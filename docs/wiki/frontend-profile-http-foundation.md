@@ -71,7 +71,7 @@ The BFF validates the target before examining the E2E boundary. If the first val
 
 `openapi/crabit-backend.yaml` is an exact byte snapshot of `crabit-backend/api/openapi.yaml`. `openapi/provenance.json` records the backend repository SHA, source path, and SHA-256 digest. Normal install, test, build, and drift verification use only these committed frontend files and do not require a sibling backend checkout.
 
-The current snapshot pins backend revision `c4e449e2e9a1813499ef583d70985030d6f7ace2` and source digest `sha256:15cf263f6ee7b2c4afdb6db0bdb849c71c1bd49a8e7d1d6679d4a2a85e03bc9a`. It includes directional academy follows, independent following/follower lists, global blocks, and the canonical Wish photo contract.
+The committed [OpenAPI provenance](../../openapi/provenance.json) records the current snapshot's backend revision and source SHA-256 digest. It includes directional academy follows, independent following/follower lists, global blocks, and the canonical Wish photo contract.
 
 Generate and check types:
 
