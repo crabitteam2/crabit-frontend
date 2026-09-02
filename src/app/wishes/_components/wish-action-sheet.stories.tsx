@@ -1,11 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import type { OwnedWishItem } from "./wish-item";
 import { WishActionSheet } from "./wish-action-sheet";
+import type { OwnedWishItem } from "./wish-item";
 
 const wish: OwnedWishItem = {
   id: "w3",
   purpose: "시나모롤 인형",
   amount: 4_500,
+  abandonmentAmount: null,
   targetAmount: 30_000,
   state: "IN_PROGRESS",
   version: 3,

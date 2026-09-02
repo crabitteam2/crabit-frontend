@@ -3,6 +3,7 @@ import Link from "next/link";
 import moreIcon from "@/../public/images/wishes/more.svg";
 import { toProgressPercent } from "@/app/_components/progress-stage";
 import { Badge } from "@/components/ui/badge";
+import { toWishDisplayAmount } from "./wish-display-amount";
 import type { WishItem } from "./wish-item";
 import { WishProgressBar } from "./wish-progress-bar";
 import { getWishTheme, type WishTone } from "./wish-theme";
@@ -20,7 +21,10 @@ export function WishCard({
   isRepresentative,
   onMore,
 }: WishCardProps) {
-  const percent = toProgressPercent(wish.amount, wish.targetAmount);
+  const percent = toProgressPercent(
+    toWishDisplayAmount(wish),
+    wish.targetAmount,
+  );
   const theme = getWishTheme(wish, tone, percent);
 
   return (

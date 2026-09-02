@@ -29,10 +29,10 @@ export function DepositDoneScreen({ amount }: DepositDoneScreenProps) {
         src={filledBankImage}
         alt=""
         width={207}
-        height={277}
+        height={281}
         priority
-        className="absolute left-1/2 h-[277px] w-[207px] -translate-x-1/2 object-cover"
-        style={{ top: 308 }}
+        className="absolute left-1/2 h-[281px] w-[207px] -translate-x-1/2"
+        style={{ top: 368 }}
       />
 
       <div className="relative mt-auto px-4 pb-[calc(55px+env(safe-area-inset-bottom))]">

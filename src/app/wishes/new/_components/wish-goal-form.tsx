@@ -89,7 +89,6 @@ export function WishGoalForm({
           <Input
             label="위시"
             variant="filled"
-            placeholder="텍스트 작성"
             value={purpose}
             error={hasPurposeError ? FORMAT_ERROR : undefined}
             onChange={(event) => setPurpose(event.target.value)}
@@ -101,7 +100,6 @@ export function WishGoalForm({
             label="위시 금액"
             variant="filled"
             inputMode="decimal"
-            placeholder="금액 작성"
             value={formatAmount(amountValue)}
             error={hasAmountError ? FORMAT_ERROR : undefined}
             onChange={(event) =>

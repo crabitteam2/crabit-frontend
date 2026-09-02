@@ -1,9 +1,12 @@
 import "server-only";
 
-import type { components } from "@/lib/http/generated/crabit-backend";
 import { unwrapResult } from "@/lib/http/result";
 import { getRepresentativeWish, listWishes } from "@/lib/http/wishes";
-import type { OwnedWishItem, WishItemState } from "../_components/wish-item";
+import {
+  toOwnedWishItem,
+  type OwnedWishItem,
+  type WishItemState,
+} from "../_components/wish-item";
 import { loadAccountContext } from "../load-account";
 
 const WISH_PAGE_LIMIT = 100;
@@ -30,7 +33,7 @@ export async function loadWishList(): Promise<WishListView> {
     getRepresentativeWish(client, { cardBalanceAccountId }),
   ]);
 
-  const wishes = unwrapResult(page).items.map(toWishItem);
+  const wishes = unwrapResult(page).items.map(toOwnedWishItem);
   const representativeId = unwrapResult(representative)?.id ?? null;
   const active = wishes.filter((wish) => !FINISHED_STATES.includes(wish.state));
 
@@ -38,18 +41,6 @@ export async function loadWishList(): Promise<WishListView> {
     inProgress: hoistRepresentative(active, representativeId),
     finished: wishes.filter((wish) => FINISHED_STATES.includes(wish.state)),
     representativeId,
-  };
-}
-
-function toWishItem(wish: components["schemas"]["Wish"]): OwnedWishItem {
-  return {
-    id: wish.id,
-    purpose: wish.purpose,
-    amount: wish.amount,
-    targetAmount: wish.targetAmount,
-    state: wish.state,
-    version: wish.version,
-    ...(wish.photo == null ? {} : { imageUrl: wish.photo.variants.medium }),
   };
 }
 

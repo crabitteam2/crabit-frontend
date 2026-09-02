@@ -71,7 +71,7 @@ export function AmountForm({
             label="금액"
             variant="line-brand"
             inputMode="numeric"
-            placeholder="입력하세요"
+            placeholder="금액을 입력하세요."
             value={digits === "" ? "" : amount.toLocaleString("ko-KR")}
             onChange={(event) => setValue(event.target.value)}
             error={isOver ? "사용 가능한 금액을 넘었어요." : undefined}

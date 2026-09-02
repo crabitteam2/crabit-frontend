@@ -36,6 +36,16 @@ The backend source pinned below contains separate E2E and Demo authentication fi
 
 Repository deployment design intends staging backend images built from `develop` to run with the E2E profile and Stable Demo backend images built from protected `main` to run with the Demo profile. This implementation did not verify a deployed image digest, running service, HTTPS endpoint, secret injection, database health, or frontend-to-backend runtime success. Matching server secrets and a verified deployment are still required before persona authentication is operational.
 
+## Google Cloud backend-origin cutover
+
+Moving the backend hosts to Google Cloud changes only the environment-scoped `BACKEND_URL` origins. It does not change the frontend profile matrix, persona namespaces, BFF routes, cookies, generated OpenAPI snapshot, or application API behavior. Staging must remain `APP_ENV=staging` with `BACKEND_PROFILE=e2e`; Stable Demo must remain `APP_ENV=prod` with `BACKEND_PROFILE=demo`. Each environment uses its own verified HTTPS root origin derived from its reserved Google Cloud public IPv4 address. Do not reuse one environment's origin or persona namespace in the other environment, and do not put the origin or persona credentials in browser-visible configuration.
+
+The Google Cloud databases are greenfield installations. Staging is initialized only from the backend's deterministic E2E profile, and Stable Demo is initialized only from the repository-defined Demo migrations, fixture, and serialized reset operation. Historical Vultr database contents are unavailable and are not migrated. Vultr is not a cutover dependency or rollback target.
+
+Update the Vercel Staging `BACKEND_URL` only after the matching Google Cloud runtime has independently proved the selected immutable Docker Hub digest, the exact aggregate `UP` HTTPS readiness response, all six E2E personas, restart persistence, and server-only credential non-disclosure. Update the Vercel Stable Demo `BACKEND_URL` only after the separate Demo runtime has proved the same image and readiness properties, all six Demo personas, restart persistence, the serialized reset result, and server-only non-disclosure. For each environment, redeploy after changing the variable and read back the environment-scoped value, deployed revision or alias, BFF routing to the expected Google Cloud origin, profile-specific persona behavior, and the absence of credentials from browser assets, responses, and logs.
+
+Repository checks do not prove that Google Cloud resources exist or that Vercel is using a new origin. Those delivery claims require provider read-back and live end-to-end verification. If a post-cutover rollback is required, keep Vercel pointed at a single writable Google Cloud database and use only the backend runbook's retained immutable image digest or verified Persistent Disk snapshot recovery path; never point the frontend back to Vultr.
+
 ## Persona Route Handlers and cookies
 
 `POST /api/e2e/persona` and `POST /api/demo/persona` accept exactly one JSON field, for example `{ "persona": "friend" }`, only when their backend profile is active. Success is bodyless `204`. `DELETE` idempotently clears that route's cookie. Unsupported methods return `405` with `Allow: POST, DELETE` only when the route is active; an inactive route returns `404` first.
@@ -116,6 +126,8 @@ npm run test
 npm run lint
 APP_ENV=local BACKEND_PROFILE=prod BACKEND_URL=http://127.0.0.1:18080 npm run build
 npm run smoke:bff
+npm run build:docs
+npm run verify:docs -- --base-path /crabit-frontend/
 git diff --check
 ```
 

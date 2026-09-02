@@ -1,20 +1,48 @@
-import { render } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import type { WishItem } from "./wish-item";
 import { WishCard } from "./wish-card";
 
-const wish = {
-  id: "wish-1",
-  purpose: "자전거",
-  amount: 10_000,
-  targetAmount: 100_000,
-  state: "IN_PROGRESS" as const,
+const abandonedWish: WishItem = {
+  id: "w1",
+  purpose: "놀이공원 자유이용권",
+  amount: 0,
+  abandonmentAmount: 12_000,
+  targetAmount: 30_000,
+  state: "ABANDONED",
 };
 
-describe("WishCard", () => {
+describe("종료 위시 목록 카드", () => {
+  it("포기 직전 역사 금액으로 진행률을 그린다", () => {
+    render(<WishCard wish={abandonedWish} tone="pink" />);
+
+    expect(screen.getByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "40",
+    );
+  });
+
+  it("포기 직전 0원은 0퍼센트로 그린다", () => {
+    render(
+      <WishCard
+        wish={{ ...abandonedWish, abandonmentAmount: 0 }}
+        tone="pink"
+      />,
+    );
+
+    expect(screen.getByRole("progressbar")).toHaveAttribute(
+      "aria-valuenow",
+      "0",
+    );
+  });
+
   it("renders an authorized signed variant when the Wish has a photo", () => {
     const { container } = render(
       <WishCard
-        wish={{ ...wish, imageUrl: "https://storage.test/signed/medium" }}
+        wish={{
+          ...abandonedWish,
+          imageUrl: "https://storage.test/signed/medium",
+        }}
         tone="pink"
       />,
     );
@@ -26,7 +54,7 @@ describe("WishCard", () => {
   });
 
   it("does not invent a photo when the contract returns null", () => {
-    const { container } = render(<WishCard wish={wish} tone="pink" />);
+    const { container } = render(<WishCard wish={abandonedWish} tone="pink" />);
     expect(container.querySelector("img")).toBeNull();
   });
 });

@@ -6,6 +6,7 @@ const wish: WishItem = {
   id: "w1",
   purpose: "포켓몬 카드 부스터팩",
   amount: 12_000,
+  abandonmentAmount: null,
   targetAmount: 30_000,
   state: "IN_PROGRESS",
 };
@@ -79,8 +80,23 @@ export const 포기: Story = {
     wish: {
       ...wish,
       purpose: "놀이공원 자유이용권",
-      amount: 12_000,
+      amount: 0,
+      abandonmentAmount: 12_000,
       targetAmount: 55_000,
+      state: "ABANDONED",
+    },
+    tone: "pink",
+  },
+};
+
+export const 포기_0원: Story = {
+  args: {
+    wish: {
+      ...wish,
+      purpose: "문구점 뽑기",
+      amount: 0,
+      abandonmentAmount: 0,
+      targetAmount: 10_000,
       state: "ABANDONED",
     },
     tone: "pink",
@@ -104,6 +120,7 @@ export const 대표위시: Story = {
       id: "w1",
       purpose: "시나모롤 키링",
       amount: 30_000,
+      abandonmentAmount: null,
       targetAmount: 30_000,
       state: "AMOUNT_REACHED",
     },
