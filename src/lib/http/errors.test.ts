@@ -32,8 +32,6 @@ describe("frontend HTTP error normalization", () => {
 
   it.each([
     "STUDENT_NOT_FOUND",
-    "FOLLOWERSHIP_NOT_FOUND",
-    "ALREADY_FOLLOWERS",
     "STUDENT_BLOCK_NOT_FOUND",
     "SELF_RELATIONSHIP",
     "STUDENT_BLOCK_ALREADY_ACTIVE",
@@ -56,7 +54,7 @@ describe("frontend HTTP error normalization", () => {
     });
   });
 
-  it.each(["FRIENDSHIP_NOT_FOUND", "FRIEND_REQUEST_NOT_FOUND", "ALREADY_FRIENDS", "FRIEND_REQUEST_ALREADY_PENDING", "INCOMING_FRIEND_REQUEST_PENDING", "FRIEND_REQUEST_NOT_PENDING", "FRIEND_REQUEST_NOT_ACTIONABLE"])("rejects removed friend code %s", async (code) => {
+  it.each(["FOLLOWERSHIP_NOT_FOUND", "ALREADY_FOLLOWERS", "FRIENDSHIP_NOT_FOUND", "FRIEND_REQUEST_NOT_FOUND", "ALREADY_FRIENDS", "FRIEND_REQUEST_ALREADY_PENDING", "INCOMING_FRIEND_REQUEST_PENDING", "FRIEND_REQUEST_NOT_PENDING", "FRIEND_REQUEST_NOT_ACTIONABLE"])("rejects removed relationship code %s", async (code) => {
     expect(await normalizeErrorResponse(jsonResponse(409, { error: { code, message: "old contract", retryable: false, traceId: "old", fieldErrors: [], details: {} } }))).toMatchObject({ kind: "malformed", code: "MALFORMED_RESPONSE" });
   });
 
