@@ -29,6 +29,7 @@ const wishId = "22222222-2222-4222-8222-222222222222";
 function wish(
   state: components["schemas"]["WishState"],
   abandonmentAmount: number | null,
+  startDate: string | null = null,
 ): components["schemas"]["Wish"] {
   return {
     id: wishId,
@@ -37,6 +38,7 @@ function wish(
     targetAmount: 50_000,
     amount: state === "ABANDONED" ? 0 : 12_000,
     abandonmentAmount,
+    startDate,
     targetDate: "2026-10-31",
     state,
     visibility: "PRIVATE",
@@ -103,5 +105,24 @@ describe("위시 상세 화면 데이터 조회", () => {
     await expect(loadWishDetail(wishId)).rejects.toThrow(
       "Active or completed Wish must not have abandonmentAmount",
     );
+  });
+
+  it("학생이 고른 저축 시작일을 생성 시각보다 먼저 쓴다", async () => {
+    getWish.mockResolvedValue({
+      ok: true,
+      data: wish("IN_PROGRESS", null, "2026-08-19"),
+    });
+
+    await expect(loadWishDetail(wishId)).resolves.toMatchObject({
+      wish: { startDate: "26.08.19" },
+    });
+  });
+
+  it("저축 시작일이 없으면 생성 시각을 대신 쓴다", async () => {
+    getWish.mockResolvedValue({ ok: true, data: wish("IN_PROGRESS", null) });
+
+    await expect(loadWishDetail(wishId)).resolves.toMatchObject({
+      wish: { startDate: "26.08.16" },
+    });
   });
 });

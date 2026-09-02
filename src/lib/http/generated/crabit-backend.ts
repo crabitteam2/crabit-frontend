@@ -400,7 +400,7 @@ export interface paths {
         put?: never;
         /**
          * 초기 적립금이 0인 비공개 위시 생성
-         * @description 잔액 정보가 UNKNOWN이거나 OPEN 잔액 불일치가 없을 때 amount 0, state IN_PROGRESS, visibility PRIVATE인 위시를 생성합니다. 일치하는 Idempotency-Key의 이전 성공 결과는 현재 불일치 방어 조건보다 먼저 재생됩니다. 그 밖의 경우 OPEN 잔액 조정 건이 있으면 새 위시를 저장하기 전에 409 BALANCE_MISMATCH_LOCKED로 생성을 거부합니다.
+         * @description 잔액 정보가 UNKNOWN이거나 OPEN 잔액 불일치가 없을 때 amount 0, state IN_PROGRESS, visibility PRIVATE인 위시를 생성합니다. startDate와 targetDate는 각각 생략하거나 null로 지정할 수 있고, 둘 다 날짜이면 startDate가 targetDate보다 늦지 않아야 합니다. 역전된 날짜 범위는 새 멱등 기록이나 위시 변경을 만들기 전에 거부합니다. 새로 캡처하는 멱등 요청 식별에는 정규화된 startDate의 명시적 null 또는 ISO 달력 날짜가 포함되므로, 같은 Idempotency-Key를 다른 startDate와 사용하면 409 IDEMPOTENCY_KEY_REUSED입니다. 기능 도입 전에 성공한 키는 startDate가 null인 재시도만 이전 식별 방식으로 재생하며, 이전 스냅샷에 이 속성이 없어도 응답에는 startDate null을 명시합니다. 일치하는 Idempotency-Key의 이전 성공 결과는 현재 불일치 방어 조건보다 먼저 재생됩니다. 그 밖의 경우 OPEN 잔액 조정 건이 있으면 새 위시를 저장하기 전에 409 BALANCE_MISMATCH_LOCKED로 생성을 거부합니다.
          */
         post: operations["createWish"];
         delete?: never;
@@ -435,7 +435,7 @@ export interface paths {
         head?: never;
         /**
          * 변경 가능한 위시 필드를 원자적으로 병합 패치
-         * @description 필드를 생략하면 기존 값을 유지하고 targetDate에 null을 지정하면 날짜를 지웁니다. 잔액 불일치가 없을 때 COMPLETED 또는 ABANDONED 위시는 공개 범위만 변경할 수 있습니다. 위시를 포기하면 공유 카드를 제거합니다. 포기된 위시의 공개 범위를 변경하면 소유자에게 보이는 위시 메타데이터만 갱신하고 공유 카드는 절대 생성하지 않습니다. OPEN 잔액 조정 건이 있으면 purpose, targetAmount, targetDate를 비롯해 공개 범위를 확대·축소하거나 PRIVATE로 바꾸는 모든 요청 필드를 거부합니다.
+         * @description 필드를 생략하면 기존 값을 유지하고 startDate 또는 targetDate에 null을 지정하면 해당 날짜를 지웁니다. 두 날짜를 함께 변경할 때는 중간 상태가 아니라 원자적으로 적용한 최종 날짜 쌍을 검증하며, 둘 다 날짜이면 startDate가 targetDate보다 늦지 않아야 합니다. 성공한 날짜 변경은 updatedAt과 version을 정확히 한 번 갱신하고, 역전된 날짜 범위는 어떤 필드, version, updatedAt 또는 공유 카드도 변경하지 않습니다. 잔액 불일치가 없을 때 COMPLETED 또는 ABANDONED 위시는 공개 범위만 변경할 수 있습니다. 위시를 포기하면 공유 카드를 제거합니다. 포기된 위시의 공개 범위를 변경하면 소유자에게 보이는 위시 메타데이터만 갱신하고 공유 카드는 절대 생성하지 않습니다. OPEN 잔액 조정 건이 있으면 purpose, targetAmount, startDate, targetDate를 비롯해 공개 범위를 확대·축소하거나 PRIVATE로 바꾸는 모든 요청 필드를 거부합니다.
          */
         patch: operations["patchWish"];
         trace?: never;
@@ -930,13 +930,18 @@ export interface components {
         };
         CreateWishRequest: {
             purpose: components["schemas"]["PurposeInput"];
+            /**
+             * Format: date
+             * @description 선택적 계획 시작 달력 날짜입니다. 생략하거나 null이면 null을 저장하며, targetDate와 둘 다 날짜이면 이 값이 더 늦을 수 없습니다.
+             */
+            startDate?: string | null;
             targetAmount: components["schemas"]["KrwPositive"];
             /** Format: date */
             targetDate?: string | null;
         };
         Cursor: string;
         /** @enum {string} */
-        ErrorCode: "MALFORMED_REQUEST" | "EXPECTED_VERSION_REQUIRED" | "IDEMPOTENCY_KEY_REQUIRED" | "AUTH_REQUIRED" | "FORBIDDEN" | "CARD_BALANCE_ACCOUNT_NOT_FOUND" | "WISH_NOT_FOUND" | "ACADEMY_NOT_FOUND" | "SHARED_CARD_NOT_FOUND" | "VERSION_CONFLICT" | "INVALID_STATE_TRANSITION" | "BALANCE_MISMATCH_LOCKED" | "INSUFFICIENT_AVAILABLE_BALANCE" | "INSUFFICIENT_WISH_AMOUNT" | "TARGET_AMOUNT_EXCEEDED" | "CROSS_ACCOUNT_TRANSFER_FORBIDDEN" | "IDEMPOTENCY_KEY_REUSED" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_AMOUNT" | "INVALID_PURPOSE" | "INVALID_VERSION" | "BALANCE_SYNC_FAILED" | "STUDENT_NOT_FOUND" | "FRIENDSHIP_NOT_FOUND" | "FRIEND_REQUEST_NOT_FOUND" | "STUDENT_BLOCK_NOT_FOUND" | "SELF_RELATIONSHIP" | "ALREADY_FRIENDS" | "FRIEND_REQUEST_ALREADY_PENDING" | "INCOMING_FRIEND_REQUEST_PENDING" | "FRIEND_REQUEST_NOT_PENDING" | "FRIEND_REQUEST_NOT_ACTIONABLE" | "STUDENT_BLOCK_ALREADY_ACTIVE";
+        ErrorCode: "MALFORMED_REQUEST" | "EXPECTED_VERSION_REQUIRED" | "IDEMPOTENCY_KEY_REQUIRED" | "AUTH_REQUIRED" | "FORBIDDEN" | "CARD_BALANCE_ACCOUNT_NOT_FOUND" | "WISH_NOT_FOUND" | "ACADEMY_NOT_FOUND" | "SHARED_CARD_NOT_FOUND" | "VERSION_CONFLICT" | "INVALID_STATE_TRANSITION" | "BALANCE_MISMATCH_LOCKED" | "INSUFFICIENT_AVAILABLE_BALANCE" | "INSUFFICIENT_WISH_AMOUNT" | "TARGET_AMOUNT_EXCEEDED" | "CROSS_ACCOUNT_TRANSFER_FORBIDDEN" | "IDEMPOTENCY_KEY_REUSED" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_AMOUNT" | "INVALID_PURPOSE" | "INVALID_DATE_RANGE" | "INVALID_VERSION" | "BALANCE_SYNC_FAILED" | "STUDENT_NOT_FOUND" | "FRIENDSHIP_NOT_FOUND" | "FRIEND_REQUEST_NOT_FOUND" | "STUDENT_BLOCK_NOT_FOUND" | "SELF_RELATIONSHIP" | "ALREADY_FRIENDS" | "FRIEND_REQUEST_ALREADY_PENDING" | "INCOMING_FRIEND_REQUEST_PENDING" | "FRIEND_REQUEST_NOT_PENDING" | "FRIEND_REQUEST_NOT_ACTIONABLE" | "STUDENT_BLOCK_ALREADY_ACTIVE";
         ErrorEnvelope: {
             /** @description 선언된 모든 실패 JSON 응답이 공통으로 사용하는 구조화된 오류 페이로드입니다. */
             error: {
@@ -1208,6 +1213,11 @@ export interface components {
             id: components["schemas"]["Uuid"];
             /** @description 이 위시에 저장된, NFC로 정규화되고 앞뒤 경계 공백이 없는 목적 텍스트입니다. */
             purpose: components["schemas"]["Purpose"];
+            /**
+             * Format: date
+             * @description 사용자가 저축 계획의 시작일로 선택한 달력 날짜입니다. 시스템 생성 감사 시점인 createdAt, updatedAt, 수명 주기 종료 시점 및 실제 경과 기간과 독립적이며, 설정하지 않았거나 기존 데이터이면 null입니다.
+             */
+            startDate: string | null;
             /** @description 수명 주기 상태입니다. 목표 미만은 IN_PROGRESS, 목표에 도달했지만 명시적으로 완료하기 전은 AMOUNT_REACHED, 완료 후는 COMPLETED, 포기 후는 ABANDONED입니다. */
             state: components["schemas"]["WishState"];
             /** @description 이 위시에 대한 양의 정수 KRW 목표입니다. */
@@ -1365,11 +1375,16 @@ export interface components {
         WishMergePatch: {
             expectedVersion: components["schemas"]["WishVersion"];
             purpose?: components["schemas"]["PurposeInput"];
+            /**
+             * Format: date
+             * @description 선택적 계획 시작 달력 날짜입니다. 생략하면 기존 값을 유지하고 null이면 지우며, targetDate와 함께 제공되면 두 변경을 적용한 최종 날짜 쌍을 원자적으로 검증합니다.
+             */
+            startDate?: string | null;
             targetAmount?: components["schemas"]["KrwPositive"];
             /** Format: date */
             targetDate?: string | null;
             visibility?: components["schemas"]["WishVisibility"];
-        } | unknown | unknown | unknown | unknown;
+        } | unknown | unknown | unknown | unknown | unknown;
         WishMutationResult: {
             /**
              * Format: uuid
@@ -1650,7 +1665,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description INVALID_AMOUNT 또는 INVALID_PURPOSE — 독립적으로 디코딩된 필드가 제약 조건을 위반합니다. */
+        /** @description INVALID_AMOUNT, INVALID_PURPOSE 또는 INVALID_DATE_RANGE — 독립적으로 디코딩된 필드가 제약 조건을 위반했거나, 유효한 두 날짜의 최종 범위가 역전되었습니다. */
         InvalidAmountOrPurpose: {
             headers: {
                 [name: string]: unknown;
@@ -1668,7 +1683,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description INVALID_AMOUNT, INVALID_PURPOSE 또는 INVALID_VERSION — 독립적으로 디코딩된 필드가 제약 조건을 위반합니다. */
+        /** @description INVALID_AMOUNT, INVALID_PURPOSE, INVALID_DATE_RANGE 또는 INVALID_VERSION — 독립적으로 디코딩된 필드가 제약 조건을 위반했거나, 원자적으로 적용한 최종 날짜 범위가 역전되었습니다. */
         InvalidAmountPurposeOrVersion: {
             headers: {
                 [name: string]: unknown;
