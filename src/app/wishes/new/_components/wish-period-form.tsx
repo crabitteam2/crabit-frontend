@@ -17,6 +17,7 @@ const EMPTY_RANGE: DateRange = { start: null, end: null };
 interface WishPeriodFormProps {
   backHref: string;
   nextPath: string;
+  cardBalanceAccountId: string;
   purpose: string;
   targetAmount: number;
 }
@@ -24,6 +25,7 @@ interface WishPeriodFormProps {
 export function WishPeriodForm({
   backHref,
   nextPath,
+  cardBalanceAccountId,
   purpose,
   targetAmount,
 }: WishPeriodFormProps) {
@@ -34,6 +36,7 @@ export function WishPeriodForm({
 
   const submit = () => {
     const params = toPeriodParams(range);
+    params.set("cardBalanceAccountId", cardBalanceAccountId);
     params.set("purpose", purpose);
     params.set("targetAmount", String(targetAmount));
     router.push(`${nextPath}?${params.toString()}`);

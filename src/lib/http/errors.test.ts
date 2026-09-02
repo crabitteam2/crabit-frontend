@@ -73,6 +73,27 @@ describe("frontend HTTP error normalization", () => {
   });
 
   it.each([
+    [408, "BFF_REQUEST_TIMEOUT", true],
+    [413, "BFF_PAYLOAD_TOO_LARGE", false],
+  ] as const)(
+    "normalizes the bounded upload BFF response %s %s with retryability",
+    async (status, code, retryable) => {
+      const response = jsonResponse(status, {
+        code,
+        message: `${code} message`,
+      });
+
+      await expect(normalizeErrorResponse(response)).resolves.toEqual({
+        kind: "bff",
+        status,
+        code,
+        message: `${code} message`,
+        retryable,
+      });
+    },
+  );
+
+  it.each([
     "application/json; charset=utf-8",
     'Application/JSON; charset="utf-8"; profile="https://example.test/a;b\\\"c"',
   ])("accepts normalized errors with valid media type parameters: %s", async (contentType) => {

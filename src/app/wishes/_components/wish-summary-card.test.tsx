@@ -44,4 +44,23 @@ describe("위시 상세 요약 카드", () => {
       "15",
     );
   });
+
+  it("renders the fresh detail variant supplied by the owner Wish response", () => {
+    const { container } = render(
+      <WishSummaryCard
+        wish={{
+          ...abandonedWish,
+          amount: 10_000,
+          abandonmentAmount: null,
+          state: "IN_PROGRESS",
+          imageUrl: "https://storage.test/signed/large",
+        }}
+      />,
+    );
+
+    expect(container.querySelector("img")).toHaveAttribute(
+      "src",
+      "https://storage.test/signed/large",
+    );
+  });
 });

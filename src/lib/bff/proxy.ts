@@ -20,9 +20,12 @@ const RESPONSE_HEADER_ALLOWLIST = [
   "content-type",
   "www-authenticate",
   "idempotency-replayed",
+  "retry-after",
 ] as const;
 const METHOD_ALLOW_HEADER = "GET, POST, PUT, PATCH, DELETE";
 const UPSTREAM_TIMEOUT_MILLISECONDS = 10_000;
+const WISH_PHOTO_UPLOAD_TIMEOUT_MILLISECONDS = 30_000;
+const WISH_PHOTO_UPLOAD_MAX_BYTES = 6 * 1024 * 1024;
 
 /** BFF 프록시의 외부 경계를 테스트 가능하게 주입하는 선택 의존성입니다. */
 export interface ProxyDependencies {
@@ -36,6 +39,10 @@ export interface ProxyDependencies {
   ) => PersonaTokenConfiguration;
   /** 업스트림 요청 제한 시간이며 기본값은 10초입니다. */
   readonly timeoutMilliseconds?: number;
+  /** 동기 사진 처리 요청의 별도 제한 시간이며 기본값은 30초입니다. */
+  readonly wishPhotoUploadTimeoutMilliseconds?: number;
+  /** multipart 오버헤드를 포함한 사진 업로드 요청의 최대 바이트 수입니다. */
+  readonly wishPhotoUploadMaxBytes?: number;
 }
 
 /**
@@ -78,21 +85,40 @@ export async function proxyBackendRequest(
     return errorResponse(404, "BFF_NOT_FOUND", "BFF route is not found");
   }
 
-  let body: ArrayBuffer | undefined;
-  if (METHODS_WITH_BODY.has(request.method)) {
-    try {
-      body = await request.arrayBuffer();
-    } catch {
-      return invalidRequestResponse();
-    }
-  }
-
   const fetchImpl = dependencies.fetchImpl ?? globalThis.fetch;
+  const wishPhotoUpload = isWishPhotoUpload(request, pathSegments);
   const abortController = new AbortController();
   const timeout = setTimeout(
     () => abortController.abort(),
-    dependencies.timeoutMilliseconds ?? UPSTREAM_TIMEOUT_MILLISECONDS,
+    requestTimeout(request, pathSegments, dependencies),
   );
+
+  let body: ArrayBuffer | undefined;
+  if (METHODS_WITH_BODY.has(request.method)) {
+    if (wishPhotoUpload) {
+      const bodyResult = await readBoundedRequestBody(
+        request,
+        dependencies.wishPhotoUploadMaxBytes ?? WISH_PHOTO_UPLOAD_MAX_BYTES,
+        abortController.signal,
+      );
+      if (!bodyResult.ok) {
+        clearTimeout(timeout);
+        return bodyResult.reason === "too_large"
+          ? payloadTooLargeResponse()
+          : bodyResult.reason === "timeout"
+            ? requestTimeoutResponse()
+            : invalidRequestResponse();
+      }
+      body = bodyResult.body;
+    } else {
+      try {
+        body = await request.arrayBuffer();
+      } catch {
+        clearTimeout(timeout);
+        return invalidRequestResponse();
+      }
+    }
+  }
 
   let upstreamResponse: Response;
   let upstreamBody: ArrayBuffer;
@@ -117,11 +143,13 @@ export async function proxyBackendRequest(
     });
     upstreamBody = await upstreamResponse.arrayBuffer();
   } catch {
-    return errorResponse(
-      502,
-      "BFF_UPSTREAM_UNAVAILABLE",
-      "Backend service is unavailable",
-    );
+    return wishPhotoUpload && abortController.signal.aborted
+      ? requestTimeoutResponse()
+      : errorResponse(
+          502,
+          "BFF_UPSTREAM_UNAVAILABLE",
+          "Backend service is unavailable",
+        );
   } finally {
     clearTimeout(timeout);
   }
@@ -141,6 +169,117 @@ export async function proxyBackendRequest(
     },
   );
 }
+
+function requestTimeout(
+  request: Request,
+  pathSegments: readonly string[],
+  dependencies: ProxyDependencies,
+) {
+  return isWishPhotoUpload(request, pathSegments)
+    ? (dependencies.wishPhotoUploadTimeoutMilliseconds ??
+        WISH_PHOTO_UPLOAD_TIMEOUT_MILLISECONDS)
+    : (dependencies.timeoutMilliseconds ?? UPSTREAM_TIMEOUT_MILLISECONDS);
+}
+
+function isWishPhotoUpload(
+  request: Request,
+  pathSegments: readonly string[],
+) {
+  return (
+    request.method === "POST" &&
+    pathSegments.length === 2 &&
+    pathSegments[0] === "v1" &&
+    pathSegments[1] === "wish-photos"
+  );
+}
+
+type BoundedBodyResult =
+  | { readonly ok: true; readonly body: ArrayBuffer }
+  | {
+      readonly ok: false;
+      readonly reason: "invalid" | "timeout" | "too_large";
+    };
+
+async function readBoundedRequestBody(
+  request: Request,
+  maxBytes: number,
+  signal: AbortSignal,
+): Promise<BoundedBodyResult> {
+  const declaredLength = request.headers.get("content-length");
+  if (
+    declaredLength !== null &&
+    /^\d+$/.test(declaredLength) &&
+    Number(declaredLength) > maxBytes
+  ) {
+    void request.body?.cancel().catch(() => undefined);
+    return { ok: false, reason: "too_large" };
+  }
+
+  if (request.body === null) {
+    return { ok: true, body: new ArrayBuffer(0) };
+  }
+
+  const reader = request.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let receivedBytes = 0;
+  let timedOut = false;
+  try {
+    while (true) {
+      const chunk = await readChunk(reader, signal);
+      if (chunk.done) break;
+      receivedBytes += chunk.value.byteLength;
+      if (receivedBytes > maxBytes) {
+        void reader.cancel().catch(() => undefined);
+        return { ok: false, reason: "too_large" };
+      }
+      chunks.push(chunk.value);
+    }
+  } catch (error) {
+    if (error instanceof RequestBodyTimeoutError) {
+      timedOut = true;
+      void reader.cancel().catch(() => undefined);
+      return { ok: false, reason: "timeout" };
+    }
+    return { ok: false, reason: "invalid" };
+  } finally {
+    if (!timedOut) reader.releaseLock();
+  }
+
+  const body = new Uint8Array(receivedBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return { ok: true, body: body.buffer as ArrayBuffer };
+}
+
+function readChunk(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  signal: AbortSignal,
+): Promise<ReadableStreamReadResult<Uint8Array>> {
+  if (signal.aborted) return Promise.reject(new RequestBodyTimeoutError());
+
+  return new Promise((resolve, reject) => {
+    const onAbort = () => {
+      signal.removeEventListener("abort", onAbort);
+      reject(new RequestBodyTimeoutError());
+    };
+    signal.addEventListener("abort", onAbort, { once: true });
+    reader.read().then(
+      (result) => {
+        signal.removeEventListener("abort", onAbort);
+        resolve(result);
+      },
+      (error: unknown) => {
+        signal.removeEventListener("abort", onAbort);
+        reject(error);
+      },
+    );
+  });
+}
+
+class RequestBodyTimeoutError extends Error {}
 
 function defaultLoadTokens(environment: BffEnvironment) {
   return readPersonaTokenConfiguration(environment.backendProfile);
@@ -263,6 +402,18 @@ function statusForbidsBody(status: number) {
 
 function invalidRequestResponse() {
   return errorResponse(400, "BFF_INVALID_REQUEST", "BFF request is invalid");
+}
+
+function requestTimeoutResponse() {
+  return errorResponse(408, "BFF_REQUEST_TIMEOUT", "BFF request timed out");
+}
+
+function payloadTooLargeResponse() {
+  return errorResponse(
+    413,
+    "BFF_PAYLOAD_TOO_LARGE",
+    "BFF request body is too large",
+  );
 }
 
 function errorResponse(

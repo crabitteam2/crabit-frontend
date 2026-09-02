@@ -1,14 +1,10 @@
-"use client";
-
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import characterImage from "@/../public/images/wishes/wish-created.png";
 import {
   WishHeroScreen,
   type HeroCharacter,
 } from "@/app/wishes/_components/wish-hero-screen";
 import { emptyWishTheme } from "@/app/wishes/_components/wish-theme";
-import { readNewWishPhoto } from "./photo-storage";
 
 const CHARACTER: HeroCharacter = {
   src: characterImage,
@@ -23,6 +19,7 @@ interface WishCreatedScreenProps {
   period: string | null;
   depositHref: string;
   closeHref: string;
+  photoUrl: string | null;
 }
 
 export function WishCreatedScreen({
@@ -31,11 +28,8 @@ export function WishCreatedScreen({
   period,
   depositHref,
   closeHref,
+  photoUrl,
 }: WishCreatedScreenProps) {
-  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
-
-  useEffect(() => setPhotoUrl(readNewWishPhoto()), []);
-
   return (
     <WishHeroScreen
       closeHref={closeHref}
