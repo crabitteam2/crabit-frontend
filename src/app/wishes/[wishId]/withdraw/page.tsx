@@ -1,35 +1,38 @@
 import { notFound } from "next/navigation";
 import { PullToRefresh } from "@/app/_components/pull-to-refresh";
-import { cardAccounts } from "@/lib/mock/accounts";
-import { findWish, resolveWishListData } from "@/lib/mock/wishes";
 import { AccountSelect } from "../../_components/account-select";
 import { ScreenHeader } from "../../_components/screen-header";
+import { refreshCardBalanceAction } from "../../wish-actions";
+import { CARD_COUNTERPART_ID, loadFundFlow } from "../fund-flow";
 
 export default async function WithdrawAccountPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ wishId: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { wishId } = await params;
-  const wish = findWish(wishId);
-  if (wish === null) notFound();
+  const view = await loadFundFlow(wishId);
+  if (view === null) notFound();
 
-  const { inProgress } = resolveWishListData(await searchParams);
-  const targets = inProgress.filter((item) => item.id !== wishId);
+  const targets = view.others.filter((wish) => wish.amount < wish.targetAmount);
 
   return (
     <div className="flex flex-col">
       <ScreenHeader
-        title="어떤 카드에서 보낼까요?"
+        title="어떤 카드로 보낼까요?"
         backHref={`/wishes/${wishId}`}
         spacing="loose"
       />
-      <PullToRefresh>
+      <PullToRefresh onRefresh={refreshCardBalanceAction}>
         <AccountSelect
           nextPath={`/wishes/${wishId}/withdraw/amount`}
-          accounts={cardAccounts}
+          paramName="to"
+          card={{
+            id: CARD_COUNTERPART_ID,
+            name: view.card.name,
+            cardNumber: view.card.cardNumber,
+            balance: view.card.availableBalance,
+          }}
           wishes={targets}
         />
       </PullToRefresh>

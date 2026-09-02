@@ -3,8 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import closeIcon from "@/../public/images/wishes/close-32.svg";
+import { Toast } from "@/components/ui/toast";
+import { depositToWishAction, transferWishFundsAction } from "../wish-actions";
 import { CoinDrop } from "./coin-drop";
+import type { FundCounterpartRef } from "./fund-counterpart";
 
 const DOT_PATTERN =
   "radial-gradient(ellipse 14.13px 17.17px at 14.13px 17.17px, var(--color-pink-2) 0 100%, transparent 0)";
@@ -12,10 +16,54 @@ const DOT_PATTERN =
 interface DepositCoinScreenProps {
   wishId: string;
   amount: number;
+  expectedVersion: number;
+  source: FundCounterpartRef;
 }
 
-export function DepositCoinScreen({ wishId, amount }: DepositCoinScreenProps) {
+export function DepositCoinScreen({
+  wishId,
+  amount,
+  expectedVersion,
+  source,
+}: DepositCoinScreenProps) {
   const router = useRouter();
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
+  const [attempt, setAttempt] = useState(0);
+  const [isPending, setIsPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const drop = async () => {
+    if (isPending) return;
+    setIsPending(true);
+    setError(null);
+
+    const result =
+      source.kind === "card"
+        ? await depositToWishAction({
+            wishId,
+            expectedVersion,
+            amount,
+            idempotencyKey,
+          })
+        : await transferWishFundsAction({
+            sourceWishId: source.wishId,
+            destinationWishId: wishId,
+            amount,
+            sourceExpectedVersion: source.version,
+            destinationExpectedVersion: expectedVersion,
+            idempotencyKey,
+          });
+
+    setIsPending(false);
+
+    if (!result.ok) {
+      setError(result.message);
+      setAttempt((count) => count + 1);
+      return;
+    }
+
+    router.replace(`/wishes/${wishId}/deposit/done?amount=${amount}`);
+  };
 
   return (
     <div
@@ -26,11 +74,7 @@ export function DepositCoinScreen({ wishId, amount }: DepositCoinScreenProps) {
         backgroundPosition: "0 -5px",
       }}
     >
-      <CoinDrop
-        onDrop={() =>
-          router.push(`/wishes/${wishId}/deposit/done?amount=${amount}`)
-        }
-      />
+      <CoinDrop key={attempt} onDrop={drop} />
 
       <div className="pointer-events-none relative">
         <div className="flex justify-end px-4 pt-[calc(env(safe-area-inset-top)+12px)]">
@@ -49,6 +93,10 @@ export function DepositCoinScreen({ wishId, amount }: DepositCoinScreenProps) {
           저금통에 넣어보세요
         </h1>
       </div>
+
+      {error === null ? null : (
+        <Toast message={error} tone="danger" onClose={() => setError(null)} />
+      )}
     </div>
   );
 }

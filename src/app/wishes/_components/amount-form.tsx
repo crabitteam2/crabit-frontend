@@ -14,16 +14,24 @@ interface AmountFormProps {
   title: string;
   backHref: string;
   nextPath: string;
+  nextParams?: Record<string, string>;
   available: number;
   availableLabel: string;
+  max?: number;
+  overMessage?: string;
 }
+
+const OVER_AVAILABLE_MESSAGE = "사용 가능한 금액을 넘었어요.";
 
 export function AmountForm({
   title,
   backHref,
   nextPath,
+  nextParams,
   available,
   availableLabel,
+  max,
+  overMessage,
 }: AmountFormProps) {
   const router = useRouter();
   const [value, setValue] = useState("");
@@ -32,8 +40,23 @@ export function AmountForm({
 
   const digits = value.replace(/\D/g, "");
   const amount = digits === "" ? 0 : Number(digits);
-  const isOver = amount > available;
+  const limit = Math.min(available, max ?? available);
+  const isOver = amount > limit;
   const canSubmit = amount > 0 && !isOver;
+
+  const error = !isOver
+    ? undefined
+    : amount > available
+      ? OVER_AVAILABLE_MESSAGE
+      : (overMessage ?? OVER_AVAILABLE_MESSAGE);
+
+  const submit = () => {
+    const query = new URLSearchParams({
+      ...nextParams,
+      amount: String(amount),
+    });
+    router.push(`${nextPath}?${query.toString()}`);
+  };
 
   return (
     <div
@@ -74,7 +97,7 @@ export function AmountForm({
             placeholder="금액을 입력하세요."
             value={digits === "" ? "" : amount.toLocaleString("ko-KR")}
             onChange={(event) => setValue(event.target.value)}
-            error={isOver ? "사용 가능한 금액을 넘었어요." : undefined}
+            error={error}
           />
           <span className="text-e1 text-gray-5 py-2">
             {availableLabel} : {available.toLocaleString("ko-KR")}원
@@ -92,7 +115,7 @@ export function AmountForm({
           className="w-full"
           disabled={!canSubmit}
           onPointerDown={(event) => event.preventDefault()}
-          onClick={() => router.push(`${nextPath}?amount=${amount}`)}
+          onClick={submit}
         >
           다음
         </Button>

@@ -1,6 +1,11 @@
-import { notFound } from "next/navigation";
-import { findWish } from "@/lib/mock/wishes";
+import { notFound, redirect } from "next/navigation";
 import { WithdrawDoneScreen } from "../../../_components/withdraw-done-screen";
+import {
+  findCounterpart,
+  firstQueryValue,
+  loadFundFlow,
+  parseAmount,
+} from "../../fund-flow";
 
 export default async function WithdrawDonePage({
   params,
@@ -10,19 +15,25 @@ export default async function WithdrawDonePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { wishId } = await params;
-  const wish = findWish(wishId);
-  if (wish === null) notFound();
+  const view = await loadFundFlow(wishId);
+  if (view === null) notFound();
 
-  const raw = (await searchParams).amount;
-  const value = Array.isArray(raw) ? raw[0] : raw;
-  const parsed = Number(value ?? 0);
-  const amount = Number.isFinite(parsed) ? parsed : 0;
+  const query = await searchParams;
+  const amount = parseAmount(query.amount);
+  if (amount === 0) redirect(`/wishes/${wishId}`);
+
+  const destination = findCounterpart(view, firstQueryValue(query.to));
 
   return (
     <WithdrawDoneScreen
-      purpose={wish.purpose}
+      purpose={view.wish.purpose}
       amount={amount}
-      balanceAfter={Math.max(0, wish.amount - amount)}
+      balanceAfter={view.wish.amount}
+      title={
+        destination?.kind === "wish"
+          ? `${destination.wish.purpose}에 보낸 금액`
+          : undefined
+      }
     />
   );
 }
