@@ -29,6 +29,7 @@ const mutationResult: components["schemas"]["WishMutationResult"] = {
     id: wishId,
     photo: null,
     purpose: "노트북",
+    startDate: null,
     state: "IN_PROGRESS",
     targetAmount: 100_000,
     targetDate: null,

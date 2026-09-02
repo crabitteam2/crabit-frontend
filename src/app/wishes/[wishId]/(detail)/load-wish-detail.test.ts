@@ -37,6 +37,7 @@ function wish(
     targetAmount: 50_000,
     amount: state === "ABANDONED" ? 0 : 12_000,
     abandonmentAmount,
+    startDate: null,
     targetDate: "2026-10-31",
     state,
     visibility: "PRIVATE",

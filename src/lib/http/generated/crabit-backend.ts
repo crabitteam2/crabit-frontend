@@ -403,7 +403,7 @@ export interface paths {
         put?: never;
         /**
          * 초기 적립금이 0인 비공개 위시 생성
-         * @description 잔액 정보가 UNKNOWN이거나 OPEN 잔액 불일치가 없을 때 amount 0, state IN_PROGRESS, visibility PRIVATE인 위시를 생성합니다. photoId가 생략되거나 null이면 사진 없이 만들고, UUID이면 인증된 학생 소유의 만료되지 않은 미첨부 Pending 사진을 새 위시에 원자적으로 첨부합니다. 성공한 첨부는 사진 업로드 receipt의 ACTIVE_SUCCESS를 유지하며 24시간 retainUntil을 소비·연장·교체하지 않습니다. 첨부 실패 시 위시와 attachment 모두 생성하지 않습니다. 일치하는 Idempotency-Key의 이전 성공 결과는 현재 불일치 방어 조건보다 먼저 재생합니다. 최초 성공에 사진이 있으면 private ACTIVE_PHOTO 상태가 그 정확한 photoId를 유효한 동안만 보존하고 재생 때 소유권과 같은 위시 attachment를 재검증하여 새 5분 URL을 발급합니다. 최초 성공에 사진이 없던 NO_PHOTO는 이후 현재 사진이 붙어도 대체하지 않고 photo null을 반환합니다. 원래 사진이 교체·제거·revocation·Wish 삭제·cleanup으로 무효화되면 식별자 없는 PHOTO_REVOKED가 되어 Wish 성공 본문 없이 409 WISH_PHOTO_EXPIRED를 반환합니다. 새 URL 발급만 실패하면 receipt를 바꾸지 않고 부분 성공 본문 없이 503 PHOTO_DELIVERY_UNAVAILABLE을 반환합니다. 성공 재생에만 Idempotency-Replayed true를 보냅니다. 응답 capability 발급은 commit 전에 완료하므로 signing 실패가 비멱등 commit을 모호하게 만들지 않습니다. 그 밖의 경우 OPEN 잔액 조정 건이 있으면 새 위시를 저장하기 전에 409 BALANCE_MISMATCH_LOCKED로 생성을 거부합니다.
+         * @description 잔액 정보가 UNKNOWN이거나 OPEN 잔액 불일치가 없을 때 amount 0, state IN_PROGRESS, visibility PRIVATE인 위시를 생성합니다. startDate와 targetDate는 각각 생략하거나 null로 지정할 수 있고, 둘 다 날짜이면 startDate가 targetDate보다 늦지 않아야 합니다. 역전된 날짜 범위는 새 멱등 기록이나 위시 변경을 만들기 전에 거부합니다. photoId가 생략되거나 null이면 사진 없이 만들고, UUID이면 인증된 학생 소유의 만료되지 않은 미첨부 Pending 사진을 새 위시에 원자적으로 첨부합니다. 성공한 첨부는 사진 업로드 receipt의 ACTIVE_SUCCESS를 유지하며 24시간 retainUntil을 소비·연장·교체하지 않습니다. 첨부 실패 시 위시와 attachment 모두 생성하지 않습니다. 새로 캡처하는 멱등 요청 식별에는 정규화된 startDate의 명시적 null 또는 ISO 달력 날짜와 photoId의 명시적 null 또는 UUID가 포함되므로, 같은 Idempotency-Key를 다른 startDate 또는 photoId와 사용하면 409 IDEMPOTENCY_KEY_REUSED입니다. 기능 도입 전에 성공한 키는 startDate가 null인 재시도 중 photoId도 동일한 경우에만 이전 식별 방식으로 재생하며, 이전 스냅샷에 startDate가 없어도 응답에는 startDate null을 명시합니다. 일치하는 Idempotency-Key의 이전 성공 결과는 현재 불일치 방어 조건보다 먼저 재생됩니다. 최초 성공에 사진이 있으면 private ACTIVE_PHOTO 상태가 그 정확한 photoId를 유효한 동안만 보존하고 재생 때 소유권과 같은 위시 attachment를 재검증하여 새 5분 URL을 발급합니다. 최초 성공에 사진이 없던 NO_PHOTO는 이후 현재 사진이 붙어도 대체하지 않고 photo null을 반환합니다. 원래 사진이 교체·제거·revocation·Wish 삭제·cleanup으로 무효화되면 식별자 없는 PHOTO_REVOKED가 되어 Wish 성공 본문 없이 409 WISH_PHOTO_EXPIRED를 반환합니다. 새 URL 발급만 실패하면 receipt를 바꾸지 않고 부분 성공 본문 없이 503 PHOTO_DELIVERY_UNAVAILABLE을 반환합니다. 성공 재생에만 Idempotency-Replayed true를 보냅니다. 응답 capability 발급은 commit 전에 완료하므로 signing 실패가 비멱등 commit을 모호하게 만들지 않습니다. 그 밖의 경우 OPEN 잔액 조정 건이 있으면 새 위시를 저장하기 전에 409 BALANCE_MISMATCH_LOCKED로 생성을 거부합니다.
          */
         post: operations["createWish"];
         delete?: never;
@@ -438,7 +438,7 @@ export interface paths {
         head?: never;
         /**
          * 변경 가능한 위시 필드를 원자적으로 병합 패치
-         * @description 필드를 생략하면 기존 값을 유지하고 targetDate에 null을 지정하면 날짜를 지웁니다. photoId를 생략하면 현재 사진을 유지하고 null이면 제거하며, 현재 사진과 같은 UUID이면 성공 no-op, 다른 UUID이면 새 Pending 사진을 원자적으로 첨부하고 이전 사진을 즉시 접근 불가능한 DELETE_PENDING으로 만듭니다. 교체나 명시적 제거는 이전 사진의 보존 중인 성공 업로드 receipt를 파괴적 정리 전에 REVOKED_SUCCESS로 바꾸고, 새로 첨부한 사진의 ACTIVE_SUCCESS와 retainUntil은 유지합니다. 사진 추가·교체·제거는 IN_PROGRESS 또는 AMOUNT_REACHED에서만 허용하고, terminal 위시에 photoId를 제공하면 보존된 사진과 같은 값이어도 INVALID_STATE_TRANSITION입니다. expectedVersion은 계속 필수이며 stale 음수 아닌 값은 VERSION_CONFLICT입니다. 교체 실패는 기존 attachment와 후보 Pending 사진을 그대로 유지합니다. 성공한 사진 변경은 version과 updatedAt, 존재하는 Shared Card의 contentUpdatedAt을 갱신합니다. 잔액 불일치가 없을 때 COMPLETED 또는 ABANDONED 위시는 공개 범위만 변경할 수 있습니다. 위시를 포기하면 공유 카드를 제거하지만 첨부 사진과 ACTIVE_SUCCESS receipt는 보존합니다. 포기된 위시의 공개 범위를 변경하면 소유자에게 보이는 위시 메타데이터만 갱신하고 공유 카드는 절대 생성하지 않습니다. OPEN 잔액 조정 건이 있으면 purpose, targetAmount, targetDate를 비롯해 공개 범위를 확대·축소하거나 PRIVATE로 바꾸는 모든 요청 필드를 거부합니다. 응답 capability 발급은 commit 전에 끝나야 합니다.
+         * @description 필드를 생략하면 기존 값을 유지하고 startDate 또는 targetDate에 null을 지정하면 해당 날짜를 지웁니다. 두 날짜를 함께 변경할 때는 중간 상태가 아니라 원자적으로 적용한 최종 날짜 쌍을 검증하며, 둘 다 날짜이면 startDate가 targetDate보다 늦지 않아야 합니다. photoId를 생략하면 현재 사진을 유지하고 null이면 제거하며, 현재 사진과 같은 UUID이면 성공 no-op, 다른 UUID이면 새 Pending 사진을 원자적으로 첨부하고 이전 사진을 즉시 접근 불가능한 DELETE_PENDING으로 만듭니다. 교체나 명시적 제거는 이전 사진의 보존 중인 성공 업로드 receipt를 파괴적 정리 전에 REVOKED_SUCCESS로 바꾸고, 새로 첨부한 사진의 ACTIVE_SUCCESS와 retainUntil은 유지합니다. 사진 추가·교체·제거는 IN_PROGRESS 또는 AMOUNT_REACHED에서만 허용하고, terminal 위시에 photoId를 제공하면 보존된 사진과 같은 값이어도 INVALID_STATE_TRANSITION입니다. expectedVersion은 계속 필수이며 stale 음수 아닌 값은 VERSION_CONFLICT입니다. 교체 실패는 기존 attachment와 후보 Pending 사진을 그대로 유지합니다. 성공한 날짜 변경은 updatedAt과 version을 정확히 한 번 갱신합니다. 성공한 사진 변경도 version과 updatedAt, 존재하는 Shared Card의 contentUpdatedAt을 갱신합니다. 역전된 날짜 범위는 어떤 필드, version, updatedAt 또는 공유 카드도 변경하지 않습니다. 잔액 불일치가 없을 때 COMPLETED 또는 ABANDONED 위시는 공개 범위만 변경할 수 있습니다. 위시를 포기하면 공유 카드를 제거하지만 첨부 사진과 ACTIVE_SUCCESS receipt는 보존합니다. 포기된 위시의 공개 범위를 변경하면 소유자에게 보이는 위시 메타데이터만 갱신하고 공유 카드는 절대 생성하지 않습니다. OPEN 잔액 조정 건이 있으면 purpose, targetAmount, startDate, targetDate를 비롯해 공개 범위를 확대·축소하거나 PRIVATE로 바꾸는 모든 요청 필드를 거부합니다. 응답 capability 발급은 commit 전에 끝나야 합니다.
          */
         patch: operations["patchWish"];
         trace?: never;
@@ -986,13 +986,18 @@ export interface components {
              */
             photoId?: string | null;
             purpose: components["schemas"]["PurposeInput"];
+            /**
+             * Format: date
+             * @description 선택적 계획 시작 달력 날짜입니다. 생략하거나 null이면 null을 저장하며, targetDate와 둘 다 날짜이면 이 값이 더 늦을 수 없습니다.
+             */
+            startDate?: string | null;
             targetAmount: components["schemas"]["KrwPositive"];
             /** Format: date */
             targetDate?: string | null;
         };
         Cursor: string;
         /** @enum {string} */
-        ErrorCode: "MALFORMED_REQUEST" | "EXPECTED_VERSION_REQUIRED" | "IDEMPOTENCY_KEY_REQUIRED" | "AUTH_REQUIRED" | "FORBIDDEN" | "CARD_BALANCE_ACCOUNT_NOT_FOUND" | "WISH_NOT_FOUND" | "ACADEMY_NOT_FOUND" | "SHARED_CARD_NOT_FOUND" | "VERSION_CONFLICT" | "INVALID_STATE_TRANSITION" | "BALANCE_MISMATCH_LOCKED" | "INSUFFICIENT_AVAILABLE_BALANCE" | "INSUFFICIENT_WISH_AMOUNT" | "TARGET_AMOUNT_EXCEEDED" | "CROSS_ACCOUNT_TRANSFER_FORBIDDEN" | "IDEMPOTENCY_KEY_REUSED" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_AMOUNT" | "INVALID_PURPOSE" | "INVALID_VERSION" | "BALANCE_SYNC_FAILED" | "STUDENT_NOT_FOUND" | "FRIENDSHIP_NOT_FOUND" | "FRIEND_REQUEST_NOT_FOUND" | "STUDENT_BLOCK_NOT_FOUND" | "SELF_RELATIONSHIP" | "ALREADY_FRIENDS" | "FRIEND_REQUEST_ALREADY_PENDING" | "INCOMING_FRIEND_REQUEST_PENDING" | "FRIEND_REQUEST_NOT_PENDING" | "FRIEND_REQUEST_NOT_ACTIONABLE" | "STUDENT_BLOCK_ALREADY_ACTIVE" | "WISH_PHOTO_NOT_FOUND" | "WISH_PHOTO_EXPIRED" | "WISH_PHOTO_ALREADY_ATTACHED" | "PHOTO_TOO_LARGE" | "UNSUPPORTED_PHOTO_TYPE" | "INVALID_PHOTO" | "PHOTO_CONTENT_NOT_ALLOWED" | "PHOTO_UPLOAD_RATE_LIMITED" | "PHOTO_PROCESSING_UNAVAILABLE" | "PHOTO_DELIVERY_UNAVAILABLE";
+        ErrorCode: "MALFORMED_REQUEST" | "EXPECTED_VERSION_REQUIRED" | "IDEMPOTENCY_KEY_REQUIRED" | "AUTH_REQUIRED" | "FORBIDDEN" | "CARD_BALANCE_ACCOUNT_NOT_FOUND" | "WISH_NOT_FOUND" | "ACADEMY_NOT_FOUND" | "SHARED_CARD_NOT_FOUND" | "VERSION_CONFLICT" | "INVALID_STATE_TRANSITION" | "BALANCE_MISMATCH_LOCKED" | "INSUFFICIENT_AVAILABLE_BALANCE" | "INSUFFICIENT_WISH_AMOUNT" | "TARGET_AMOUNT_EXCEEDED" | "CROSS_ACCOUNT_TRANSFER_FORBIDDEN" | "IDEMPOTENCY_KEY_REUSED" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_AMOUNT" | "INVALID_PURPOSE" | "INVALID_DATE_RANGE" | "INVALID_VERSION" | "BALANCE_SYNC_FAILED" | "STUDENT_NOT_FOUND" | "FRIENDSHIP_NOT_FOUND" | "FRIEND_REQUEST_NOT_FOUND" | "STUDENT_BLOCK_NOT_FOUND" | "SELF_RELATIONSHIP" | "ALREADY_FRIENDS" | "FRIEND_REQUEST_ALREADY_PENDING" | "INCOMING_FRIEND_REQUEST_PENDING" | "FRIEND_REQUEST_NOT_PENDING" | "FRIEND_REQUEST_NOT_ACTIONABLE" | "STUDENT_BLOCK_ALREADY_ACTIVE" | "WISH_PHOTO_NOT_FOUND" | "WISH_PHOTO_EXPIRED" | "WISH_PHOTO_ALREADY_ATTACHED" | "PHOTO_TOO_LARGE" | "UNSUPPORTED_PHOTO_TYPE" | "INVALID_PHOTO" | "PHOTO_CONTENT_NOT_ALLOWED" | "PHOTO_UPLOAD_RATE_LIMITED" | "PHOTO_PROCESSING_UNAVAILABLE" | "PHOTO_DELIVERY_UNAVAILABLE";
         ErrorEnvelope: {
             /** @description 선언된 모든 실패 JSON 응답이 공통으로 사용하는 구조화된 오류 페이로드입니다. */
             error: {
@@ -1268,6 +1273,11 @@ export interface components {
             photo: components["schemas"]["WishPhoto"] | null;
             /** @description 이 위시에 저장된, NFC로 정규화되고 앞뒤 경계 공백이 없는 목적 텍스트입니다. */
             purpose: components["schemas"]["Purpose"];
+            /**
+             * Format: date
+             * @description 사용자가 저축 계획의 시작일로 선택한 달력 날짜입니다. 시스템 생성 감사 시점인 createdAt, updatedAt, 수명 주기 종료 시점 및 실제 경과 기간과 독립적이며, 설정하지 않았거나 기존 데이터이면 null입니다.
+             */
+            startDate: string | null;
             /** @description 수명 주기 상태입니다. 목표 미만은 IN_PROGRESS, 목표에 도달했지만 명시적으로 완료하기 전은 AMOUNT_REACHED, 완료 후는 COMPLETED, 포기 후는 ABANDONED입니다. */
             state: components["schemas"]["WishState"];
             /** @description 이 위시에 대한 양의 정수 KRW 목표입니다. */
@@ -1430,11 +1440,16 @@ export interface components {
              */
             photoId?: string | null;
             purpose?: components["schemas"]["PurposeInput"];
+            /**
+             * Format: date
+             * @description 선택적 계획 시작 달력 날짜입니다. 생략하면 기존 값을 유지하고 null이면 지우며, targetDate와 함께 제공되면 두 변경을 적용한 최종 날짜 쌍을 원자적으로 검증합니다.
+             */
+            startDate?: string | null;
             targetAmount?: components["schemas"]["KrwPositive"];
             /** Format: date */
             targetDate?: string | null;
             visibility?: components["schemas"]["WishVisibility"];
-        } | unknown | unknown | unknown | unknown | unknown;
+        } | unknown | unknown | unknown | unknown | unknown | unknown;
         WishMutationResult: {
             /**
              * Format: uuid
@@ -1768,7 +1783,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description INVALID_AMOUNT 또는 INVALID_PURPOSE — 독립적으로 디코딩된 필드가 제약 조건을 위반합니다. */
+        /** @description INVALID_AMOUNT, INVALID_PURPOSE 또는 INVALID_DATE_RANGE — 독립적으로 디코딩된 필드가 제약 조건을 위반했거나, 유효한 두 날짜의 최종 범위가 역전되었습니다. */
         InvalidAmountOrPurpose: {
             headers: {
                 [name: string]: unknown;
@@ -1786,7 +1801,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description INVALID_AMOUNT, INVALID_PURPOSE 또는 INVALID_VERSION — 독립적으로 디코딩된 필드가 제약 조건을 위반합니다. */
+        /** @description INVALID_AMOUNT, INVALID_PURPOSE, INVALID_DATE_RANGE 또는 INVALID_VERSION — 독립적으로 디코딩된 필드가 제약 조건을 위반했거나, 원자적으로 적용한 최종 날짜 범위가 역전되었습니다. */
         InvalidAmountPurposeOrVersion: {
             headers: {
                 [name: string]: unknown;
