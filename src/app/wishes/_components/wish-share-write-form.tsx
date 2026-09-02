@@ -6,6 +6,8 @@ import { useState } from "react";
 import radioOffIcon from "@/../public/images/common/radio-off.svg";
 import radioOnIcon from "@/../public/images/common/radio-on.svg";
 import { Button } from "@/components/ui/button";
+import { Toast } from "@/components/ui/toast";
+import { shareWishAction } from "../wish-actions";
 
 const VISIBILITIES = [
   { value: "ACADEMY", label: "학원 전체" },
@@ -15,12 +17,33 @@ const VISIBILITIES = [
 type Visibility = (typeof VISIBILITIES)[number]["value"];
 
 interface WishShareWriteFormProps {
+  wishId: string;
+  version: number;
   donePath: string;
 }
 
-export function WishShareWriteForm({ donePath }: WishShareWriteFormProps) {
+export function WishShareWriteForm({
+  wishId,
+  version,
+  donePath,
+}: WishShareWriteFormProps) {
   const router = useRouter();
   const [visibility, setVisibility] = useState<Visibility>("ACADEMY");
+  const [isSharing, setIsSharing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const share = async () => {
+    if (isSharing) return;
+    setIsSharing(true);
+
+    const result = await shareWishAction(wishId, version, visibility);
+    if (result.ok) {
+      router.replace(donePath);
+      return;
+    }
+    setIsSharing(false);
+    setError(result.message);
+  };
 
   return (
     <>
@@ -64,11 +87,16 @@ export function WishShareWriteForm({ donePath }: WishShareWriteFormProps) {
         <Button
           size="xlarge"
           className="w-full"
-          onClick={() => router.push(`${donePath}?visibility=${visibility}`)}
+          isLoading={isSharing}
+          onClick={() => void share()}
         >
           공유하기
         </Button>
       </div>
+
+      {error === null ? null : (
+        <Toast message={error} tone="danger" onClose={() => setError(null)} />
+      )}
     </>
   );
 }
