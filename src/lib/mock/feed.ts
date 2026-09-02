@@ -1,3 +1,4 @@
+import type { components } from "../http/generated/crabit-backend";
 import type { Wish } from "./wishes";
 
 /** 학원 피드에 걸린 공유 카드 한 장입니다. */
@@ -87,6 +88,44 @@ export function resolveFeedCards(params: SearchParams): FeedCard[] {
   return cards;
 }
 
+/** 가상 공유 위시에도 실제 계약의 공개 범위를 명시합니다. */
+export interface SharedProfileWish extends Wish {
+  visibility: components["schemas"]["WishVisibility"];
+}
+
+/** 가상 프로필의 본인 기준 양방향 관계와 차단입니다. */
+export interface ProfileRelationship {
+  isFollowing: boolean;
+  isFollowedBy: boolean;
+  isBlocked: boolean;
+  isBlockedBy: boolean;
+}
+
+/** 차단하면 두 방향을 종료하며 해제는 관계를 복원하지 않습니다. */
+export function toggleProfileBlock(
+  relationship: ProfileRelationship,
+): ProfileRelationship {
+  return {
+    ...relationship,
+    isBlocked: !relationship.isBlocked,
+    isFollowing: false,
+    isFollowedBy: false,
+  };
+}
+
+/** viewer → owner만 팔로워 공개를 허용하며 어느 방향 차단도 우선합니다. */
+export function visibleProfileWishes(
+  wishes: SharedProfileWish[],
+  relationship: ProfileRelationship,
+): SharedProfileWish[] {
+  if (relationship.isBlocked || relationship.isBlockedBy) return [];
+  return wishes.filter(
+    (wish) =>
+      wish.visibility === "ACADEMY" ||
+      (wish.visibility === "FOLLOWERS" && relationship.isFollowing),
+  );
+}
+
 /** 다른 학생의 프로필에 보여줄 위시 묶음입니다. */
 export interface StudentProfile {
   /** 학생 식별자입니다. */
@@ -94,18 +133,27 @@ export interface StudentProfile {
   /** 학생의 별명입니다. */
   nickname: string;
   /** 진행중인 위시입니다. */
-  inProgress: Wish[];
+  inProgress: SharedProfileWish[];
   /** 완료하거나 포기한 위시입니다. */
-  finished: Wish[];
+  finished: SharedProfileWish[];
+  /** 현재 학원의 독립적인 양방향 팔로우 상태입니다. */
+  relationship: ProfileRelationship;
 }
 
 const profiles: StudentProfile[] = [
   {
     id: "s1",
+    relationship: {
+      isFollowing: true,
+      isFollowedBy: true,
+      isBlocked: false,
+      isBlockedBy: false,
+    },
     nickname: "박선형",
     inProgress: [
       {
         id: "s1w1",
+        visibility: "FOLLOWERS",
         purpose: "여름 방학 캠프",
         amount: 20_000,
         targetAmount: 100_000,
@@ -118,6 +166,7 @@ const profiles: StudentProfile[] = [
     finished: [
       {
         id: "s1w2",
+        visibility: "FOLLOWERS",
         purpose: "농구공",
         amount: 35_000,
         targetAmount: 35_000,
@@ -127,6 +176,7 @@ const profiles: StudentProfile[] = [
       },
       {
         id: "s1w3",
+        visibility: "ACADEMY",
         purpose: "보드게임",
         amount: 9_000,
         targetAmount: 40_000,
@@ -138,10 +188,17 @@ const profiles: StudentProfile[] = [
   },
   {
     id: "s2",
+    relationship: {
+      isFollowing: true,
+      isFollowedBy: false,
+      isBlocked: false,
+      isBlockedBy: false,
+    },
     nickname: "권아라",
     inProgress: [
       {
         id: "s2w1",
+        visibility: "FOLLOWERS",
         purpose: "산리오 스티커 세트",
         amount: 27_000,
         targetAmount: 30_000,
@@ -154,11 +211,18 @@ const profiles: StudentProfile[] = [
   },
   {
     id: "s3",
+    relationship: {
+      isFollowing: false,
+      isFollowedBy: true,
+      isBlocked: false,
+      isBlockedBy: false,
+    },
     nickname: "오지원",
     inProgress: [],
     finished: [
       {
         id: "s3w1",
+        visibility: "ACADEMY",
         purpose: "스포츠카 레고",
         amount: 45_000,
         targetAmount: 45_000,

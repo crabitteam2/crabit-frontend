@@ -6,25 +6,35 @@ import { useState } from "react";
 import moreIcon from "@/../public/images/feed/more.svg";
 import searchIcon from "@/../public/images/feed/search.svg";
 import { Toast } from "@/components/ui/toast";
-import type { StudentProfile as StudentProfileData } from "@/lib/mock/feed";
+import {
+  toggleProfileBlock,
+  visibleProfileWishes,
+  type StudentProfile as StudentProfileData,
+} from "@/lib/mock/feed";
 import { ProfileScreen } from "./profile-screen";
 
-const BLOCKED_MESSAGE = "친구를 차단했어요. 해제시 다시 친구가 되어요.";
+const BLOCKED_MESSAGE = "학생을 차단했어요. 서로의 팔로우가 해제돼요.";
 
-const UNBLOCKED_MESSAGE = "차단을 해제했어요. 다시 친구의 활동을 볼 수 있어요.";
+const UNBLOCKED_MESSAGE =
+  "차단을 해제했어요. 팔로우는 자동으로 복원되지 않아요.";
 
 interface StudentProfileProps {
   profile: StudentProfileData;
 }
 
 export function StudentProfile({ profile }: StudentProfileProps) {
-  const [isBlocked, setIsBlocked] = useState(false);
+  return <StudentProfileContent key={profile.id} profile={profile} />;
+}
+
+function StudentProfileContent({ profile }: StudentProfileProps) {
+  const [relationship, setRelationship] = useState(profile.relationship);
+  const { isBlocked } = relationship;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   const toggleBlock = () => {
     setIsMenuOpen(false);
-    setIsBlocked((blocked) => !blocked);
+    setRelationship(toggleProfileBlock);
     setToast(isBlocked ? UNBLOCKED_MESSAGE : BLOCKED_MESSAGE);
   };
 
@@ -32,8 +42,8 @@ export function StudentProfile({ profile }: StudentProfileProps) {
     <>
       <ProfileScreen
         nickname={profile.nickname}
-        inProgress={isBlocked ? [] : profile.inProgress}
-        finished={isBlocked ? [] : profile.finished}
+        inProgress={visibleProfileWishes(profile.inProgress, relationship)}
+        finished={visibleProfileWishes(profile.finished, relationship)}
         backHref="/feed"
         actions={
           isMenuOpen ? (

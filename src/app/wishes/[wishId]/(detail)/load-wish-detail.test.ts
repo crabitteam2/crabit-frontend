@@ -33,6 +33,7 @@ function wish(
 ): components["schemas"]["Wish"] {
   return {
     id: wishId,
+    photo: null,
     cardBalanceAccountId: accountId,
     purpose: "놀이공원 자유이용권",
     targetAmount: 50_000,
