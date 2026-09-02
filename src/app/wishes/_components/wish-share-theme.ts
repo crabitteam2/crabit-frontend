@@ -1,8 +1,8 @@
 import abandonedImage from "@/../public/images/wishes/share-abandoned.png";
 import completedImage from "@/../public/images/wishes/share-completed.png";
 import inProgressImage from "@/../public/images/wishes/wish-created.png";
-import type { Wish } from "@/lib/mock/wishes";
 import type { HeroCharacter } from "./wish-hero-screen";
+import type { WishItemState } from "./wish-item";
 import type { WishTheme } from "./wish-theme";
 
 export interface WishShareLook {
@@ -60,7 +60,9 @@ const abandoned: WishShareLook = {
   },
 };
 
-export function getWishShareLook(wish: Wish): WishShareLook {
+export function getWishShareLook(wish: {
+  state: WishItemState;
+}): WishShareLook {
   if (wish.state === "ABANDONED") return abandoned;
   if (wish.state === "COMPLETED") return completed;
   return inProgress;

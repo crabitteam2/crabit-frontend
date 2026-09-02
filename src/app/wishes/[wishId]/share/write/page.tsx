@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { toProgressPercent } from "@/app/_components/progress-stage";
-import { findWish } from "@/lib/mock/wishes";
+import { loadWishDetail } from "../../(detail)/load-wish-detail";
 import { ScreenHeader } from "../../../_components/screen-header";
 import { WishHeroContent } from "../../../_components/wish-hero-screen";
 import { toSavingPeriodLabel } from "../../../_components/wish-period-format";
@@ -9,15 +9,14 @@ import { WishShareWriteForm } from "../../../_components/wish-share-write-form";
 
 export default async function WishShareWritePage({
   params,
-  searchParams,
 }: {
   params: Promise<{ wishId: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { wishId } = await params;
-  const query = await searchParams;
-  const wish = findWish(wishId, query);
-  if (wish === null) notFound();
+  const view = await loadWishDetail(wishId);
+  if (view === null) notFound();
+
+  const { wish } = view;
 
   const look = getWishShareLook(wish);
   const period = toSavingPeriodLabel({
@@ -51,7 +50,11 @@ export default async function WishShareWritePage({
         <div className="h-5" />
       </div>
 
-      <WishShareWriteForm donePath={`/wishes/${wishId}/share/loading`} />
+      <WishShareWriteForm
+        wishId={wishId}
+        version={wish.version}
+        donePath={`/wishes/${wishId}/share/loading`}
+      />
     </div>
   );
 }

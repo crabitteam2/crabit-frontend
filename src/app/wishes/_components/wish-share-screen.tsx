@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { toProgressPercent } from "@/app/_components/progress-stage";
-import type { Wish } from "@/lib/mock/wishes";
+import type { WishDetail } from "./wish-detail";
 import { WishHeroScreen } from "./wish-hero-screen";
 import { toSavingPeriodLabel } from "./wish-period-format";
 import { getWishShareLook } from "./wish-share-theme";
 
 interface WishShareScreenProps {
-  wish: Wish;
+  wish: WishDetail;
   photoUrl: string | null;
   closeHref: string;
   writeHref: string;

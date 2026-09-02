@@ -69,6 +69,18 @@ export interface AbandonWishOptions {
   readonly body: operations["abandonWish"]["requestBody"]["content"]["application/json"];
 }
 
+/** 위시 완료에 필요한 식별자, 멱등성 키, 계약 본문입니다. */
+export interface CompleteWishOptions {
+  /** 위시가 속한 카드잔액계좌 식별자입니다. */
+  readonly cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+  /** 완료할 위시 식별자입니다. */
+  readonly wishId: components["parameters"]["WishId"];
+  /** 재시도 중 중복 처리를 막는 멱등성 키입니다. */
+  readonly idempotencyKey: components["parameters"]["IdempotencyKey"];
+  /** OpenAPI 계약이 정의한 기대 버전 본문입니다. */
+  readonly body: operations["completeWish"]["requestBody"]["content"]["application/json"];
+}
+
 /** 대표 위시 조회에 필요한 카드잔액계좌 식별자입니다. */
 export interface GetRepresentativeWishOptions {
   /** 대표 위시가 속한 카드잔액계좌 식별자입니다. */
@@ -207,6 +219,28 @@ export function deleteWish(
             "If-Match": options.ifMatch,
           },
         },
+      },
+    ),
+  );
+}
+
+/** 멱등성 키와 기대 버전을 사용해 목표에 도달한 위시를 완료합니다. */
+export function completeWish(
+  client: CrabitApiClient,
+  options: CompleteWishOptions,
+): Promise<ApiResult<components["schemas"]["WishMutationResult"]>> {
+  return apiResult<components["schemas"]["WishMutationResult"]>(() =>
+    client.POST(
+      "/v1/card-balance-accounts/{cardBalanceAccountId}/wishes/{wishId}/completion",
+      {
+        params: {
+          path: {
+            cardBalanceAccountId: options.cardBalanceAccountId,
+            wishId: options.wishId,
+          },
+          header: { "Idempotency-Key": options.idempotencyKey },
+        },
+        body: options.body,
       },
     ),
   );
