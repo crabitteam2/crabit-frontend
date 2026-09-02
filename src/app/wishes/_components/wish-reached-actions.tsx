@@ -61,10 +61,10 @@ export function WishReachedActions({
           사용하러 가기
         </button>
         <Link
-          href={`/wishes/${wishId}/share`}
+          href={`/wishes/${wishId}/withdraw`}
           className={`bg-brand-weak text-fg-brand ${ACTION_STYLE}`}
         >
-          공유하기
+          돈 꺼내기
         </Link>
       </div>
 
