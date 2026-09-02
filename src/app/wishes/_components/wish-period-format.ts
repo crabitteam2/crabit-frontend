@@ -16,14 +16,16 @@ export function toFullDate(short: string) {
 
 /** 선택한 기간을 목표 기간 입력칸에 표시할 문자열로 바꿉니다. */
 export function toPeriodLabel(range: DateRange) {
-  if (range.start === null) return "";
+  if (range.start === null)
+    return range.end === null ? "" : `목표일 ${toShortDate(range.end)}`;
   if (range.end === null) return toShortDate(range.start);
   return `${toShortDate(range.start)}${SEPARATOR}${toShortDate(range.end)}`;
 }
 
 /** 저축 기간을 카드와 완료 화면에 표시할 문자열로 바꿉니다. */
 export function toSavingPeriodLabel(range: DateRange) {
-  if (range.start === null) return "";
+  if (range.start === null)
+    return range.end === null ? "" : `목표일 ${toShortDate(range.end)}`;
   if (range.end === null) return toShortDate(range.start);
   return `${toShortDate(range.start)} ~ ${toShortDate(range.end)}`;
 }
@@ -32,6 +34,8 @@ export function toSavingPeriodLabel(range: DateRange) {
 export function fromPeriodLabel(label: string | null): DateRange {
   if (label === null || label === "") return { start: null, end: null };
 
+  if (label.startsWith("목표일 "))
+    return { start: null, end: toFullDate(label.slice(4)) };
   const [start, end] = label.split(SEPARATOR);
   if (start === undefined) return { start: null, end: null };
   return {
@@ -43,7 +47,9 @@ export function fromPeriodLabel(label: string | null): DateRange {
 /** 선택한 기간을 다음 화면으로 넘길 쿼리 값으로 바꿉니다. */
 export function toPeriodParams(range: DateRange) {
   const params = new URLSearchParams();
-  if (range.start !== null) params.set("startDate", range.start);
-  if (range.end !== null) params.set("targetDate", range.end);
+  if (range.start !== null)
+    params.set("startDate", range.start.replaceAll(".", "-"));
+  if (range.end !== null)
+    params.set("targetDate", range.end.replaceAll(".", "-"));
   return params;
 }

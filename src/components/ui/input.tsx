@@ -1,4 +1,6 @@
-import type { InputHTMLAttributes } from "react";
+"use client";
+
+import { useId, type InputHTMLAttributes, type Ref } from "react";
 
 export type InputVariant = "line" | "line-brand" | "filled";
 
@@ -39,6 +41,7 @@ export interface InputProps extends Omit<
   InputHTMLAttributes<HTMLInputElement>,
   "size"
 > {
+  ref?: Ref<HTMLInputElement>;
   label: string;
   error?: string;
   variant?: InputVariant;
@@ -51,6 +54,13 @@ export function Input({
   className = "",
   ...props
 }: InputProps) {
+  const generatedId = useId();
+  const errorId = `${generatedId}-error`;
+  const labelId = `${generatedId}-label`;
+  const describedBy =
+    [props["aria-describedby"], error ? errorId : undefined]
+      .filter(Boolean)
+      .join(" ") || undefined;
   const isInvalid = error !== undefined && error !== "";
   const styles = variantStyles[variant];
   const boxStyle = isInvalid ? (styles.invalidBox ?? styles.box) : styles.box;
@@ -61,6 +71,7 @@ export function Input({
   return (
     <label className="flex w-full flex-col gap-2">
       <span
+        id={labelId}
         className={`text-e1 font-medium ${isInvalid ? "text-error" : styles.label}`}
       >
         {label}
@@ -69,8 +80,14 @@ export function Input({
         aria-invalid={isInvalid || undefined}
         className={`placeholder:text-fg-neutral-subtle read-only:text-fg-neutral-subtle w-full text-[16px] leading-[23px] tracking-[-0.3px] outline-none ${styles.value} ${boxStyle} ${borderStyle} ${className}`}
         {...props}
+        aria-describedby={describedBy}
+        aria-labelledby={props["aria-labelledby"] ?? labelId}
       />
-      {isInvalid ? <span className="text-e1 text-error">{error}</span> : null}
+      {isInvalid ? (
+        <span id={errorId} role="alert" className="text-e1 text-error">
+          {error}
+        </span>
+      ) : null}
     </label>
   );
 }

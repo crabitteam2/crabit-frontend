@@ -16,6 +16,7 @@ import {
   type CropTransform,
   type PhotoSize,
 } from "./photo-crop";
+import { useWishForm } from "@/lib/forms/use-wish-form";
 import { clearNewWishPhoto, saveNewWishPhoto } from "./photo-storage";
 
 const TAP_SLOP = 8;
@@ -51,6 +52,11 @@ export function WishPhotoForm({
   query,
 }: WishPhotoFormProps) {
   const router = useRouter();
+  const {
+    setValue,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useWishForm<{ photo: File | null }>({ defaultValues: { photo: null } });
   const inputRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -92,6 +98,7 @@ export function WishPhotoForm({
 
   const pick = (file: File | undefined) => {
     if (file === undefined) return;
+    setValue("photo", file, { shouldDirty: true });
     setPhoto(null);
     setPreviewUrl(URL.createObjectURL(file));
   };
@@ -162,7 +169,7 @@ export function WishPhotoForm({
     if (drift.current <= TAP_SLOP) openPicker();
   };
 
-  const submit = () => {
+  const submit = handleSubmit(() => {
     const image = imageRef.current;
     if (image === null || photo === null || box === 0) {
       clearNewWishPhoto();
@@ -191,14 +198,14 @@ export function WishPhotoForm({
       }
     }
     router.push(`${nextPath}?${query}`);
-  };
+  });
 
   const size = photo === null ? null : displayedSize(transform, box, photo);
   const safeTransform =
     photo === null ? transform : clampTransform(transform, box, photo);
 
   return (
-    <div className="flex min-h-svh flex-col">
+    <form onSubmit={submit} className="flex min-h-svh flex-col">
       <ScreenHeader
         title="사진을 업로드 할까요?"
         backHref={backHref}
@@ -235,7 +242,10 @@ export function WishPhotoForm({
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
             onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") openPicker();
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openPicker();
+              }
             }}
             className="bg-pink-1 relative aspect-square w-full touch-none overflow-hidden rounded-[20px] select-none"
           >
@@ -283,11 +293,12 @@ export function WishPhotoForm({
           variant={previewUrl === null ? "weak" : "fill"}
           size="xlarge"
           className="w-full"
-          onClick={submit}
+          type="submit"
+          isLoading={isSubmitting}
         >
           {previewUrl === null ? "넘어가기" : "다음"}
         </Button>
       </div>
-    </div>
+    </form>
   );
 }

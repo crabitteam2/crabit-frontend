@@ -1,32 +1,23 @@
+import { readWishQuery } from "@/lib/forms/wish-form-query";
+import { FormQueryError } from "@/app/wishes/_components/form-query-error";
 import { toSavingPeriodLabel } from "@/app/wishes/_components/wish-period-format";
 import { WishCreatedScreen } from "../_components/wish-created-screen";
 
 const PLACEHOLDER_WISH_ID = "w1";
-
-function read(
-  params: Record<string, string | string[] | undefined>,
-  key: string,
-) {
-  const raw = params[key];
-  return Array.isArray(raw) ? raw[0] : raw;
-}
 
 export default async function NewWishDonePage({
   searchParams,
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const query = await searchParams;
-  const parsed = Number(read(query, "targetAmount") ?? 0);
-  const period = toSavingPeriodLabel({
-    start: read(query, "startDate") ?? null,
-    end: read(query, "targetDate") ?? null,
-  });
+  const values = readWishQuery(await searchParams);
+  if (!values) return <FormQueryError backHref="/wishes/new" />;
+  const period = toSavingPeriodLabel(values.range);
 
   return (
     <WishCreatedScreen
-      purpose={read(query, "purpose") ?? ""}
-      targetAmount={Number.isFinite(parsed) ? parsed : 0}
+      purpose={values.purpose}
+      targetAmount={values.targetAmount}
       period={period === "" ? null : period}
       depositHref={`/wishes/${PLACEHOLDER_WISH_ID}/deposit/amount`}
       closeHref="/"

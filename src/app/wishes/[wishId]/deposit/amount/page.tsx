@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { cardAccounts } from "@/lib/mock/accounts";
+import { depositContext } from "@/lib/forms/wish-amount-context";
+import { FormQueryError } from "@/app/wishes/_components/form-query-error";
 import { findWish } from "@/lib/mock/wishes";
 import { AmountForm } from "../../../_components/amount-form";
 
@@ -14,19 +15,18 @@ export default async function DepositAmountPage({
   const wish = findWish(wishId);
   if (wish === null) notFound();
 
-  const query = await searchParams;
-  const raw = query.from;
-  const from = Array.isArray(raw) ? raw[0] : raw;
-  const source = from?.startsWith("w") ? findWish(from) : null;
-  const account = cardAccounts[0];
-  const available = source?.amount ?? account?.balance ?? 0;
+  const context = depositContext(wish, await searchParams);
+  if (!context)
+    return <FormQueryError backHref={`/wishes/${wishId}/deposit`} />;
 
   return (
     <AmountForm
       title="얼마를 모아볼까요?"
       backHref={`/wishes/${wishId}/deposit`}
       nextPath={`/wishes/${wishId}/deposit/coin`}
-      available={available}
+      available={context.available}
+      remaining={context.remaining}
+      from={context.from}
       availableLabel="현재 사용 가능한 금액"
     />
   );

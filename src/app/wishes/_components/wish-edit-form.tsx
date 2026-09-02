@@ -2,6 +2,16 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useWishForm } from "@/lib/forms/use-wish-form";
+import { formEnter } from "@/lib/forms/form-keyboard";
+import {
+  purposeError,
+  amountError,
+  periodError,
+  normalizePurpose,
+  parseKrw,
+  formatKrw,
+} from "@/lib/forms/wish-validation";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -15,6 +25,7 @@ interface WishEditFormProps {
   purpose: string;
   targetAmount: number;
   period: string | null;
+  currentAmount?: number;
 }
 
 export function WishEditForm({
@@ -23,39 +34,58 @@ export function WishEditForm({
   purpose,
   targetAmount,
   period,
+  currentAmount = 0,
 }: WishEditFormProps) {
   const router = useRouter();
-  const [nextPurpose, setNextPurpose] = useState("");
-  const [nextAmount, setNextAmount] = useState("");
-  const [range, setRange] = useState(() => fromPeriodLabel(period));
+  const initialRange = fromPeriodLabel(period);
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    getValues,
+    watch,
+    setFocus,
+    formState: { errors, isSubmitting },
+  } = useWishForm({
+    defaultValues: {
+      purpose,
+      amount: formatKrw(String(targetAmount)),
+      range: initialRange,
+    },
+  });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const box = useKeyboardViewport();
   const isKeyboardOpen = box?.isKeyboardOpen ?? false;
-
-  const digits = nextAmount.replace(/\D/g, "");
-  const amount = digits === "" ? 0 : Number(digits);
+  const values = watch();
+  const range = values.range;
   const nextPeriod = toPeriodLabel(range);
   const canSubmit =
-    nextPurpose.trim() !== "" || amount > 0 || nextPeriod !== (period ?? "");
-
-  const submit = () => {
-    if (isCalendarOpen) {
-      setIsCalendarOpen(false);
-      return;
-    }
-
-    const params = new URLSearchParams();
-    params.set("purpose", nextPurpose === "" ? purpose : nextPurpose);
-    params.set("targetAmount", String(amount === 0 ? targetAmount : amount));
-    if (nextPeriod !== "") params.set("period", nextPeriod);
-    router.push(`${donePath}?${params.toString()}`);
-  };
+    !purposeError(values.purpose) &&
+    !amountError(values.amount, undefined, currentAmount) &&
+    !periodError(range) &&
+    (normalizePurpose(values.purpose) !== normalizePurpose(purpose) ||
+      parseKrw(values.amount) !== targetAmount ||
+      range.start !== initialRange.start ||
+      range.end !== initialRange.end);
+  const submit = handleSubmit((values) => {
+    if (!canSubmit) return;
+    const params = new URLSearchParams({
+      purpose: normalizePurpose(values.purpose),
+      targetAmount: String(parseKrw(values.amount)),
+      startDate: values.range.start?.replaceAll(".", "-") ?? "",
+      targetDate: values.range.end?.replaceAll(".", "-") ?? "",
+    });
+    router.push(`${donePath}?${params}`);
+  });
 
   return (
-    <div
+    <form
+      noValidate
+      onSubmit={submit}
+      onKeyDown={formEnter}
       className={
         isKeyboardOpen
-          ? "max-w-app fixed inset-x-0 z-10 mx-auto flex w-full flex-col bg-white"
+          ? "max-w-app fixed inset-x-0 z-10 mx-auto flex w-full flex-col overflow-hidden bg-white [&>header]:shrink-0"
           : "flex min-h-svh flex-col"
       }
       style={
@@ -70,65 +100,107 @@ export function WishEditForm({
         spacing="loose"
       />
 
-      {isCalendarOpen ? null : (
-        <>
-          <div className="px-4 pt-5 pb-[76px]">
-            <Input
-              label="위시"
-              variant="filled"
-              placeholder={purpose}
-              value={nextPurpose}
-              onChange={(event) => setNextPurpose(event.target.value)}
+      <div
+        className={
+          isKeyboardOpen ? "min-h-0 flex-1 overflow-y-auto" : undefined
+        }
+      >
+        {isCalendarOpen ? null : (
+          <>
+            <div className="px-4 pt-5 pb-[76px]">
+              <Input
+                label="위시"
+                variant="filled"
+                {...register("purpose", {
+                  validate: (value) => purposeError(value) ?? true,
+                })}
+                type="text"
+                enterKeyHint="next"
+                onKeyDown={(event) =>
+                  formEnter(event, () => setFocus("amount"))
+                }
+                error={errors.purpose?.message}
+              />
+            </div>
+
+            <div className="px-4 py-5">
+              <Input
+                label="위시 금액"
+                variant="filled"
+                {...register("amount", {
+                  validate: (value) =>
+                    amountError(value, undefined, currentAmount) ?? true,
+                  onBlur: () =>
+                    setValue("amount", formatKrw(getValues("amount"))),
+                })}
+                type="text"
+                inputMode="numeric"
+                enterKeyHint="done"
+                error={errors.amount?.message}
+              />
+            </div>
+          </>
+        )}
+
+        <div className={`px-4 py-5 ${isCalendarOpen ? "pt-5" : ""}`}>
+          <Input
+            ref={
+              register("range", {
+                validate: (value) => periodError(value) ?? true,
+              }).ref
+            }
+            error={errors.range?.message}
+            label="위시 기간"
+            variant="filled"
+            readOnly
+            inputMode="none"
+            value={nextPeriod}
+            placeholder="설정된 기간 없음"
+            onClick={() => setIsCalendarOpen(true)}
+            onKeyDown={(event) =>
+              formEnter(event, () => setIsCalendarOpen(true))
+            }
+          />
+        </div>
+
+        {isCalendarOpen ? (
+          <div className="px-[10px]">
+            <Calendar
+              value={range}
+              onChange={(range) =>
+                setValue("range", range, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
             />
           </div>
-
-          <div className="px-4 py-5">
-            <Input
-              label="위시 금액"
-              variant="filled"
-              inputMode="numeric"
-              placeholder={`${targetAmount.toLocaleString("ko-KR")}원`}
-              value={digits === "" ? "" : amount.toLocaleString("ko-KR")}
-              onChange={(event) => setNextAmount(event.target.value)}
-            />
-          </div>
-        </>
-      )}
-
-      <div className={`px-4 py-5 ${isCalendarOpen ? "pt-5" : ""}`}>
-        <Input
-          label="위시 기간"
-          variant="filled"
-          readOnly
-          value={nextPeriod}
-          placeholder="설정된 기간 없음"
-          onFocus={() => setIsCalendarOpen(true)}
-          onClick={() => setIsCalendarOpen(true)}
-        />
+        ) : null}
       </div>
 
-      {isCalendarOpen ? (
-        <div className="px-[10px]">
-          <Calendar value={range} onChange={setRange} />
-        </div>
-      ) : null}
-
-      <div className="flex-1" />
+      {isKeyboardOpen ? null : <div className="flex-1" />}
 
       <div
-        className={`px-4 ${isKeyboardOpen ? "pb-5" : "pb-[calc(55px+env(safe-area-inset-bottom))]"}`}
+        className={`shrink-0 px-4 ${isKeyboardOpen ? "pb-5" : "pb-[calc(55px+env(safe-area-inset-bottom))]"}`}
       >
         <Button
           size="xlarge"
           variant={isCalendarOpen ? "weak" : "fill"}
           className="w-full"
-          disabled={!isCalendarOpen && !canSubmit}
+          type={isCalendarOpen ? "button" : "submit"}
+          onClick={isCalendarOpen ? () => setIsCalendarOpen(false) : undefined}
+          isLoading={isSubmitting}
+          disabled={
+            !isCalendarOpen &&
+            !canSubmit &&
+            !purposeError(values.purpose) &&
+            !amountError(values.amount, undefined, currentAmount)
+          }
           onPointerDown={(event) => event.preventDefault()}
-          onClick={submit}
         >
           {isCalendarOpen ? "넘어가기" : "다음"}
         </Button>
       </div>
-    </div>
+    </form>
   );
 }

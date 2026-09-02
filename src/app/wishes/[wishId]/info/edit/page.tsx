@@ -21,6 +21,7 @@ export default async function WishEditPage({
       donePath={`/wishes/${wishId}/info/done`}
       purpose={wish.purpose}
       targetAmount={wish.targetAmount}
+      currentAmount={wish.amount}
       period={toPeriodLabel({
         start: toFullDate(wish.startDate),
         end: toFullDate(wish.targetDate),

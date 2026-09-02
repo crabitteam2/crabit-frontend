@@ -1,3 +1,5 @@
+import { readAmountQuery } from "@/lib/forms/wish-form-query";
+import { FormQueryError } from "@/app/wishes/_components/form-query-error";
 import { notFound } from "next/navigation";
 import { findWish } from "@/lib/mock/wishes";
 import { WithdrawDoneScreen } from "../../../_components/withdraw-done-screen";
@@ -13,16 +15,16 @@ export default async function WithdrawDonePage({
   const wish = findWish(wishId);
   if (wish === null) notFound();
 
-  const raw = (await searchParams).amount;
-  const value = Array.isArray(raw) ? raw[0] : raw;
-  const parsed = Number(value ?? 0);
-  const amount = Number.isFinite(parsed) ? parsed : 0;
+  const query = await searchParams;
+  const amount = readAmountQuery(query, wish.amount);
+  if (amount === null)
+    return <FormQueryError backHref={`/wishes/${wishId}/withdraw/amount`} />;
 
   return (
     <WithdrawDoneScreen
       purpose={wish.purpose}
       amount={amount}
-      balanceAfter={Math.max(0, wish.amount - amount)}
+      balanceAfter={wish.amount - amount}
     />
   );
 }

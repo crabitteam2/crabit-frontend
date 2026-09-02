@@ -12,9 +12,14 @@ const DOT_PATTERN =
 interface DepositCoinScreenProps {
   wishId: string;
   amount: number;
+  from?: string;
 }
 
-export function DepositCoinScreen({ wishId, amount }: DepositCoinScreenProps) {
+export function DepositCoinScreen({
+  wishId,
+  amount,
+  from,
+}: DepositCoinScreenProps) {
   const router = useRouter();
 
   return (
@@ -28,7 +33,9 @@ export function DepositCoinScreen({ wishId, amount }: DepositCoinScreenProps) {
     >
       <CoinDrop
         onDrop={() =>
-          router.push(`/wishes/${wishId}/deposit/done?amount=${amount}`)
+          router.push(
+            `/wishes/${wishId}/deposit/done?amount=${amount}${from ? `&from=${encodeURIComponent(from)}` : ""}`,
+          )
         }
       />
 

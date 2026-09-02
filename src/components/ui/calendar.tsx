@@ -4,7 +4,6 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 import chevronBrandIcon from "@/../public/images/common/chevron-right-brand.svg";
 import chevronIcon from "@/../public/images/common/chevron-left.svg";
-import { selectDate } from "./calendar-selection";
 import { MonthYearSheet } from "./month-year-sheet";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
@@ -50,7 +49,7 @@ export function Calendar({ value, onChange }: CalendarProps) {
   });
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [todayKey, setTodayKey] = useState<string | null>(null);
-  const [pendingStart, setPendingStart] = useState<string | null>(null);
+  const [selectedField, setSelectedField] = useState<"start" | "end">("start");
 
   useEffect(() => setTodayKey(toDateKey(new Date())), []);
 
@@ -61,15 +60,28 @@ export function Calendar({ value, onChange }: CalendarProps) {
 
   const select = (day: number) => {
     const key = toDateKey(new Date(view.year, view.month, day));
-    const next = selectDate({ pendingStart, range: value }, key);
-    setPendingStart(next.pendingStart);
-    if (next.range.start !== value.start || next.range.end !== value.end) {
-      onChange(next.range);
-    }
+    onChange({ ...value, [selectedField]: key });
+    setSelectedField(selectedField === "start" ? "end" : "start");
   };
 
   return (
     <div className="bg-gray-2 w-full rounded-[13px] p-3">
+      <div className="flex gap-3 pb-2" role="group" aria-label="선택할 날짜">
+        <button
+          type="button"
+          aria-pressed={selectedField === "start"}
+          onClick={() => setSelectedField("start")}
+        >
+          시작일 선택
+        </button>
+        <button
+          type="button"
+          aria-pressed={selectedField === "end"}
+          onClick={() => setSelectedField("end")}
+        >
+          목표일 선택
+        </button>
+      </div>
       <div className="[box-sizing:content-box] flex h-6 items-center justify-between pt-[13px] pb-[3px]">
         <button
           type="button"
@@ -132,10 +144,7 @@ export function Calendar({ value, onChange }: CalendarProps) {
                 }
 
                 const key = toDateKey(new Date(view.year, view.month, day));
-                const isEdge =
-                  key === value.start ||
-                  key === value.end ||
-                  key === pendingStart;
+                const isEdge = key === value.start || key === value.end;
                 const isBetween =
                   value.start !== null &&
                   value.end !== null &&
@@ -164,6 +173,46 @@ export function Calendar({ value, onChange }: CalendarProps) {
         </div>
       </div>
 
+      <div className="flex flex-wrap gap-3 pt-3 text-sm">
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedField("start");
+            onChange({ start: null, end: value.end });
+          }}
+        >
+          시작일 해제
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedField("start");
+            onChange({ start: value.start, end: null });
+          }}
+        >
+          목표일 해제
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedField("start");
+            onChange({ start: null, end: null });
+          }}
+        >
+          기간 해제
+        </button>
+        {value.start !== null && value.end === null ? (
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedField("start");
+              onChange({ start: null, end: value.start });
+            }}
+          >
+            목표일만 설정
+          </button>
+        ) : null}
+      </div>
       <MonthYearSheet
         isOpen={isSheetOpen}
         onClose={() => setIsSheetOpen(false)}

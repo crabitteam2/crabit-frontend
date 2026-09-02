@@ -101,7 +101,7 @@ describe("toPeriodParams", () => {
   it("시작일만 고르면 startDate만 담는다", () => {
     expect(
       toPeriodParams({ start: "2026.08.21", end: null }).get("startDate"),
-    ).toBe("2026.08.21");
+    ).toBe("2026-08-21");
     expect(
       toPeriodParams({ start: "2026.08.21", end: null }).has("targetDate"),
     ).toBe(false);
@@ -109,7 +109,7 @@ describe("toPeriodParams", () => {
 
   it("범위를 고르면 둘 다 담는다", () => {
     const params = toPeriodParams({ start: "2026.08.21", end: "2026.08.27" });
-    expect(params.get("startDate")).toBe("2026.08.21");
-    expect(params.get("targetDate")).toBe("2026.08.27");
+    expect(params.get("startDate")).toBe("2026-08-21");
+    expect(params.get("targetDate")).toBe("2026-08-27");
   });
 });
