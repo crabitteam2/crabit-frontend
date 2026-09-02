@@ -15,7 +15,9 @@ export default async function DepositAmountPage({
   const wish = findWish(wishId);
   if (wish === null) notFound();
 
-  const context = depositContext(wish, await searchParams);
+  const context = depositContext(wish, await searchParams, {
+    allowDefaultSource: true,
+  });
   if (!context)
     return <FormQueryError backHref={`/wishes/${wishId}/deposit`} />;
 
