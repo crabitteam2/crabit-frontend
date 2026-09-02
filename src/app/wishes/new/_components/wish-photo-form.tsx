@@ -204,18 +204,6 @@ export function WishPhotoForm({
     return true;
   };
 
-  const removePhoto = async () => {
-    setIsSubmitting(true);
-    setError(null);
-    try {
-      if (!(await cancelPendingPhoto())) return;
-      setPreviewUrl(null);
-      setPhoto(null);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const submit = async () => {
     if (isSubmitting) return;
     setIsSubmitting(true);
@@ -313,7 +301,7 @@ export function WishPhotoForm({
             type="button"
             onClick={openPicker}
             aria-label="업로드한 위시 사진 변경"
-            className="bg-pink-1 relative aspect-square w-full overflow-hidden rounded-[20px]"
+            className="bg-pink-1 relative aspect-square w-full overflow-hidden rounded-full"
           >
             <Image
               src={pendingPhoto?.variants.large ?? ""}
@@ -336,7 +324,7 @@ export function WishPhotoForm({
             onKeyDown={(event) => {
               if (event.key === "Enter" || event.key === " ") openPicker();
             }}
-            className="bg-pink-1 relative aspect-square w-full touch-none overflow-hidden rounded-[20px] select-none"
+            className="bg-pink-1 relative aspect-square w-full touch-none overflow-hidden rounded-full select-none"
           >
             <Image
               ref={imageRef}
@@ -383,18 +371,7 @@ export function WishPhotoForm({
 
       <div className="flex-1" />
 
-      <div className="flex flex-col gap-3 px-4 pb-[calc(55px+env(safe-area-inset-bottom))]">
-        {previewUrl !== null || pendingPhoto !== null ? (
-          <Button
-            variant="weak"
-            size="large"
-            className="w-full"
-            disabled={isSubmitting}
-            onClick={() => void removePhoto()}
-          >
-            사진 삭제
-          </Button>
-        ) : null}
+      <div className="px-4 pb-[calc(55px+env(safe-area-inset-bottom))]">
         <Button
           variant={
             previewUrl === null && pendingPhoto === null ? "weak" : "fill"
@@ -407,8 +384,8 @@ export function WishPhotoForm({
           {isSubmitting
             ? "처리 중..."
             : previewUrl === null && pendingPhoto === null
-              ? "사진 없이 만들기"
-              : "위시 만들기"}
+              ? "넘어가기"
+              : "다음"}
         </Button>
       </div>
     </div>
