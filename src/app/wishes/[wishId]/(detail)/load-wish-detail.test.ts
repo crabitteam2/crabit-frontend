@@ -34,6 +34,7 @@ function wish(
   return {
     id: wishId,
     cardBalanceAccountId: accountId,
+    photo: null,
     purpose: "놀이공원 자유이용권",
     targetAmount: 50_000,
     amount: state === "ABANDONED" ? 0 : 12_000,

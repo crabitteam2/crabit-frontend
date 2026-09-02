@@ -1,4 +1,5 @@
 import "server-only";
+import { CONTEXT_HEADER, currentContext, contextError } from "../behavior/context-server";
 
 import { readBffEnvironment, type BffEnvironment } from "../../config/env";
 import {
@@ -20,6 +21,7 @@ const RESPONSE_HEADER_ALLOWLIST = [
   "content-type",
   "www-authenticate",
   "idempotency-replayed",
+  "retry-after",
 ] as const;
 const METHOD_ALLOW_HEADER = "GET, POST, PUT, PATCH, DELETE";
 const UPSTREAM_TIMEOUT_MILLISECONDS = 10_000;
@@ -76,6 +78,13 @@ export async function proxyBackendRequest(
     !environment.profilePolicy.allowsE2eUpstream
   ) {
     return errorResponse(404, "BFF_NOT_FOUND", "BFF route is not found");
+  }
+
+  const behaviorPath = pathSegments[0] === "v1" && pathSegments[1] === "academies" &&
+    ((request.method === "POST" && ["profile-visits", "feed-results", "feed-events"].includes(pathSegments[3])) || request.headers.has(CONTEXT_HEADER));
+  if (behaviorPath) {
+    const context = currentContext(request.headers, environment, pathSegments[2]);
+    if (!context || request.headers.get(CONTEXT_HEADER) !== context) return contextError(409, "BEHAVIOR_CONTEXT_MISMATCH");
   }
 
   let body: ArrayBuffer | undefined;

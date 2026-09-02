@@ -27,6 +27,7 @@ const mutationResult: components["schemas"]["WishMutationResult"] = {
     completedAt: null,
     createdAt: "2026-08-21T00:00:00Z",
     id: wishId,
+    photo: null,
     purpose: "노트북",
     startDate: null,
     state: "IN_PROGRESS",
