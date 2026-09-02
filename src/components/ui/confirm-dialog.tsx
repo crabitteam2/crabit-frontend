@@ -61,9 +61,13 @@ export function ConfirmDialog({
   return (
     <div className="fixed inset-0 z-30 flex justify-center">
       <div className="max-w-app relative flex w-full items-center justify-center px-4 pb-[64px]">
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-[rgba(42,42,42,0.71)]"
+        <button
+          type="button"
+          tabIndex={-1}
+          aria-label="닫기"
+          disabled={isBusy}
+          onClick={onDismiss}
+          className="absolute inset-0 cursor-default bg-[rgba(42,42,42,0.71)]"
         />
         <div
           ref={dialogRef}

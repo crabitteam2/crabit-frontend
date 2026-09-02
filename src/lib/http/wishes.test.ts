@@ -77,8 +77,9 @@ describe("Wish typed request helpers", () => {
       idempotencyKey: "create-key",
       body: {
         purpose: "노트북",
+        startDate: "2026-09-01",
         targetAmount: 100_000,
-        targetDate: null,
+        targetDate: "2027-01-15",
         photoId: "9a8b7c6d-5e4f-4321-9876-1234567890ab",
       },
     })).resolves.toEqual({ ok: true, data: mutationResult });
@@ -89,7 +90,11 @@ describe("Wish typed request helpers", () => {
     );
     expect(captured[0].headers.get("idempotency-key")).toBe("create-key");
     expect(captured[0].headers.get("content-type")).toBe("application/json");
-    await expect(captured[0].clone().json()).resolves.toMatchObject({
+    await expect(captured[0].clone().json()).resolves.toEqual({
+      purpose: "노트북",
+      startDate: "2026-09-01",
+      targetAmount: 100_000,
+      targetDate: "2027-01-15",
       photoId: "9a8b7c6d-5e4f-4321-9876-1234567890ab",
     });
   });
@@ -101,7 +106,12 @@ describe("Wish typed request helpers", () => {
     await expect(patchWish(client, {
       cardBalanceAccountId: accountId,
       wishId,
-      body: { expectedVersion: 3, targetDate: null, photoId: null },
+      body: {
+        expectedVersion: 3,
+        startDate: null,
+        targetDate: "2027-01-15",
+        photoId: null,
+      },
     })).resolves.toEqual({ ok: true, data: mutationResult });
 
     expect(captured[0].method).toBe("PATCH");
@@ -110,7 +120,8 @@ describe("Wish typed request helpers", () => {
     );
     await expect(captured[0].clone().json()).resolves.toEqual({
       expectedVersion: 3,
-      targetDate: null,
+      startDate: null,
+      targetDate: "2027-01-15",
       photoId: null,
     });
   });

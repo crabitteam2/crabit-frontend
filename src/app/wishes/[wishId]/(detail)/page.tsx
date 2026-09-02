@@ -45,7 +45,7 @@ export default async function WishDetailPage({
         {isFinished ? (
           <WishFinishedActions wishId={wishId} version={wish.version} />
         ) : hasReachedTarget ? (
-          <WishReachedActions wishId={wishId} />
+          <WishReachedActions wishId={wishId} version={wish.version} />
         ) : (
           <div className="flex gap-4 px-4 pt-[22.25px] pb-[6.25px]">
             <Link
