@@ -127,12 +127,6 @@ export function FollowListScreen({
           );
         })}
       </ul>
-
-      {items.length === 0 ? (
-        <p className="text-gray-7 px-4 py-16 text-center text-[16px] leading-[23px] font-medium tracking-[-0.3px]">
-          찾는 친구가 없어요.
-        </p>
-      ) : null}
     </div>
   );
 }
