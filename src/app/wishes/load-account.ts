@@ -2,6 +2,7 @@ import "server-only";
 
 import { headers } from "next/headers";
 import { listMyCardBalanceAccounts } from "@/lib/http/card-balance-accounts";
+import type { components } from "@/lib/http/generated/crabit-backend";
 import { unwrapResult } from "@/lib/http/result";
 import { createServerApiClient, type ServerApiClient } from "@/lib/http/server";
 
@@ -19,6 +20,8 @@ export interface AccountContext {
   readonly client: ServerApiClient;
   /** 인증된 학생의 첫 카드잔액계좌 식별자입니다. */
   readonly cardBalanceAccountId: string;
+  /** 잔액과 잔액 인지 상태를 담은 첫 카드잔액계좌 스냅샷입니다. */
+  readonly account: components["schemas"]["CardBalanceAccount"];
 }
 
 /**
@@ -38,5 +41,9 @@ export async function loadAccountContext(): Promise<AccountContext> {
     throw new CardBalanceAccountMissingError();
   }
 
-  return { client, cardBalanceAccountId: account.cardBalanceAccountId };
+  return {
+    client,
+    cardBalanceAccountId: account.cardBalanceAccountId,
+    account,
+  };
 }
