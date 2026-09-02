@@ -1,9 +1,11 @@
 import "server-only";
 
+import { readBffEnvironment, type BffEnvironment } from "../../config/env";
 import {
-  readBffEnvironment,
-  type BffEnvironment,
-} from "../../config/env";
+  readPersonaTokenConfiguration,
+  type PersonaTokenConfiguration,
+} from "../../config/persona-tokens";
+import { readPersonaCookie } from "../persona/cookies";
 
 const FORWARDED_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 const METHODS_WITH_BODY = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -22,12 +24,24 @@ const RESPONSE_HEADER_ALLOWLIST = [
 const METHOD_ALLOW_HEADER = "GET, POST, PUT, PATCH, DELETE";
 const UPSTREAM_TIMEOUT_MILLISECONDS = 10_000;
 
+/** BFF 프록시의 외부 경계를 테스트 가능하게 주입하는 선택 의존성입니다. */
 export interface ProxyDependencies {
+  /** 백엔드 요청에 사용할 fetch 구현입니다. */
   readonly fetchImpl?: typeof globalThis.fetch;
+  /** 검증된 서버 환경을 읽는 함수입니다. */
   readonly loadEnvironment?: () => BffEnvironment;
+  /** 프로필별 서버 자격 증명을 읽는 함수입니다. */
+  readonly loadTokens?: (
+    environment: BffEnvironment,
+  ) => PersonaTokenConfiguration;
+  /** 업스트림 요청 제한 시간이며 기본값은 10초입니다. */
   readonly timeoutMilliseconds?: number;
 }
 
+/**
+ * 같은 출처 BFF 요청을 허용된 메서드·헤더·경로 경계 안에서 백엔드로 전달합니다.
+ * 업스트림 상태와 본문은 유지하고, 오류 응답에는 내부 예외나 대상 URL을 노출하지 않습니다.
+ */
 export async function proxyBackendRequest(
   request: Request,
   pathSegments: readonly string[],
@@ -38,8 +52,12 @@ export async function proxyBackendRequest(
   }
 
   let environment: BffEnvironment;
+  let tokenConfiguration: PersonaTokenConfiguration;
   try {
     environment = (dependencies.loadEnvironment ?? readBffEnvironment)();
+    tokenConfiguration = (dependencies.loadTokens ?? defaultLoadTokens)(
+      environment,
+    );
   } catch {
     return errorResponse(
       500,
@@ -51,6 +69,13 @@ export async function proxyBackendRequest(
   const target = constructTarget(request.url, pathSegments, environment);
   if (target === null) {
     return invalidRequestResponse();
+  }
+
+  if (
+    pathSegments[0] === "e2e" &&
+    !environment.profilePolicy.allowsE2eUpstream
+  ) {
+    return errorResponse(404, "BFF_NOT_FOUND", "BFF route is not found");
   }
 
   let body: ArrayBuffer | undefined;
@@ -72,9 +97,19 @@ export async function proxyBackendRequest(
   let upstreamResponse: Response;
   let upstreamBody: ArrayBuffer;
   try {
+    const headers = copyAllowedHeaders(
+      request.headers,
+      REQUEST_HEADER_ALLOWLIST,
+    );
+    injectServerCredential(
+      headers,
+      request.headers,
+      environment,
+      tokenConfiguration,
+    );
     upstreamResponse = await fetchImpl(target, {
       method: request.method,
-      headers: copyAllowedHeaders(request.headers, REQUEST_HEADER_ALLOWLIST),
+      headers,
       ...(body === undefined ? {} : { body }),
       cache: "no-store",
       redirect: "manual",
@@ -97,13 +132,43 @@ export async function proxyBackendRequest(
   );
   headers.set("Cache-Control", "no-store");
 
-  return new Response(statusForbidsBody(upstreamResponse.status) ? null : upstreamBody, {
-    status: upstreamResponse.status,
-    statusText: upstreamResponse.statusText,
-    headers,
-  });
+  return new Response(
+    statusForbidsBody(upstreamResponse.status) ? null : upstreamBody,
+    {
+      status: upstreamResponse.status,
+      statusText: upstreamResponse.statusText,
+      headers,
+    },
+  );
 }
 
+function defaultLoadTokens(environment: BffEnvironment) {
+  return readPersonaTokenConfiguration(environment.backendProfile);
+}
+
+function injectServerCredential(
+  upstreamHeaders: Headers,
+  browserHeaders: Headers,
+  environment: BffEnvironment,
+  tokenConfiguration: PersonaTokenConfiguration,
+) {
+  const namespace = environment.profilePolicy.credentialNamespace;
+  if (namespace === null || tokenConfiguration.active === null) {
+    return;
+  }
+
+  const persona = readPersonaCookie(browserHeaders, namespace);
+  if (persona === null) {
+    return;
+  }
+
+  upstreamHeaders.set(
+    "Authorization",
+    `Bearer ${tokenConfiguration.active[persona]}`,
+  );
+}
+
+/** 허용되지 않은 HTTP 메서드에 대한 정규화된 405 응답을 생성합니다. */
 export function methodNotAllowedResponse() {
   return errorResponse(
     405,
@@ -126,12 +191,12 @@ function constructTarget(
   try {
     for (const segment of pathSegments) {
       if (
-        segment.length === 0
-        || segment === "."
-        || segment === ".."
-        || segment.includes("\0")
-        || segment.includes("\\")
-        || segment.includes("/")
+        segment.length === 0 ||
+        segment === "." ||
+        segment === ".." ||
+        segment.includes("\0") ||
+        segment.includes("\\") ||
+        segment.includes("/")
       ) {
         return null;
       }
@@ -153,9 +218,9 @@ function constructTarget(
   }
 
   if (
-    target.origin !== environment.backendUrl.origin
-    || target.pathname !== expectedPath
-    || target.hash.length > 0
+    target.origin !== environment.backendUrl.origin ||
+    target.pathname !== expectedPath ||
+    target.hash.length > 0
   ) {
     return null;
   }
@@ -163,10 +228,7 @@ function constructTarget(
   return target;
 }
 
-function copyAllowedHeaders(
-  source: Headers,
-  allowlist: readonly string[],
-) {
+function copyAllowedHeaders(source: Headers, allowlist: readonly string[]) {
   const connectionNominated = connectionNominatedHeaders(source);
   const copied = new Headers();
 
@@ -200,11 +262,7 @@ function statusForbidsBody(status: number) {
 }
 
 function invalidRequestResponse() {
-  return errorResponse(
-    400,
-    "BFF_INVALID_REQUEST",
-    "BFF request is invalid",
-  );
+  return errorResponse(400, "BFF_INVALID_REQUEST", "BFF request is invalid");
 }
 
 function errorResponse(

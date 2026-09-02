@@ -10,6 +10,8 @@ lerna-debug.log*
 node_modules
 .next
 out
+/dist
+/storybook-static
 next-env.d.ts
 *.tsbuildinfo
 *.local
@@ -30,3 +32,6 @@ test-results
 *.njsproj
 *.sln
 *.sw?
+.vercel
+.env*.local
+CLAUDE.md

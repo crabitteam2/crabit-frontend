@@ -1,4 +1,5 @@
 import { once } from "node:events";
+import { randomUUID } from "node:crypto";
 import {
   createServer,
   type IncomingHttpHeaders,
@@ -18,6 +19,12 @@ import {
 vi.mock("server-only", () => ({}));
 
 import type { BffEnvironment } from "../../config/env";
+import type {
+  PersonaTokenConfiguration,
+  PersonaTokenRegistry,
+} from "../../config/persona-tokens";
+import { resolveProfilePolicy, type BackendProfile } from "../../config/profile-policy";
+import { PERSONAS } from "../persona/persona";
 import {
   proxyBackendRequest,
   type ProxyDependencies,
@@ -101,6 +108,7 @@ describe("proxyBackendRequest", () => {
     await once(upstream, "listening");
     const address = upstream.address() as AddressInfo;
     upstreamOrigin = `http://127.0.0.1:${address.port}`;
+    currentUpstreamOrigin = upstreamOrigin;
   });
 
   afterAll(async () => {
@@ -272,6 +280,95 @@ describe("proxyBackendRequest", () => {
     expect(headers.connection).not.toContain("Idempotency-Key");
   });
 
+  it.each(PERSONAS)(
+    "replaces browser credentials with only the server-resolved %s credential",
+    async (persona) => {
+      const tokens = tokenConfiguration("e2e");
+      const token = tokens.active![persona];
+      const request = frontendRequest("GET", "/v1/echo", {
+        headers: {
+          Authorization: "Bearer browser-value",
+          Cookie: `unrelated=browser-value; crabit-e2e-persona=${persona}`,
+          "Proxy-Authorization": "Basic browser-value",
+        },
+      });
+
+      const response = await proxy(request, ["v1", "echo"], {
+        loadEnvironment: () => environment("e2e"),
+        loadTokens: () => tokens,
+      });
+
+      expect(response.status).toBe(200);
+      expect(received).toHaveLength(1);
+      expect(received[0].headers.authorization).toBe(`Bearer ${token}`);
+      expect(received[0].headers.cookie).toBeUndefined();
+      expect(received[0].headers["proxy-authorization"]).toBeUndefined();
+      expect(await response.text()).not.toContain(token);
+    },
+  );
+
+  it.each([
+    ["missing", undefined],
+    ["unknown", "crabit-e2e-persona=unknown"],
+    ["stale namespace", "crabit-demo-persona=owner"],
+    ["duplicate", "crabit-e2e-persona=owner; crabit-e2e-persona=friend"],
+    ["malformed encoding", "crabit-e2e-persona=%ZZ"],
+    ["noncanonical encoding", "crabit-e2e-persona=%66riend"],
+    ["whitespace-bearing", "crabit-e2e-persona= friend"],
+  ])("does not default to owner for a %s persona cookie", async (_label, cookie) => {
+    const tokens = tokenConfiguration("e2e");
+    const request = frontendRequest("GET", "/v1/echo", {
+      headers: cookie === undefined ? undefined : { Cookie: cookie },
+    });
+
+    const response = await proxy(request, ["v1", "echo"], {
+      loadEnvironment: () => environment("e2e"),
+      loadTokens: () => tokens,
+    });
+
+    expect(response.status).toBe(200);
+    expect(received[0].headers.authorization).toBeUndefined();
+  });
+
+  it("forwards a validated /e2e target only for the E2E backend profile", async () => {
+    const response = await proxy(
+      frontendRequest("GET", "/e2e/scenario"),
+      ["e2e", "scenario"],
+      {
+        loadEnvironment: () => environment("e2e"),
+        loadTokens: () => tokenConfiguration("e2e"),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    expect(received[0].url).toBe("/e2e/scenario");
+  });
+
+  it.each(["demo", "prod"] as const)(
+    "denies /e2e for the %s backend profile before reading the body or fetching",
+    async (backendProfile) => {
+      const fetchImpl = vi.fn<typeof fetch>();
+      const request = frontendRequest("POST", "/e2e/scenario", { body: "secret body" });
+      const bodyRead = vi.spyOn(request, "arrayBuffer");
+      const response = await proxyBackendRequest(request, ["e2e", "scenario"], {
+        fetchImpl,
+        loadEnvironment: () => environment(backendProfile),
+        loadTokens: () => backendProfile === "demo"
+          ? tokenConfiguration("demo")
+          : emptyTokenConfiguration(),
+      });
+
+      expect(response.status).toBe(404);
+      await expect(response.json()).resolves.toEqual({
+        code: "BFF_NOT_FOUND",
+        message: "BFF route is not found",
+      });
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(bodyRead).not.toHaveBeenCalled();
+      expect(fetchImpl).not.toHaveBeenCalled();
+    },
+  );
+
   it("preserves upstream status and bytes while applying the response allowlist", async () => {
     const response = await proxy(
       frontendRequest("GET", "/v1/status"),
@@ -389,6 +486,31 @@ describe("proxyBackendRequest", () => {
     consoleError.mockRestore();
   });
 
+  it("maps credential registry failure to the same secret-free configuration boundary", async () => {
+    const secret = `credential-${randomUUID()}`;
+    const fetchImpl = vi.fn<typeof fetch>();
+    const response = await proxyBackendRequest(
+      frontendRequest("GET", "/v1/echo"),
+      ["v1", "echo"],
+      {
+        fetchImpl,
+        loadEnvironment: () => environment("e2e"),
+        loadTokens: () => {
+          throw new Error(secret);
+        },
+      },
+    );
+    const text = await response.text();
+
+    expect(response.status).toBe(500);
+    expect(JSON.parse(text)).toEqual({
+      code: "BFF_CONFIGURATION_ERROR",
+      message: "BFF configuration is invalid",
+    });
+    expect(text).not.toContain(secret);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
   it("maps a network failure to the stable secret-free unavailable response", async () => {
     const secret = "http://secret-upstream.invalid";
     const fetchImpl = vi.fn<typeof fetch>(async () => {
@@ -445,14 +567,10 @@ describe("proxyBackendRequest", () => {
     path: readonly string[],
     overrides: Partial<ProxyDependencies> = {},
   ) {
-    const environment: BffEnvironment = {
-      appEnv: "local",
-      backendUrl: new URL(upstreamOrigin),
-    };
-
     return proxyBackendRequest(request, path, {
       fetchImpl: globalThis.fetch,
-      loadEnvironment: () => environment,
+      loadEnvironment: () => environment("prod"),
+      loadTokens: () => emptyTokenConfiguration(),
       timeoutMilliseconds: 1_000,
       ...overrides,
     });
@@ -472,4 +590,36 @@ function frontendRequest(
     headers: options.headers,
     ...(options.body === undefined ? {} : { body: options.body }),
   });
+}
+
+function environment(backendProfile: BackendProfile): BffEnvironment {
+  const profilePolicy = resolveProfilePolicy("local", backendProfile);
+  return {
+    appEnv: "local",
+    backendProfile,
+    backendUrl: new URL(upstreamOriginForTests()),
+    profilePolicy,
+  };
+}
+
+let currentUpstreamOrigin = "http://127.0.0.1";
+
+function upstreamOriginForTests() {
+  return currentUpstreamOrigin;
+}
+
+function tokenConfiguration(namespace: "e2e" | "demo"): PersonaTokenConfiguration {
+  const registry = Object.fromEntries(PERSONAS.map((persona) => [
+    persona,
+    `${namespace}-${persona}-${randomUUID()}`,
+  ])) as PersonaTokenRegistry;
+  return {
+    e2e: namespace === "e2e" ? registry : null,
+    demo: namespace === "demo" ? registry : null,
+    active: registry,
+  };
+}
+
+function emptyTokenConfiguration(): PersonaTokenConfiguration {
+  return { e2e: null, demo: null, active: null };
 }
