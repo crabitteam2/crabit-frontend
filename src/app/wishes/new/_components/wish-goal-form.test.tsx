@@ -9,7 +9,14 @@ vi.mock("@/hooks/use-keyboard-viewport", () => ({
 }));
 beforeEach(() => push.mockClear());
 const setup = () => {
-  render(<WishGoalForm backHref="/" nextPath="/period" available={20} />);
+  render(
+    <WishGoalForm
+      cardBalanceAccountId="account"
+      backHref="/"
+      nextPath="/period"
+      available={20}
+    />,
+  );
   return userEvent.setup();
 };
 describe("goal form", () => {

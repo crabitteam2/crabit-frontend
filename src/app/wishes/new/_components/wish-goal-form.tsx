@@ -21,13 +21,15 @@ const PURPOSE_FIELD_HEIGHT = 161;
 interface WishGoalFormProps {
   backHref: string;
   nextPath: string;
-  available: number;
+  available: number | null;
+  cardBalanceAccountId: string;
 }
 
 export function WishGoalForm({
   backHref,
   nextPath,
   available,
+  cardBalanceAccountId,
 }: WishGoalFormProps) {
   const router = useRouter();
   const {
@@ -42,6 +44,7 @@ export function WishGoalForm({
   const isKeyboardOpen = box?.isKeyboardOpen ?? false;
   const submit = handleSubmit(({ purpose, amount }) => {
     const params = new URLSearchParams({
+      cardBalanceAccountId,
       purpose: normalizePurpose(purpose),
       targetAmount: String(parseKrw(amount)),
     });
@@ -108,7 +111,9 @@ export function WishGoalForm({
               error={errors.amount?.message}
             />
             <span className="text-e1 text-gray-5 py-2">
-              현재 사용 가능한 금액 : {available.toLocaleString("ko-KR")}원
+              {available === null
+                ? "사용 가능한 금액을 확인해주세요."
+                : `현재 사용 가능한 금액 : ${available.toLocaleString("ko-KR")}원`}
             </span>
           </div>
         </PullToRefresh>

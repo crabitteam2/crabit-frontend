@@ -65,6 +65,16 @@ const BACKEND_ERROR_CODES = new Set<BackendErrorCode>([
   "FRIEND_REQUEST_NOT_PENDING",
   "FRIEND_REQUEST_NOT_ACTIONABLE",
   "STUDENT_BLOCK_ALREADY_ACTIVE",
+  "WISH_PHOTO_NOT_FOUND",
+  "WISH_PHOTO_EXPIRED",
+  "WISH_PHOTO_ALREADY_ATTACHED",
+  "PHOTO_TOO_LARGE",
+  "UNSUPPORTED_PHOTO_TYPE",
+  "INVALID_PHOTO",
+  "PHOTO_CONTENT_NOT_ALLOWED",
+  "PHOTO_UPLOAD_RATE_LIMITED",
+  "PHOTO_PROCESSING_UNAVAILABLE",
+  "PHOTO_DELIVERY_UNAVAILABLE",
 ]);
 
 const BFF_ERROR_CODES = [
@@ -73,6 +83,8 @@ const BFF_ERROR_CODES = [
   "BFF_CONFIGURATION_ERROR",
   "BFF_UPSTREAM_UNAVAILABLE",
   "BFF_NOT_FOUND",
+  "BFF_REQUEST_TIMEOUT",
+  "BFF_PAYLOAD_TOO_LARGE",
   "PERSONA_INVALID",
   "PERSONA_UNAVAILABLE",
   "PERSONA_METHOD_NOT_ALLOWED",
@@ -181,7 +193,21 @@ function normalizeBffEnvelope(
     status,
     code: value.code as BffErrorCode,
     message: value.message,
+    ...bffRetryability(value.code as BffErrorCode),
   };
+}
+
+function bffRetryability(
+  code: BffErrorCode,
+): Pick<FrontendHttpError, "retryable"> | Record<string, never> {
+  switch (code) {
+    case "BFF_REQUEST_TIMEOUT":
+      return { retryable: true };
+    case "BFF_PAYLOAD_TOO_LARGE":
+      return { retryable: false };
+    default:
+      return {};
+  }
 }
 
 function malformedError(status?: number): FrontendHttpError {

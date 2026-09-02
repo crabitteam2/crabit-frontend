@@ -194,7 +194,7 @@ export interface paths {
         };
         /**
          * 학원에서 현재 볼 수 있는 공유 카드 목록 조회
-         * @description 조회할 때마다 학원 소속, 친구 관계, 양방향 차단을 다시 평가하고 소유자 본인은 제외합니다. PRIVATE 위시는 카드를 생성하지 않습니다. 임시 정렬은 contentUpdatedAt DESC, sharedCardId DESC 순입니다. 현재는 정렬 매개변수를 지원하지 않습니다. 이 임시 정책에서는 콘텐츠 또는 게시 상태가 바뀔 때만 카드 순서가 달라집니다. 친구 우선순위와 임베딩 기반 추천 정렬은 향후 계약에서 정할 사항이며 이 버전에서는 사용하지 않습니다.
+         * @description 조회할 때마다 학원 소속, 위시 visibility, 친구 관계, 양방향 차단을 다시 평가하고 소유자 본인은 제외합니다. photoId, object key, 과거 signed URL은 이 권한 검사를 대신하지 않습니다. PRIVATE 위시는 카드를 생성하지 않습니다. 첨부 사진이 하나라도 있으면 모든 항목의 새 5분 비공개 URL을 발급한 뒤에만 전체 페이지를 반환하며 signing 실패는 부분 페이지나 거짓 null 없이 503입니다. 임시 정렬은 contentUpdatedAt DESC, sharedCardId DESC 순입니다. 현재는 정렬 매개변수를 지원하지 않습니다. 이 임시 정책에서는 콘텐츠 또는 게시 상태가 바뀔 때만 카드 순서가 달라집니다. 친구 우선순위와 임베딩 기반 추천 정렬은 향후 계약에서 정할 사항이며 이 버전에서는 사용하지 않습니다.
          */
         get: operations["listAcademySharedCards"];
         put?: never;
@@ -217,7 +217,7 @@ export interface paths {
         };
         /**
          * 현재 볼 수 있는 공유 카드 조회
-         * @description 소유자는 자신의 카드가 현재 공개 상태라면 조회할 수 있습니다. 그 밖의 리소스 부재나 공개 범위 조건 위반은 모두 숨깁니다.
+         * @description 소유자는 자신의 카드가 현재 공개 상태라면 조회할 수 있습니다. 다른 호출자는 현재 학원 소속, 위시 visibility, 친구 관계와 양방향 차단을 매번 다시 통과해야 하며 photoId나 과거 signed URL은 권한을 부여하지 않습니다. 사진이 있으면 새 5분 비공개 URL 세 개를 모두 발급한 뒤 반환하고 signing 실패는 거짓 null 없이 503입니다. 이미 발급된 URL은 접근이 철회되어도 최대 기존 5분 만료까지만 유효할 수 있고 새 URL은 발급하지 않습니다. 그 밖의 리소스 부재나 공개 범위 조건 위반은 모두 숨깁니다.
          */
         get: operations["getAcademySharedCard"];
         put?: never;
@@ -375,7 +375,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 동일 계정의 두 위시 간 자금 원자적 이체 */
+        /**
+         * 동일 계정의 두 위시 간 자금 원자적 이체
+         * @description 출발·도착 Wish snapshot과 각각의 private photo replay state를 이체 성공 결과와 함께 원자적으로 캡처합니다. 일치 재생은 두 상태를 URL 발급 전에 함께 평가합니다. 각 NO_PHOTO는 이후 현재 attachment와 무관하게 null을 유지하고, 각 ACTIVE_PHOTO는 캡처된 정확한 photoId가 같은 소유자와 정확한 위시에 유효하게 ATTACHED인 경우에만 새 5분 URL을 받습니다. 어느 한쪽이라도 PHOTO_REVOKED이면 다른 쪽 URL을 발급하거나 부분 본문을 반환하지 않고 전체 재생이 409 WISH_PHOTO_EXPIRED로 실패합니다. 모든 필요한 URL 중 하나라도 발급하지 못하면 receipt를 바꾸지 않고 전체 재생이 503 PHOTO_DELIVERY_UNAVAILABLE로 실패합니다. 성공 재생에만 Idempotency-Replayed true를 보냅니다.
+         */
         post: operations["transferWishFunds"];
         delete?: never;
         options?: never;
@@ -394,13 +397,13 @@ export interface paths {
         };
         /**
          * 계정이 소유한 삭제되지 않은 위시 목록 조회
-         * @description 불투명 커서를 사용하며 createdAt DESC, id DESC 순으로 정렬합니다. 각 위시는 카드 잔액 계정의 조회 시점 OPEN 잔액 조정 상태를 반환합니다.
+         * @description 불투명 커서를 사용하며 createdAt DESC, id DESC 순으로 정렬합니다. 각 위시는 카드 잔액 계정의 조회 시점 OPEN 잔액 조정 상태를 반환합니다. 첨부 사진이 하나라도 있으면 모든 항목의 새 5분 비공개 URL을 발급한 뒤에만 전체 페이지를 반환하며, signing 실패는 부분 페이지나 거짓 null 없이 503입니다.
          */
         get: operations["listWishes"];
         put?: never;
         /**
          * 초기 적립금이 0인 비공개 위시 생성
-         * @description 잔액 정보가 UNKNOWN이거나 OPEN 잔액 불일치가 없을 때 amount 0, state IN_PROGRESS, visibility PRIVATE인 위시를 생성합니다. startDate와 targetDate는 각각 생략하거나 null로 지정할 수 있고, 둘 다 날짜이면 startDate가 targetDate보다 늦지 않아야 합니다. 역전된 날짜 범위는 새 멱등 기록이나 위시 변경을 만들기 전에 거부합니다. 새로 캡처하는 멱등 요청 식별에는 정규화된 startDate의 명시적 null 또는 ISO 달력 날짜가 포함되므로, 같은 Idempotency-Key를 다른 startDate와 사용하면 409 IDEMPOTENCY_KEY_REUSED입니다. 기능 도입 전에 성공한 키는 startDate가 null인 재시도만 이전 식별 방식으로 재생하며, 이전 스냅샷에 이 속성이 없어도 응답에는 startDate null을 명시합니다. 일치하는 Idempotency-Key의 이전 성공 결과는 현재 불일치 방어 조건보다 먼저 재생됩니다. 그 밖의 경우 OPEN 잔액 조정 건이 있으면 새 위시를 저장하기 전에 409 BALANCE_MISMATCH_LOCKED로 생성을 거부합니다.
+         * @description 잔액 정보가 UNKNOWN이거나 OPEN 잔액 불일치가 없을 때 amount 0, state IN_PROGRESS, visibility PRIVATE인 위시를 생성합니다. startDate와 targetDate는 각각 생략하거나 null로 지정할 수 있고, 둘 다 날짜이면 startDate가 targetDate보다 늦지 않아야 합니다. 역전된 날짜 범위는 새 멱등 기록이나 위시 변경을 만들기 전에 거부합니다. photoId가 생략되거나 null이면 사진 없이 만들고, UUID이면 인증된 학생 소유의 만료되지 않은 미첨부 Pending 사진을 새 위시에 원자적으로 첨부합니다. 성공한 첨부는 사진 업로드 receipt의 ACTIVE_SUCCESS를 유지하며 24시간 retainUntil을 소비·연장·교체하지 않습니다. 첨부 실패 시 위시와 attachment 모두 생성하지 않습니다. 새로 캡처하는 멱등 요청 식별에는 정규화된 startDate의 명시적 null 또는 ISO 달력 날짜와 photoId의 명시적 null 또는 UUID가 포함되므로, 같은 Idempotency-Key를 다른 startDate 또는 photoId와 사용하면 409 IDEMPOTENCY_KEY_REUSED입니다. 기능 도입 전에 성공한 키는 startDate가 null인 재시도 중 photoId도 동일한 경우에만 이전 식별 방식으로 재생하며, 이전 스냅샷에 startDate가 없어도 응답에는 startDate null을 명시합니다. 일치하는 Idempotency-Key의 이전 성공 결과는 현재 불일치 방어 조건보다 먼저 재생됩니다. 최초 성공에 사진이 있으면 private ACTIVE_PHOTO 상태가 그 정확한 photoId를 유효한 동안만 보존하고 재생 때 소유권과 같은 위시 attachment를 재검증하여 새 5분 URL을 발급합니다. 최초 성공에 사진이 없던 NO_PHOTO는 이후 현재 사진이 붙어도 대체하지 않고 photo null을 반환합니다. 원래 사진이 교체·제거·revocation·Wish 삭제·cleanup으로 무효화되면 식별자 없는 PHOTO_REVOKED가 되어 Wish 성공 본문 없이 409 WISH_PHOTO_EXPIRED를 반환합니다. 새 URL 발급만 실패하면 receipt를 바꾸지 않고 부분 성공 본문 없이 503 PHOTO_DELIVERY_UNAVAILABLE을 반환합니다. 성공 재생에만 Idempotency-Replayed true를 보냅니다. 응답 capability 발급은 commit 전에 완료하므로 signing 실패가 비멱등 commit을 모호하게 만들지 않습니다. 그 밖의 경우 OPEN 잔액 조정 건이 있으면 새 위시를 저장하기 전에 409 BALANCE_MISMATCH_LOCKED로 생성을 거부합니다.
          */
         post: operations["createWish"];
         delete?: never;
@@ -421,21 +424,21 @@ export interface paths {
         };
         /**
          * 소유한 삭제되지 않은 위시 조회
-         * @description 위시가 속한 카드 잔액 계정의 조회 시점 OPEN 잔액 조정 상태를 반환합니다. OPEN 잔액 조정 건이 있어도 이 조회를 차단하지 않습니다.
+         * @description 위시가 속한 카드 잔액 계정의 조회 시점 OPEN 잔액 조정 상태를 반환합니다. OPEN 잔액 조정 건이 있어도 이 조회를 차단하지 않습니다. 사진이 있으면 현재 소유권을 다시 확인하고 새 5분 비공개 URL을 모두 발급한 뒤 반환하며 signing 실패는 거짓 null 없이 503입니다.
          */
         get: operations["getWish"];
         put?: never;
         post?: never;
         /**
          * 위시 논리 삭제
-         * @description 최종 변경 결과를 반환합니다. 이후의 모든 조회는 WISH_NOT_FOUND로 숨깁니다. OPEN 잔액 조정 건이 있어도 삭제를 차단하지 않습니다.
+         * @description 최종 변경 결과를 반환합니다. 첨부 사진은 같은 domain transaction에서 즉시 접근 불가능한 DELETE_PENDING으로 바꾸고, 보존 중인 성공 업로드 receipt를 파괴적 정리 전에 REVOKED_SUCCESS로 변경하여 retainUntil까지 남깁니다. 동시에 소유자의 모든 Wish mutation receipt에서 그 photoId인 ACTIVE_PHOTO를 식별자 없는 PHOTO_REVOKED로 원자적으로 바꾼 뒤 삭제 성공 snapshot을 캡처합니다. 따라서 deleteWish 자체의 성공 receipt는 항상 NO_PHOTO를 저장하고 일치 재생은 이후 사진 상태를 조회하지 않은 채 원래 photo null 결과를 반환하므로 DeleteConflict에는 WISH_PHOTO_EXPIRED가 없습니다. redaction이 실패하면 삭제와 사진 revocation도 rollback합니다. tombstone과 불변 이력에는 사진 identity나 URL을 남기지 않습니다. 응답 capability 발급은 commit 전에 완료합니다. 이후의 모든 조회는 WISH_NOT_FOUND로 숨깁니다. OPEN 잔액 조정 건이 있어도 삭제를 차단하지 않습니다.
          */
         delete: operations["deleteWish"];
         options?: never;
         head?: never;
         /**
          * 변경 가능한 위시 필드를 원자적으로 병합 패치
-         * @description 필드를 생략하면 기존 값을 유지하고 startDate 또는 targetDate에 null을 지정하면 해당 날짜를 지웁니다. 두 날짜를 함께 변경할 때는 중간 상태가 아니라 원자적으로 적용한 최종 날짜 쌍을 검증하며, 둘 다 날짜이면 startDate가 targetDate보다 늦지 않아야 합니다. 성공한 날짜 변경은 updatedAt과 version을 정확히 한 번 갱신하고, 역전된 날짜 범위는 어떤 필드, version, updatedAt 또는 공유 카드도 변경하지 않습니다. 잔액 불일치가 없을 때 COMPLETED 또는 ABANDONED 위시는 공개 범위만 변경할 수 있습니다. 위시를 포기하면 공유 카드를 제거합니다. 포기된 위시의 공개 범위를 변경하면 소유자에게 보이는 위시 메타데이터만 갱신하고 공유 카드는 절대 생성하지 않습니다. OPEN 잔액 조정 건이 있으면 purpose, targetAmount, startDate, targetDate를 비롯해 공개 범위를 확대·축소하거나 PRIVATE로 바꾸는 모든 요청 필드를 거부합니다.
+         * @description 필드를 생략하면 기존 값을 유지하고 startDate 또는 targetDate에 null을 지정하면 해당 날짜를 지웁니다. 두 날짜를 함께 변경할 때는 중간 상태가 아니라 원자적으로 적용한 최종 날짜 쌍을 검증하며, 둘 다 날짜이면 startDate가 targetDate보다 늦지 않아야 합니다. photoId를 생략하면 현재 사진을 유지하고 null이면 제거하며, 현재 사진과 같은 UUID이면 성공 no-op, 다른 UUID이면 새 Pending 사진을 원자적으로 첨부하고 이전 사진을 즉시 접근 불가능한 DELETE_PENDING으로 만듭니다. 교체나 명시적 제거는 이전 사진의 보존 중인 성공 업로드 receipt를 파괴적 정리 전에 REVOKED_SUCCESS로 바꾸고, 새로 첨부한 사진의 ACTIVE_SUCCESS와 retainUntil은 유지합니다. 사진 추가·교체·제거는 IN_PROGRESS 또는 AMOUNT_REACHED에서만 허용하고, terminal 위시에 photoId를 제공하면 보존된 사진과 같은 값이어도 INVALID_STATE_TRANSITION입니다. expectedVersion은 계속 필수이며 stale 음수 아닌 값은 VERSION_CONFLICT입니다. 교체 실패는 기존 attachment와 후보 Pending 사진을 그대로 유지합니다. 성공한 날짜 변경은 updatedAt과 version을 정확히 한 번 갱신합니다. 성공한 사진 변경도 version과 updatedAt, 존재하는 Shared Card의 contentUpdatedAt을 갱신합니다. 역전된 날짜 범위는 어떤 필드, version, updatedAt 또는 공유 카드도 변경하지 않습니다. 잔액 불일치가 없을 때 COMPLETED 또는 ABANDONED 위시는 공개 범위만 변경할 수 있습니다. 위시를 포기하면 공유 카드를 제거하지만 첨부 사진과 ACTIVE_SUCCESS receipt는 보존합니다. 포기된 위시의 공개 범위를 변경하면 소유자에게 보이는 위시 메타데이터만 갱신하고 공유 카드는 절대 생성하지 않습니다. OPEN 잔액 조정 건이 있으면 purpose, targetAmount, startDate, targetDate를 비롯해 공개 범위를 확대·축소하거나 PRIVATE로 바꾸는 모든 요청 필드를 거부합니다. 응답 capability 발급은 commit 전에 끝나야 합니다.
          */
         patch: operations["patchWish"];
         trace?: never;
@@ -454,7 +457,7 @@ export interface paths {
         put?: never;
         /**
          * 위시를 포기하고 영구 비공개로 전환
-         * @description OPEN 잔액 조정 건이 있어도 포기를 차단하지 않습니다. 반환된 위시는 변경 커밋 후의 잔액 조정 플래그를 담습니다.
+         * @description OPEN 잔액 조정 건이 있어도 포기를 차단하지 않습니다. 첨부 사진은 보존되지만 이후 사진 변경은 허용하지 않습니다. 일치하는 멱등 재생은 최초 포기 snapshot의 NO_PHOTO를 그대로 null로 유지하거나 유효한 ACTIVE_PHOTO의 정확한 photoId에만 새 5분 URL을 발급합니다. 이후 Wish 삭제 등으로 원래 사진이 PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, URL 발급만 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다. 반환된 위시는 변경 커밋 후의 잔액 조정 플래그를 담고 응답 capability는 commit 전에 발급합니다.
          */
         post: operations["abandonWish"];
         delete?: never;
@@ -477,7 +480,7 @@ export interface paths {
         put?: never;
         /**
          * 목표 금액에 도달한 위시 완료
-         * @description OPEN 잔액 조정 건이 있어도 완료를 차단하지 않습니다. 반환된 위시는 변경 커밋 후의 잔액 조정 플래그를 담습니다.
+         * @description OPEN 잔액 조정 건이 있어도 완료를 차단하지 않습니다. 첨부 사진은 보존되지만 이후 사진 변경은 허용하지 않습니다. 일치하는 멱등 재생은 최초 완료 snapshot의 NO_PHOTO를 그대로 null로 유지하거나 유효한 ACTIVE_PHOTO의 정확한 photoId에만 새 5분 URL을 발급합니다. 이후 Wish 삭제 등으로 원래 사진이 PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, URL 발급만 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다. 반환된 위시는 변경 커밋 후의 잔액 조정 플래그를 담고 응답 capability는 commit 전에 발급합니다.
          */
         post: operations["completeWish"];
         delete?: never;
@@ -500,7 +503,7 @@ export interface paths {
         put?: never;
         /**
          * 카드 잔액 계정 자금을 위시에 적립
-         * @description 내부에서 PRE_DEPOSIT 조회를 수행합니다. 외부 제공자 조회가 실패하면 위시는 변경되지 않습니다. 저장된 불일치 관측 결과는 이 입금 작업만 잠그고 거부합니다.
+         * @description 내부에서 PRE_DEPOSIT 조회를 수행합니다. 외부 제공자 조회가 실패하면 위시는 변경되지 않습니다. 저장된 불일치 관측 결과는 이 입금 작업만 잠그고 거부합니다. 일치하는 멱등 재생은 최초 Wish snapshot의 NO_PHOTO를 그대로 null로 유지하거나, 유효한 ACTIVE_PHOTO의 정확한 photoId에만 새 5분 URL을 발급합니다. 원래 사진이 PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, URL 발급만 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다.
          */
         post: operations["depositToWish"];
         delete?: never;
@@ -544,7 +547,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 위시에서 자금 인출 */
+        /**
+         * 위시에서 자금 인출
+         * @description 일치하는 멱등 재생은 최초 Wish snapshot의 identity·상태·version·event identity를 유지합니다. NO_PHOTO는 이후 현재 attachment가 있어도 null이고, ACTIVE_PHOTO는 캡처된 정확한 photoId가 같은 소유자와 위시에 유효하게 ATTACHED인 경우에만 새 5분 URL로 성공합니다. PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, 유효한 사진의 URL 발급만 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다.
+         */
         post: operations["withdrawFromWish"];
         delete?: never;
         options?: never;
@@ -614,6 +620,49 @@ export interface paths {
          * @description 차단 주체가 인증된 학생인 현재 차단만 해제합니다. 차단이 없거나 이미 해제되었거나 인증된 학생이 소유하지 않은 차단은 STUDENT_BLOCK_NOT_FOUND로 숨깁니다. 차단을 해제해도 친구 관계나 차단 과정에서 취소된 요청은 절대 복원하지 않으며 성공 응답 본문이 없습니다.
          */
         delete: operations["unblockStudent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/wish-photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 위시에 첨부할 비공개 사진 업로드
+         * @description 인증된 학생 소유의 Pending 사진을 동기적으로 만듭니다. 정확히 하나의 photo 파트만 허용하고 5 MiB보다 큰 바이트 스트림은 디코딩 전에 중단합니다. 실제 JPEG 1080x1080 이미지만 디코딩한 뒤 EXIF·위치 메타데이터를 제거하고 1080x1080, 720x720, 360x360 JPEG로 재인코딩합니다. adult, racy, violence가 LIKELY 또는 VERY_LIKELY이면 PHOTO_CONTENT_NOT_ALLOWED로 거부하지만 medical 또는 spoof가 POSSIBLE인 것만으로는 거부하지 않습니다. 요청 지문은 multipart framing·boundary·filename을 제외한, 변환 전 수신 photo 파트 정확한 바이트의 SHA-256입니다. 소유자와 Idempotency-Key로 범위가 정해진 최소 receipt는 최초 receipt 생성 업로드가 시작된 시점부터 정확히 24시간 동안만 효력이 있습니다. 보존 중인 같은 지문의 ACTIVE_SUCCESS는 변환·검사·저장·quota 소비를 반복하지 않고 같은 photoId와 새 5분 signed URL을 201로 재생합니다. 새 URL 발급만 실패하면 receipt를 바꾸지 않고 503 PHOTO_DELIVERY_UNAVAILABLE을 반환합니다. 같은 지문의 REVOKED_SUCCESS 또는 이미 재생할 수 없는 사진은 사진·URL·receipt 세부 정보 없이 409 WISH_PHOTO_EXPIRED를 반환하고, 다른 지문은 처리 전에 409 IDEMPOTENCY_KEY_REUSED를 반환합니다. 보존한 결정적 거부는 원래 status와 안정적 code를 재생하되 자유 형식 message는 보존하지 않습니다. request time이 retainUntil에 도달하면 이전 receipt는 논리적으로 없으며 같은 key를 새 업로드에 재사용할 수 있습니다. 첨부 자체와 완료·포기는 성공 receipt를 폐기하지 않지만 Pending 취소·만료, 교체·명시적 제거, Wish 삭제, DELETE_PENDING 전환, hard cleanup은 파괴적 정리 전에 REVOKED_SUCCESS로 바꾸고 retainUntil까지 receipt를 남깁니다. 학생별 미첨부 Pending 사진은 최대 3개이고 rolling 1시간의 새 처리 시도는 최대 20회입니다. 파일 이름은 신뢰하지 않고 업로더 identity는 인증 주체에서만 결정합니다.
+         */
+        post: operations["uploadWishPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/wish-photos/{photoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Opaque 위시 사진 UUID입니다. 식별자 knowledge만으로 읽기, 취소 또는 첨부 권한이 생기지 않습니다. */
+                photoId: components["parameters"]["WishPhotoId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * 미첨부 Pending 위시 사진 취소
+         * @description 인증된 소유자만 미첨부 Pending 사진을 취소할 수 있습니다. 소유한 PENDING 또는 만료 사진은 즉시 첨부 불가능한 DELETE_PENDING으로 바꾸고 204를 반환하며 객체 제거와 hard delete는 비동기로 이어집니다. 성공한 취소는 정리를 enqueue하기 전에 보존 중인 성공 업로드 receipt를 REVOKED_SUCCESS로 바꾸고 retainUntil까지 남깁니다. 같은 소유자가 DELETE_PENDING 상태에서 반복하면 204 no-op입니다. 없거나 다른 학생 소유인 식별자는 404 WISH_PHOTO_NOT_FOUND로 숨기고, 위시에 이미 첨부된 사진은 409 WISH_PHOTO_ALREADY_ATTACHED를 반환합니다. photoId나 기존 signed URL 자체는 권한을 부여하지 않습니다.
+         */
+        delete: operations["deletePendingWishPhoto"];
         options?: never;
         head?: never;
         patch?: never;
@@ -901,6 +950,8 @@ export interface components {
             kind: "COMPLETION";
             /** @description 소유자의 표시 별명입니다. 소유자 식별자, 학생 식별자, 계정 데이터 또는 실제 카드 데이터가 노출되지 않습니다. */
             ownerNickname: string;
+            /** @description 현재 권한 검사 뒤 발급된 5분 비공개 사진 URL 세트이며 첨부 사진이 없으면 null입니다. 완료 이후 사진은 보존되지만 변경할 수 없습니다. */
+            photo: components["schemas"]["WishPhoto"] | null;
             /**
              * @description 완료 카드 변형에서는 항상 100입니다.
              * @constant
@@ -929,6 +980,11 @@ export interface components {
             studentId: components["schemas"]["Uuid"];
         };
         CreateWishRequest: {
+            /**
+             * Format: uuid
+             * @description 생략하거나 null이면 사진 없이 생성합니다. UUID이면 인증된 학생 소유의 만료되지 않은 미첨부 Pending 사진을 새 위시에 원자적으로 첨부합니다.
+             */
+            photoId?: string | null;
             purpose: components["schemas"]["PurposeInput"];
             /**
              * Format: date
@@ -941,13 +997,13 @@ export interface components {
         };
         Cursor: string;
         /** @enum {string} */
-        ErrorCode: "MALFORMED_REQUEST" | "EXPECTED_VERSION_REQUIRED" | "IDEMPOTENCY_KEY_REQUIRED" | "AUTH_REQUIRED" | "FORBIDDEN" | "CARD_BALANCE_ACCOUNT_NOT_FOUND" | "WISH_NOT_FOUND" | "ACADEMY_NOT_FOUND" | "SHARED_CARD_NOT_FOUND" | "VERSION_CONFLICT" | "INVALID_STATE_TRANSITION" | "BALANCE_MISMATCH_LOCKED" | "INSUFFICIENT_AVAILABLE_BALANCE" | "INSUFFICIENT_WISH_AMOUNT" | "TARGET_AMOUNT_EXCEEDED" | "CROSS_ACCOUNT_TRANSFER_FORBIDDEN" | "IDEMPOTENCY_KEY_REUSED" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_AMOUNT" | "INVALID_PURPOSE" | "INVALID_DATE_RANGE" | "INVALID_VERSION" | "BALANCE_SYNC_FAILED" | "STUDENT_NOT_FOUND" | "FRIENDSHIP_NOT_FOUND" | "FRIEND_REQUEST_NOT_FOUND" | "STUDENT_BLOCK_NOT_FOUND" | "SELF_RELATIONSHIP" | "ALREADY_FRIENDS" | "FRIEND_REQUEST_ALREADY_PENDING" | "INCOMING_FRIEND_REQUEST_PENDING" | "FRIEND_REQUEST_NOT_PENDING" | "FRIEND_REQUEST_NOT_ACTIONABLE" | "STUDENT_BLOCK_ALREADY_ACTIVE";
+        ErrorCode: "MALFORMED_REQUEST" | "EXPECTED_VERSION_REQUIRED" | "IDEMPOTENCY_KEY_REQUIRED" | "AUTH_REQUIRED" | "FORBIDDEN" | "CARD_BALANCE_ACCOUNT_NOT_FOUND" | "WISH_NOT_FOUND" | "ACADEMY_NOT_FOUND" | "SHARED_CARD_NOT_FOUND" | "VERSION_CONFLICT" | "INVALID_STATE_TRANSITION" | "BALANCE_MISMATCH_LOCKED" | "INSUFFICIENT_AVAILABLE_BALANCE" | "INSUFFICIENT_WISH_AMOUNT" | "TARGET_AMOUNT_EXCEEDED" | "CROSS_ACCOUNT_TRANSFER_FORBIDDEN" | "IDEMPOTENCY_KEY_REUSED" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_AMOUNT" | "INVALID_PURPOSE" | "INVALID_DATE_RANGE" | "INVALID_VERSION" | "BALANCE_SYNC_FAILED" | "STUDENT_NOT_FOUND" | "FRIENDSHIP_NOT_FOUND" | "FRIEND_REQUEST_NOT_FOUND" | "STUDENT_BLOCK_NOT_FOUND" | "SELF_RELATIONSHIP" | "ALREADY_FRIENDS" | "FRIEND_REQUEST_ALREADY_PENDING" | "INCOMING_FRIEND_REQUEST_PENDING" | "FRIEND_REQUEST_NOT_PENDING" | "FRIEND_REQUEST_NOT_ACTIONABLE" | "STUDENT_BLOCK_ALREADY_ACTIVE" | "WISH_PHOTO_NOT_FOUND" | "WISH_PHOTO_EXPIRED" | "WISH_PHOTO_ALREADY_ATTACHED" | "PHOTO_TOO_LARGE" | "UNSUPPORTED_PHOTO_TYPE" | "INVALID_PHOTO" | "PHOTO_CONTENT_NOT_ALLOWED" | "PHOTO_UPLOAD_RATE_LIMITED" | "PHOTO_PROCESSING_UNAVAILABLE" | "PHOTO_DELIVERY_UNAVAILABLE";
         ErrorEnvelope: {
             /** @description 선언된 모든 실패 JSON 응답이 공통으로 사용하는 구조화된 오류 페이로드입니다. */
             error: {
                 /** @description 안정적으로 기계 판독할 수 있는 ErrorCode입니다. 클라이언트는 message 텍스트가 아니라 이 값으로 분기해야 합니다. */
                 code: components["schemas"]["ErrorCode"];
-                /** @description 오류 코드별로 확장할 수 있는 메타데이터 객체입니다. 적용할 세부 정보가 없으면 비어 있으며 클라이언트는 알 수 없는 키를 무시해야 합니다. */
+                /** @description 오류 코드별로 확장할 수 있는 메타데이터 객체입니다. 적용할 세부 정보가 없으면 비어 있으며 클라이언트는 알 수 없는 키를 무시해야 합니다. 사진 오류에는 raw·transformed bytes, Base64, multipart content, filename, photoId, receipt outcome, retainUntil, signed URL, bucket, object path, content digest, 이미지 메타데이터, traceId 외 사진 내부 정보, 콘텐츠 안전성 category·likelihood 또는 provider payload를 절대 담지 않습니다. WISH_PHOTO_EXPIRED, IDEMPOTENCY_KEY_REUSED, PHOTO_PROCESSING_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE은 빈 details 객체를 반환합니다. */
                 details: {
                     [key: string]: unknown;
                 };
@@ -955,7 +1011,7 @@ export interface components {
                 fieldErrors: components["schemas"]["FieldError"][];
                 /** @description 이번 오류 발생을 사람이 읽을 수 있게 설명한 문장입니다. 안정적인 기계 판정 키가 아닙니다. */
                 message: string;
-                /** @description BALANCE_SYNC_FAILED일 때만 true입니다. 정의된 모든 클라이언트, 인가, 리소스 없음, 유효성 검사, 상태 충돌 오류에는 false입니다. */
+                /** @description BALANCE_SYNC_FAILED, PHOTO_UPLOAD_RATE_LIMITED, PHOTO_PROCESSING_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE일 때만 true입니다. 정의된 그 밖의 클라이언트, 인가, 리소스 없음, 유효성 검사, 상태 충돌 오류에는 false입니다. */
                 retryable: boolean;
                 /** @description 진단과 지원에 사용하는 불투명한 서버 상관관계 식별자입니다. 도메인 의미는 없습니다. */
                 traceId: string;
@@ -1072,6 +1128,8 @@ export interface components {
             kind: "PROGRESS";
             /** @description 소유자의 표시 별명입니다. 소유자 식별자, 학생 식별자, 계정 데이터 또는 실제 카드 데이터가 노출되지 않습니다. */
             ownerNickname: string;
+            /** @description 현재 권한 검사 뒤 발급된 5분 비공개 사진 URL 세트이며 첨부 사진이 없으면 null입니다. */
+            photo: components["schemas"]["WishPhoto"] | null;
             /** @description 내림 정수 나눗셈으로 계산합니다. 목표 미도달 진행률은 최대 99이고 목표에 도달했을 때만 100을 반환합니다. */
             progressPercent: number;
             /** @description 게시된 NFC 정규화 위시 목적입니다. */
@@ -1211,6 +1269,8 @@ export interface components {
             createdAt: components["schemas"]["UtcInstant"];
             /** @description 이 위시의 안정적인 UUID입니다. */
             id: components["schemas"]["Uuid"];
+            /** @description 현재 첨부 사진의 새 5분 비공개 URL 세트이며 사진이 없으면 null입니다. signed URL은 영속 domain snapshot이나 멱등 receipt에 저장하지 않습니다. */
+            photo: components["schemas"]["WishPhoto"] | null;
             /** @description 이 위시에 저장된, NFC로 정규화되고 앞뒤 경계 공백이 없는 목적 텍스트입니다. */
             purpose: components["schemas"]["Purpose"];
             /**
@@ -1374,6 +1434,11 @@ export interface components {
         } & unknown;
         WishMergePatch: {
             expectedVersion: components["schemas"]["WishVersion"];
+            /**
+             * Format: uuid
+             * @description 생략하면 현재 사진을 유지하고, null이면 제거하며, 현재와 같은 UUID이면 no-op, 다른 UUID이면 소유한 unexpired Pending 사진으로 원자 교체합니다.
+             */
+            photoId?: string | null;
             purpose?: components["schemas"]["PurposeInput"];
             /**
              * Format: date
@@ -1384,7 +1449,7 @@ export interface components {
             /** Format: date */
             targetDate?: string | null;
             visibility?: components["schemas"]["WishVisibility"];
-        } | unknown | unknown | unknown | unknown | unknown;
+        } | unknown | unknown | unknown | unknown | unknown | unknown;
         WishMutationResult: {
             /**
              * Format: uuid
@@ -1399,6 +1464,41 @@ export interface components {
             items: components["schemas"]["Wish"][];
             /** @description 다음 위시 페이지에 대한 불투명 커서; 추가 페이지가 없으면 null입니다. */
             nextCursor: string | null;
+        };
+        WishPhoto: {
+            /**
+             * Format: date-time
+             * @description 세 signed URL이 함께 만료되는 RFC 3339 UTC Z 시점이며 발급 시각에서 정확히 5분 뒤입니다.
+             */
+            expiresAt: string;
+            /** @description Opaque 사진 identity입니다. 이를 아는 것만으로 읽기나 첨부 소유권이 생기지 않습니다. */
+            id: components["schemas"]["Uuid"];
+            /** @description 같은 private 사진의 360, 720, 1080 정사각형 JPEG signed URL 세 개입니다. */
+            variants: components["schemas"]["WishPhotoVariants"];
+        };
+        WishPhotoUploadRequest: {
+            /**
+             * Format: binary
+             * @description 정확히 하나만 허용되는 photo multipart 파트입니다. 선언 타입과 실제 decoded 타입이 모두 JPEG여야 하고 바이트 길이는 최대 5 MiB, decoded 크기는 정확히 1080x1080이어야 합니다. 멱등 콘텐츠 digest는 변환 전 수신한 이 파트의 정확한 바이트로 계산하며 multipart framing, boundary, filename은 포함하지 않습니다. filename은 선택 사항이며 타입 판단에 신뢰하지 않습니다.
+             */
+            photo: string;
+        };
+        WishPhotoVariants: {
+            /**
+             * Format: uri
+             * @description 1080x1080 JPEG 비공개 signed URL입니다.
+             */
+            large: string;
+            /**
+             * Format: uri
+             * @description 720x720 JPEG 비공개 signed URL입니다.
+             */
+            medium: string;
+            /**
+             * Format: uri
+             * @description 360x360 JPEG 비공개 signed URL입니다.
+             */
+            small: string;
         };
         /** @enum {string} */
         WishState: "IN_PROGRESS" | "AMOUNT_REACHED" | "COMPLETED" | "ABANDONED";
@@ -1520,6 +1620,15 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /** @description BALANCE_SYNC_FAILED 또는 PHOTO_DELIVERY_UNAVAILABLE — 외부 잔액 조회가 실패했거나 기존 사진의 새 5분 비공개 URL을 모두 발급할 수 없습니다. 두 경우 모두 위시 변경은 commit되지 않습니다. */
+        BalanceSyncOrPhotoDeliveryUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
         /** @description CARD_BALANCE_ACCOUNT_NOT_FOUND — 계정이 없거나 종료되었거나, 인증된 학생이 소유하지 않거나, 다른 학원 소속인 경우를 숨깁니다. */
         CardBalanceAccountNotFound: {
             headers: {
@@ -1529,8 +1638,17 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description BALANCE_MISMATCH_LOCKED 또는 IDEMPOTENCY_KEY_REUSED입니다. 일치하는 성공 결과의 멱등 재생을 현재 불일치 방어 조건보다 먼저 처리합니다. */
+        /** @description BALANCE_MISMATCH_LOCKED, IDEMPOTENCY_KEY_REUSED, WISH_PHOTO_EXPIRED 또는 WISH_PHOTO_ALREADY_ATTACHED입니다. 일치하는 성공 결과의 멱등 재생을 현재 불일치 방어 조건보다 먼저 처리합니다. 캡처된 사진 상태가 식별자 없는 PHOTO_REVOKED이면 Wish 성공 본문, photoId, URL, Idempotency-Replayed 없이 WISH_PHOTO_EXPIRED입니다. 사진 첨부 실패는 위시를 생성하지 않습니다. */
         CreateConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description CARD_BALANCE_ACCOUNT_NOT_FOUND 또는 WISH_PHOTO_NOT_FOUND — 계정 부재·비소유·학원 불일치와 사진 부재·다른 소유자를 각각 숨깁니다. */
+        CreateWishResourceNotFound: {
             headers: {
                 [name: string]: unknown;
             };
@@ -1556,7 +1674,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, INSUFFICIENT_AVAILABLE_BALANCE, TARGET_AMOUNT_EXCEEDED 또는 IDEMPOTENCY_KEY_REUSED. */
+        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, INSUFFICIENT_AVAILABLE_BALANCE, TARGET_AMOUNT_EXCEEDED, IDEMPOTENCY_KEY_REUSED 또는 WISH_PHOTO_EXPIRED. 일치하는 성공 receipt의 사진 상태가 PHOTO_REVOKED이면 Wish 성공 본문과 photo capability 없이 WISH_PHOTO_EXPIRED입니다. */
         DepositConflict: {
             headers: {
                 [name: string]: unknown;
@@ -1701,6 +1819,15 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /** @description INVALID_PHOTO 또는 PHOTO_CONTENT_NOT_ALLOWED — JPEG 디코딩·정확한 1080x1080 크기가 유효하지 않거나 필수 콘텐츠 안전성 정책이 canonical 이미지의 사용을 거부했습니다. 안전성 category, likelihood, provider 결과는 반환하거나 product data로 보존하지 않습니다. */
+        InvalidOrRejectedPhoto: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
         /** @description INVALID_AMOUNT 또는 INVALID_VERSION — 독립적으로 디코딩된 금액 또는 소스/대상 버전이 제약 조건을 위반합니다. */
         InvalidTransferAmountOrVersion: {
             headers: {
@@ -1746,8 +1873,45 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION 또는 BALANCE_MISMATCH_LOCKED. */
+        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, WISH_PHOTO_EXPIRED 또는 WISH_PHOTO_ALREADY_ATTACHED. 사진 교체 실패는 기존 attachment와 후보 Pending 사진을 바꾸지 않습니다. */
         PatchConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description PHOTO_DELIVERY_UNAVAILABLE — 기존 사진 또는 일치하는 Wish mutation 재생의 유효한 ACTIVE_PHOTO에 필요한 새 5분 비공개 URL을 모두 발급할 수 없습니다. 이 오류는 retryable true이고 receipt의 ACTIVE_PHOTO 또는 NO_PHOTO 상태를 바꾸지 않으며, 부분 Wish·transfer representation, 현재 사진 대체, 거짓 null, photoId, URL 또는 Idempotency-Replayed를 반환하지 않습니다. */
+        PhotoDeliveryUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description PHOTO_TOO_LARGE — photo 파트가 5 MiB를 초과하여 디코딩 전에 중단했습니다. */
+        PhotoTooLarge: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description PHOTO_UPLOAD_RATE_LIMITED — rolling 처리 시도 또는 미첨부 Pending quota가 소진되었습니다. */
+        PhotoUploadRateLimited: {
+            headers: {
+                "Retry-After": components["headers"]["RetryAfter"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description PHOTO_PROCESSING_UNAVAILABLE — 새 업로드의 필수 변환, 안전성 검사, 비공개 저장 또는 영속화 의존성을 일시적으로 사용할 수 없습니다. attachable identity 없이 부분 레코드와 객체를 보상 정리하며 terminal receipt를 생성하지 않아 같은 key와 콘텐츠를 재시도할 수 있습니다. PHOTO_DELIVERY_UNAVAILABLE — 보존 중인 유효한 ACTIVE_SUCCESS 재생에 필요한 새 5분 비공개 URL을 모두 발급할 수 없습니다. 부분 representation을 반환하거나 receipt를 변경·삭제하지 않습니다. 두 오류 모두 retryable true이며 사진 바이트, digest, photoId, receipt, URL, path, 안전성·provider 정보를 노출하지 않습니다. */
+        PhotoUploadUnavailable: {
             headers: {
                 [name: string]: unknown;
             };
@@ -1773,7 +1937,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION 또는 IDEMPOTENCY_KEY_REUSED. OPEN 잔액 불일치는 완료 또는 포기를 차단하지 않습니다. */
+        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, IDEMPOTENCY_KEY_REUSED 또는 WISH_PHOTO_EXPIRED. 일치하는 완료·포기 성공 receipt의 사진 상태가 PHOTO_REVOKED이면 Wish 성공 본문과 photo capability 없이 WISH_PHOTO_EXPIRED입니다. OPEN 잔액 불일치는 완료 또는 포기를 차단하지 않습니다. */
         StateMutationConflict: {
             headers: {
                 [name: string]: unknown;
@@ -1818,7 +1982,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, CROSS_ACCOUNT_TRANSFER_FORBIDDEN, INSUFFICIENT_WISH_AMOUNT, TARGET_AMOUNT_EXCEEDED, BALANCE_MISMATCH_LOCKED 또는 IDEMPOTENCY_KEY_REUSED. */
+        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, CROSS_ACCOUNT_TRANSFER_FORBIDDEN, INSUFFICIENT_WISH_AMOUNT, TARGET_AMOUNT_EXCEEDED, BALANCE_MISMATCH_LOCKED, IDEMPOTENCY_KEY_REUSED 또는 WISH_PHOTO_EXPIRED. 일치하는 이체 성공 receipt의 출발 또는 도착 사진 상태 중 하나라도 PHOTO_REVOKED이면 양쪽 URL을 발급하기 전에 전체 재생을 WISH_PHOTO_EXPIRED로 실패시키고 부분 본문을 반환하지 않습니다. */
         TransferConflict: {
             headers: {
                 [name: string]: unknown;
@@ -1836,6 +2000,24 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /** @description UNSUPPORTED_PHOTO_TYPE — multipart/form-data가 아니거나 photo 파트 선언 타입·실제 디코딩 타입이 JPEG가 아니거나 서로 다릅니다. */
+        UnsupportedPhotoType: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description CARD_BALANCE_ACCOUNT_NOT_FOUND, WISH_NOT_FOUND 또는 WISH_PHOTO_NOT_FOUND — 계정·위시·후보 사진의 부재나 비소유 상태를 리소스별 not-found로 숨깁니다. */
+        WishAccountOrPhotoNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
         /** @description CARD_BALANCE_ACCOUNT_NOT_FOUND 또는 WISH_NOT_FOUND — 계정이 없거나 인증된 학생이 소유하지 않은 경우, 또는 위시가 없거나 다른 소유자의 것이거나 해당 계정에 속하지 않은 경우입니다. 소유자가 논리 삭제한 위시는 이력 전용 응답에서 의도적으로 숨기지 않으며 200을 반환합니다. */
         WishHistoryOrAccountNotFound: {
             headers: {
@@ -1845,9 +2027,10 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description 위시 변경이 완료되었습니다. 동일 요청을 재생하면 최초 응답의 상태와 본문을 그대로 반환합니다. */
+        /** @description 위시 변경이 완료되었습니다. 동일 요청 재생은 최초 domain snapshot identity·상태·event identity·occurrence time·version을 유지합니다. 최초 사진 상태가 NO_PHOTO이면 이후 현재 attachment를 조회하거나 대체하지 않고 photo null을 반환합니다. ACTIVE_PHOTO이면 인증 학생 소유이고 최초 snapshot의 정확한 위시에 ATTACHED인 같은 photoId를 재검증한 뒤 새 5분 URL만 발급합니다. PHOTO_REVOKED이면 이 성공 응답 대신 409 WISH_PHOTO_EXPIRED를 반환하고, 유효한 ACTIVE_PHOTO의 URL 발급만 실패하면 이 성공 응답 대신 503 PHOTO_DELIVERY_UNAVAILABLE을 반환합니다. Idempotency-Replayed는 성공 재생에만 true이고, 사진 응답 capability는 state-changing command가 commit하기 전에 발급되어야 합니다. */
         WishMutationSuccess: {
             headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
                 "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
                 [name: string]: unknown;
             };
@@ -1864,7 +2047,34 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, INSUFFICIENT_WISH_AMOUNT 또는 IDEMPOTENCY_KEY_REUSED. */
+        /** @description WISH_PHOTO_ALREADY_ATTACHED — 사진이 이미 어떤 위시에 첨부되어 Pending 취소 또는 다른 위시 첨부에 사용할 수 없습니다. */
+        WishPhotoAlreadyAttached: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description WISH_PHOTO_NOT_FOUND — 사진이 없거나 인증된 학생과 다른 소유자임을 구분하지 않습니다. */
+        WishPhotoNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description IDEMPOTENCY_KEY_REUSED — 보존 중인 같은 소유자·Idempotency-Key receipt의 콘텐츠 digest가 다르며 변환·안전성 검사·quota 소비·객체 쓰기 전에 실패합니다. WISH_PHOTO_EXPIRED — 보존 중인 receipt의 digest는 같지만 성공 사진이 Pending 취소·만료, 교체·명시적 제거, Wish 삭제, DELETE_PENDING 전환 또는 hard cleanup으로 재생 불가능합니다. 두 응답 모두 retryable false이며 사진, photoId, URL, object path, digest, receipt outcome, retainUntil을 노출하지 않습니다. */
+        WishPhotoUploadConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, INSUFFICIENT_WISH_AMOUNT, IDEMPOTENCY_KEY_REUSED 또는 WISH_PHOTO_EXPIRED. 일치하는 성공 receipt의 사진 상태가 PHOTO_REVOKED이면 Wish 성공 본문과 photo capability 없이 WISH_PHOTO_EXPIRED입니다. */
         WithdrawalConflict: {
             headers: {
                 [name: string]: unknown;
@@ -1892,11 +2102,17 @@ export interface components {
         /** @description 관계 상대방의 UUID입니다. 인증된 소유자 정보는 항상 현재 인증 주체에서 가져오며 이 매개변수로 받지 않습니다. */
         StudentId: components["schemas"]["Uuid"];
         WishId: components["schemas"]["Uuid"];
+        /** @description Opaque 위시 사진 UUID입니다. 식별자 knowledge만으로 읽기, 취소 또는 첨부 권한이 생기지 않습니다. */
+        WishPhotoId: components["schemas"]["Uuid"];
     };
     requestBodies: never;
     headers: {
-        /** @description 동일한 요청에 대해 원래 상태와 본문이 재생되는 경우에만 true입니다. */
+        /** @description 짧은 수명의 비공개 signed URL이 포함될 수 있으므로 JSON 응답을 저장하지 않습니다. */
+        CacheControlNoStore: "no-store";
+        /** @description 동일한 요청의 종결 성공 domain 결과가 재생되는 경우에만 true입니다. ACTIVE_PHOTO는 최초 결과의 정확한 photoId만 유지하고 ephemeral signed URL을 새로 발급하며, NO_PHOTO는 이후 현재 attachment와 무관하게 null을 유지합니다. PHOTO_REVOKED의 409 WISH_PHOTO_EXPIRED 또는 URL 발급 실패의 503 PHOTO_DELIVERY_UNAVAILABLE에는 이 header를 보내지 않습니다. */
         IdempotencyReplayed: boolean;
+        /** @description 가장 이른 적용 quota 해제까지 기다릴 양의 정수 초입니다. */
+        RetryAfter: number;
     };
     pathItems: never;
 }
@@ -2154,6 +2370,7 @@ export interface operations {
             /** @description 현재 조회 가능한 진행 카드와 완료 카드입니다. */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -2164,6 +2381,7 @@ export interface operations {
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["AcademyNotFound"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     getAcademySharedCard: {
@@ -2181,6 +2399,7 @@ export interface operations {
             /** @description 현재 조회 가능한 공유 카드 한 건입니다. */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -2190,6 +2409,7 @@ export interface operations {
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["SharedCardOrAcademyNotFound"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     searchAcademyStudents: {
@@ -2349,6 +2569,7 @@ export interface operations {
             /** @description 현재 대표 위시입니다. */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -2366,6 +2587,7 @@ export interface operations {
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["CardBalanceAccountNotFound"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     selectRepresentativeWish: {
@@ -2386,6 +2608,7 @@ export interface operations {
             /** @description 선택된 대표 위시는 변경 결과 래퍼나 eventId 없이 직접 반환됩니다. */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -2398,6 +2621,7 @@ export interface operations {
             404: components["responses"]["WishOrAccountNotFound"];
             409: components["responses"]["RepresentativeWishSelectionConflict"];
             415: components["responses"]["JsonUnsupportedMediaType"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     transferWishFunds: {
@@ -2418,9 +2642,10 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 원자적 이체가 완료되었습니다. 동일 요청을 재생하면 최초 응답의 상태와 본문을 그대로 반환합니다. */
+            /** @description 원자적 이체가 완료되었습니다. 동일 요청 재생은 출발·도착의 최초 domain 결과와 각 ACTIVE_PHOTO의 정확한 photoId 또는 NO_PHOTO의 null을 유지하고, 양쪽을 모두 검증한 뒤 ephemeral photo URL만 새로 발급합니다. */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
                     [name: string]: unknown;
                 };
@@ -2434,6 +2659,7 @@ export interface operations {
             404: components["responses"]["WishOrAccountNotFound"];
             409: components["responses"]["TransferConflict"];
             422: components["responses"]["InvalidTransferAmountOrVersion"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     listWishes: {
@@ -2455,6 +2681,7 @@ export interface operations {
             /** @description 삭제되지 않은 위시 페이지입니다. */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -2465,6 +2692,7 @@ export interface operations {
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["CardBalanceAccountNotFound"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     createWish: {
@@ -2485,9 +2713,10 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 위시가 생성되었습니다. 동일 요청을 재생하면 최초 응답의 상태와 본문을 그대로 반환합니다. */
+            /** @description 위시가 생성되었습니다. 동일 요청 재생은 최초 domain 결과와 ACTIVE_PHOTO의 정확한 photoId 또는 NO_PHOTO의 null을 유지하고, 유효한 ACTIVE_PHOTO의 ephemeral URL만 새로 발급합니다. */
             201: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
                     [name: string]: unknown;
                 };
@@ -2498,7 +2727,7 @@ export interface operations {
             400: components["responses"]["MalformedOrIdempotencyRequired"];
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
-            404: components["responses"]["CardBalanceAccountNotFound"];
+            404: components["responses"]["CreateWishResourceNotFound"];
             409: components["responses"]["CreateConflict"];
             /** @description UNSUPPORTED_MEDIA_TYPE — Content-Type이 application/json이 아닙니다. */
             415: {
@@ -2510,6 +2739,7 @@ export interface operations {
                 };
             };
             422: components["responses"]["InvalidAmountOrPurpose"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     getWish: {
@@ -2527,6 +2757,7 @@ export interface operations {
             /** @description 위시입니다. */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -2537,6 +2768,7 @@ export interface operations {
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["WishOrAccountNotFound"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     deleteWish: {
@@ -2563,6 +2795,7 @@ export interface operations {
             404: components["responses"]["WishOrAccountNotFound"];
             409: components["responses"]["DeleteConflict"];
             422: components["responses"]["InvalidIfMatchVersion"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     patchWish: {
@@ -2584,6 +2817,7 @@ export interface operations {
             /** @description 원자적으로 갱신된 위시입니다. */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -2593,10 +2827,11 @@ export interface operations {
             400: components["responses"]["MalformedRequest"];
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
-            404: components["responses"]["WishOrAccountNotFound"];
+            404: components["responses"]["WishAccountOrPhotoNotFound"];
             409: components["responses"]["PatchConflict"];
             415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["InvalidAmountPurposeOrVersion"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     abandonWish: {
@@ -2634,6 +2869,7 @@ export interface operations {
                 };
             };
             422: components["responses"]["InvalidVersion"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     completeWish: {
@@ -2671,6 +2907,7 @@ export interface operations {
                 };
             };
             422: components["responses"]["InvalidVersion"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     depositToWish: {
@@ -2699,7 +2936,7 @@ export interface operations {
             404: components["responses"]["WishOrAccountNotFound"];
             409: components["responses"]["DepositConflict"];
             422: components["responses"]["InvalidAmountOrVersion"];
-            503: components["responses"]["BalanceSyncFailed"];
+            503: components["responses"]["BalanceSyncOrPhotoDeliveryUnavailable"];
         };
     };
     listWishFundMovements: {
@@ -2759,6 +2996,7 @@ export interface operations {
             404: components["responses"]["WishOrAccountNotFound"];
             409: components["responses"]["WithdrawalConflict"];
             422: components["responses"]["InvalidAmountOrVersion"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     listMyCardBalanceAccounts: {
@@ -2862,6 +3100,70 @@ export interface operations {
             401: components["responses"]["FriendManagementAuthRequired"];
             403: components["responses"]["FriendManagementForbidden"];
             404: components["responses"]["StudentBlockNotFound"];
+        };
+    };
+    uploadWishPhoto: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 학생별 영구 네임스페이스입니다. 동일한 작업, 대상, 정규화된 요청에만 키를 재사용할 수 있습니다. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["WishPhotoUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description 검증·안전성 검사·비공개 변형 저장이 완료된 미첨부 Pending 사진입니다. 멱등 재생은 같은 사진 identity에 새 5분 signed URL을 발급합니다. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WishPhoto"];
+                };
+            };
+            400: components["responses"]["MalformedOrIdempotencyRequired"];
+            401: components["responses"]["AuthRequired"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["WishPhotoUploadConflict"];
+            413: components["responses"]["PhotoTooLarge"];
+            415: components["responses"]["UnsupportedPhotoType"];
+            422: components["responses"]["InvalidOrRejectedPhoto"];
+            429: components["responses"]["PhotoUploadRateLimited"];
+            503: components["responses"]["PhotoUploadUnavailable"];
+        };
+    };
+    deletePendingWishPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Opaque 위시 사진 UUID입니다. 식별자 knowledge만으로 읽기, 취소 또는 첨부 권한이 생기지 않습니다. */
+                photoId: components["parameters"]["WishPhotoId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 사진이 즉시 첨부 불가능해졌거나 이미 같은 소유자의 DELETE_PENDING 상태입니다. 응답 본문은 없습니다. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["MalformedRequest"];
+            401: components["responses"]["AuthRequired"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["WishPhotoNotFound"];
+            409: components["responses"]["WishPhotoAlreadyAttached"];
         };
     };
 }

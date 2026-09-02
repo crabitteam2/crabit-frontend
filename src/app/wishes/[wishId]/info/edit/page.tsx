@@ -1,10 +1,9 @@
 import { notFound } from "next/navigation";
-import { findWish } from "@/lib/mock/wishes";
+import { getWish } from "@/lib/http/wishes";
+import { unwrapResult } from "@/lib/http/result";
+import { loadAccountContext } from "../../../load-account";
 import { WishEditForm } from "../../../_components/wish-edit-form";
-import {
-  toFullDate,
-  toPeriodLabel,
-} from "../../../_components/wish-period-format";
+import { toPeriodLabel } from "../../../_components/wish-period-format";
 
 export default async function WishEditPage({
   params,
@@ -12,8 +11,10 @@ export default async function WishEditPage({
   params: Promise<{ wishId: string }>;
 }) {
   const { wishId } = await params;
-  const wish = findWish(wishId);
-  if (wish === null) notFound();
+  const { client, cardBalanceAccountId } = await loadAccountContext();
+  const result = await getWish(client, { cardBalanceAccountId, wishId });
+  if (!result.ok && result.error.status === 404) notFound();
+  const wish = unwrapResult(result);
 
   return (
     <WishEditForm
@@ -23,9 +24,13 @@ export default async function WishEditPage({
       targetAmount={wish.targetAmount}
       currentAmount={wish.amount}
       period={toPeriodLabel({
-        start: toFullDate(wish.startDate),
-        end: toFullDate(wish.targetDate),
+        start: wish.startDate?.replaceAll("-", ".") ?? null,
+        end: wish.targetDate?.replaceAll("-", ".") ?? null,
       })}
+      cardBalanceAccountId={cardBalanceAccountId}
+      wishId={wish.id}
+      version={wish.version}
+      photo={wish.photo}
     />
   );
 }

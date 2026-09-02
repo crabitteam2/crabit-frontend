@@ -24,6 +24,8 @@ import type {
   PersonaTokenRegistry,
 } from "../../config/persona-tokens";
 import { resolveProfilePolicy, type BackendProfile } from "../../config/profile-policy";
+import { wishPhotoErrorMessage } from "../../app/wishes/new/_components/wish-photo-error";
+import { normalizeErrorResponse } from "../http/errors";
 import { PERSONAS } from "../persona/persona";
 import {
   proxyBackendRequest,
@@ -94,6 +96,16 @@ describe("proxyBackendRequest", () => {
       if (pathname === "/v1/no-content") {
         response.writeHead(204, { "Content-Type": "text/plain" });
         response.end();
+        return;
+      }
+
+      if (pathname === "/v1/wish-photos") {
+        response.writeHead(201, {
+          "Content-Type": "application/json",
+          "Idempotency-Replayed": "true",
+          "Retry-After": "17",
+        });
+        response.end(JSON.stringify({ uploaded: true }));
         return;
       }
 
@@ -184,6 +196,97 @@ describe("proxyBackendRequest", () => {
 
     expect(response.status).toBe(200);
     expect(Array.from(received[0].body)).toEqual(Array.from(body));
+  });
+
+  it("preserves Wish photo multipart bytes and boundary and exposes upload headers", async () => {
+    const boundary = "----crabit-boundary-875c11ef";
+    const body = Buffer.from(
+      `--${boundary}\r\nContent-Disposition: form-data; name="photo"; filename="wish-photo.jpg"\r\nContent-Type: image/jpeg\r\n\r\nphoto-bytes\r\n--${boundary}--\r\n`,
+    );
+    const contentType = `multipart/form-data; boundary=${boundary}`;
+
+    const response = await proxy(
+      frontendRequest("POST", "/v1/wish-photos", {
+        headers: {
+          "Content-Type": contentType,
+          "Idempotency-Key": "stable-upload-key",
+        },
+        body,
+      }),
+      ["v1", "wish-photos"],
+    );
+
+    expect(response.status).toBe(201);
+    expect(received[0].headers["content-type"]).toBe(contentType);
+    expect(received[0].headers["idempotency-key"]).toBe("stable-upload-key");
+    expect(received[0].body).toEqual(body);
+    expect(response.headers.get("idempotency-replayed")).toBe("true");
+    expect(response.headers.get("retry-after")).toBe("17");
+  });
+
+  it("rejects a declared oversized Wish photo body before reading or contacting upstream", async () => {
+    const request = frontendRequest("POST", "/v1/wish-photos", {
+      headers: {
+        "Content-Length": "9",
+        "Content-Type": "multipart/form-data; boundary=x",
+      },
+      body: "123456789",
+    });
+    const bodyRead = vi.spyOn(request, "arrayBuffer");
+    const fetchImpl = vi.fn<typeof fetch>();
+
+    const response = await proxy(request, ["v1", "wish-photos"], {
+      fetchImpl,
+      wishPhotoUploadMaxBytes: 8,
+    });
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toEqual({
+      code: "BFF_PAYLOAD_TOO_LARGE",
+      message: "BFF request body is too large",
+    });
+    expect(bodyRead).not.toHaveBeenCalled();
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("stops a chunked Wish photo body when its streamed bytes exceed the limit", async () => {
+    const request = streamedFrontendRequest([
+      new Uint8Array([1, 2, 3, 4, 5]),
+      new Uint8Array([6, 7, 8, 9]),
+    ]);
+    const fetchImpl = vi.fn<typeof fetch>();
+
+    const response = await proxy(request, ["v1", "wish-photos"], {
+      fetchImpl,
+      wishPhotoUploadMaxBytes: 8,
+    });
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toEqual({
+      code: "BFF_PAYLOAD_TOO_LARGE",
+      message: "BFF request body is too large",
+    });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("includes slow Wish photo body receipt in the upload deadline", async () => {
+    vi.useFakeTimers();
+    try {
+      const request = streamedFrontendRequest([], false);
+      const fetchImpl = vi.fn<typeof fetch>();
+      const responsePromise = proxy(request, ["v1", "wish-photos"], {
+        fetchImpl,
+        wishPhotoUploadMaxBytes: 8,
+        wishPhotoUploadTimeoutMilliseconds: 25,
+      });
+
+      await vi.advanceTimersByTimeAsync(25);
+
+      expect((await responsePromise).status).toBe(408);
+      expect(fetchImpl).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("re-encodes decoded path segments and preserves the raw ordered query", async () => {
@@ -562,6 +665,82 @@ describe("proxyBackendRequest", () => {
     });
   });
 
+  it("maps an upstream Wish photo deadline through normalization to same-photo retry guidance", async () => {
+    vi.useFakeTimers();
+    try {
+      const captured: {
+        signal?: AbortSignal;
+        headers?: Headers;
+        body?: ArrayBuffer;
+      } = {};
+      const fetchImpl = vi.fn(async (
+        _input: RequestInfo | URL,
+        init?: RequestInit,
+      ) => {
+        captured.signal = init?.signal ?? undefined;
+        captured.headers = new Headers(init?.headers);
+        captured.body = init?.body as ArrayBuffer | undefined;
+        return await new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener(
+            "abort",
+            () => reject(new DOMException("upload timeout", "AbortError")),
+            { once: true },
+          );
+        });
+      });
+      const responsePromise = proxyBackendRequest(
+        frontendRequest("POST", "/v1/wish-photos", {
+          headers: {
+            "Content-Type": "multipart/form-data; boundary=x",
+            "Idempotency-Key": "stable-upload-key",
+          },
+          body: "--x--\r\n",
+        }),
+        ["v1", "wish-photos"],
+        {
+          fetchImpl: fetchImpl as typeof fetch,
+          loadEnvironment: () => environment("prod"),
+          loadTokens: () => emptyTokenConfiguration(),
+          timeoutMilliseconds: 5,
+          wishPhotoUploadTimeoutMilliseconds: 25,
+        },
+      );
+
+      await vi.advanceTimersByTimeAsync(5);
+      expect(captured.signal?.aborted).toBe(false);
+      await vi.advanceTimersByTimeAsync(20);
+      const response = await responsePromise;
+
+      expect(response.status).toBe(408);
+      expect(response.headers.get("cache-control")).toBe("no-store");
+      expect(captured.signal?.aborted).toBe(true);
+      expect(captured.headers?.get("idempotency-key")).toBe(
+        "stable-upload-key",
+      );
+      expect(new Uint8Array(captured.body ?? new ArrayBuffer(0))).toEqual(
+        new TextEncoder().encode("--x--\r\n"),
+      );
+      await expect(response.clone().json()).resolves.toEqual({
+        code: "BFF_REQUEST_TIMEOUT",
+        message: "BFF request timed out",
+      });
+
+      const normalized = await normalizeErrorResponse(response);
+      expect(normalized).toEqual({
+        kind: "bff",
+        status: 408,
+        code: "BFF_REQUEST_TIMEOUT",
+        message: "BFF request timed out",
+        retryable: true,
+      });
+      expect(wishPhotoErrorMessage(normalized.code)).toBe(
+        "사진 업로드 시간이 초과됐어요. 같은 사진으로 다시 시도해주세요.",
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   function proxy(
     request: Request,
     path: readonly string[],
@@ -590,6 +769,27 @@ function frontendRequest(
     headers: options.headers,
     ...(options.body === undefined ? {} : { body: options.body }),
   });
+}
+
+function streamedFrontendRequest(
+  chunks: readonly Uint8Array[],
+  close = true,
+) {
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const chunk of chunks) controller.enqueue(chunk);
+      if (close) controller.close();
+    },
+  });
+  return new Request(
+    "http://frontend.test/api/backend/v1/wish-photos",
+    {
+      method: "POST",
+      headers: { "Content-Type": "multipart/form-data; boundary=x" },
+      body,
+      duplex: "half",
+    } as RequestInit & { duplex: "half" },
+  );
 }
 
 function environment(backendProfile: BackendProfile): BffEnvironment {

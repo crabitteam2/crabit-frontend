@@ -11,6 +11,7 @@ it("uses explicit endpoints, rejects reversal, allows same-day and target-only",
   const user = userEvent.setup();
   render(
     <WishPeriodForm
+      cardBalanceAccountId="account"
       backHref="/"
       nextPath="/photo"
       purpose="선물"
