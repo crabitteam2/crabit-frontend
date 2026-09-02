@@ -1,10 +1,9 @@
 import { notFound } from "next/navigation";
-import { findWish } from "@/lib/mock/wishes";
+import { getWish } from "@/lib/http/wishes";
+import { unwrapResult } from "@/lib/http/result";
+import { loadAccountContext } from "../../load-account";
 import { WishInfoScreen } from "../../_components/wish-info-screen";
-import {
-  toFullDate,
-  toPeriodLabel,
-} from "../../_components/wish-period-format";
+import { toPeriodLabel } from "../../_components/wish-period-format";
 
 export default async function WishInfoPage({
   params,
@@ -12,8 +11,10 @@ export default async function WishInfoPage({
   params: Promise<{ wishId: string }>;
 }) {
   const { wishId } = await params;
-  const wish = findWish(wishId);
-  if (wish === null) notFound();
+  const { client, cardBalanceAccountId } = await loadAccountContext();
+  const result = await getWish(client, { cardBalanceAccountId, wishId });
+  if (!result.ok && result.error.status === 404) notFound();
+  const wish = unwrapResult(result);
 
   return (
     <WishInfoScreen
@@ -22,9 +23,21 @@ export default async function WishInfoPage({
       purpose={wish.purpose}
       targetAmount={wish.targetAmount}
       period={toPeriodLabel({
-        start: toFullDate(wish.startDate),
-        end: toFullDate(wish.targetDate),
+        start: toDateKey(wish.createdAt),
+        end: wish.targetDate?.replaceAll("-", ".") ?? null,
       })}
+      photoUrl={wish.photo?.variants.medium ?? null}
     />
   );
+}
+
+const dateFormatter = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Seoul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+function toDateKey(value: string) {
+  return dateFormatter.format(new Date(value)).replaceAll("-", ".");
 }

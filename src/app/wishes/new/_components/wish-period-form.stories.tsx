@@ -8,6 +8,7 @@ const meta = {
   args: {
     backHref: "/wishes/new",
     nextPath: "/wishes/new/photo",
+    cardBalanceAccountId: "11111111-1111-4111-8111-111111111111",
     purpose: "시나모롤 키링",
     targetAmount: 50_000,
   },

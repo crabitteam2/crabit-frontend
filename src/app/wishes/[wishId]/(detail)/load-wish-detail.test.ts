@@ -42,6 +42,7 @@ function wish(
     targetDate: "2026-10-31",
     state,
     visibility: "PRIVATE",
+    photo: null,
     balanceAdjustmentInProgress: false,
     createdAt: "2026-08-16T00:00:00Z",
     updatedAt: "2026-08-20T00:00:00Z",

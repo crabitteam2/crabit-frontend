@@ -1,3 +1,4 @@
+import { notFound } from "next/navigation";
 import { WishPeriodForm } from "../_components/wish-period-form";
 
 function read(
@@ -14,12 +15,15 @@ export default async function NewWishPeriodPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
+  const cardBalanceAccountId = read(query, "cardBalanceAccountId");
+  if (cardBalanceAccountId === undefined) notFound();
   const parsed = Number(read(query, "targetAmount") ?? 0);
 
   return (
     <WishPeriodForm
       backHref="/wishes/new"
       nextPath="/wishes/new/photo"
+      cardBalanceAccountId={cardBalanceAccountId}
       purpose={read(query, "purpose") ?? ""}
       targetAmount={Number.isFinite(parsed) ? parsed : 0}
     />
