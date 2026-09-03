@@ -27,7 +27,11 @@ import {
 } from "@/lib/http/wish-photos";
 import { patchWish } from "@/lib/http/wishes";
 import { ScreenHeader } from "./screen-header";
-import { fromPeriodLabel, toPeriodLabel } from "./wish-period-format";
+import {
+  fromPeriodLabel,
+  toIsoDate,
+  toPeriodLabel,
+} from "./wish-period-format";
 
 interface WishEditFormProps {
   backHref: string;
@@ -80,6 +84,7 @@ export function WishEditForm({
       pendingPhoto?.variants.medium ??
       photo?.variants.medium ??
       null);
+  const isSkippingPeriod = isCalendarOpen && range.start === null;
   const canSubmit =
     nextPurpose.trim() !== "" ||
     amount > 0 ||
@@ -138,7 +143,10 @@ export function WishEditForm({
         ...(amount === 0 ? {} : { targetAmount: amount }),
         ...(nextPeriod === (period ?? "")
           ? {}
-          : { targetDate: range.end ?? range.start }),
+          : {
+              startDate: toIsoDate(range.start),
+              targetDate: toIsoDate(range.end),
+            }),
         ...(removeCurrentPhoto
           ? { photoId: null }
           : candidate === null
@@ -315,14 +323,14 @@ export function WishEditForm({
       >
         <Button
           size="xlarge"
-          variant={isCalendarOpen ? "weak" : "fill"}
+          variant={isSkippingPeriod ? "weak" : "fill"}
           className="w-full"
           disabled={!isCalendarOpen && !canSubmit}
           isLoading={isSubmitting}
           onPointerDown={(event) => event.preventDefault()}
           onClick={() => void submit()}
         >
-          {isCalendarOpen ? "넘어가기" : "다음"}
+          {isSkippingPeriod ? "넘어가기" : "다음"}
         </Button>
       </div>
     </div>
