@@ -32,16 +32,23 @@ describe("frontend HTTP error normalization", () => {
 
   it.each([
     "STUDENT_NOT_FOUND",
+    "SELF_PROFILE_VISIT",
+    "EVENT_TIME_OUT_OF_RANGE",
     "STUDENT_BLOCK_NOT_FOUND",
     "SELF_RELATIONSHIP",
+    "PROFILE_NOT_FOUND",
+    "FEED_CONTEXT_NOT_FOUND",
+    "FEED_CONTEXT_EXPIRED",
+    "EVENT_ID_CONFLICT",
+    "IMPRESSION_CONFLICT",
     "STUDENT_BLOCK_ALREADY_ACTIVE",
-  ] as const)("recognizes the generated Student Relationships code %s", async (code) => {
+  ] as const)("recognizes the generated behavior and relationship code %s", async (code) => {
     const response = jsonResponse(409, {
       error: {
         code,
         message: `${code} message`,
         retryable: false,
-        traceId: "follow-trace",
+        traceId: "friend-trace",
         fieldErrors: [],
         details: {},
       },
@@ -52,10 +59,6 @@ describe("frontend HTTP error normalization", () => {
       status: 409,
       code,
     });
-  });
-
-  it.each(["FOLLOWERSHIP_NOT_FOUND", "ALREADY_FOLLOWERS", "FRIENDSHIP_NOT_FOUND", "FRIEND_REQUEST_NOT_FOUND", "ALREADY_FRIENDS", "FRIEND_REQUEST_ALREADY_PENDING", "INCOMING_FRIEND_REQUEST_PENDING", "FRIEND_REQUEST_NOT_PENDING", "FRIEND_REQUEST_NOT_ACTIONABLE"])("rejects removed relationship code %s", async (code) => {
-    expect(await normalizeErrorResponse(jsonResponse(409, { error: { code, message: "old contract", retryable: false, traceId: "old", fieldErrors: [], details: {} } }))).toMatchObject({ kind: "malformed", code: "MALFORMED_RESPONSE" });
   });
 
   it("recognizes only documented exact flat BFF envelopes", async () => {

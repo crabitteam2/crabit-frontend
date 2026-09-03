@@ -54,6 +54,18 @@ export function searchAcademyStudents(
   );
 }
 
+/** 현재 접근 가능한 학생의 신원과 방향별 관계를 조회합니다. */
+export function getAcademyStudent(
+  client: CrabitApiClient,
+  options: FollowAcademyStudentOptions,
+): Promise<ApiResult<components["schemas"]["StudentRelationship"]>> {
+  return apiResult(() =>
+    client.GET("/v1/academies/{academyId}/students/{studentId}", {
+      params: { path: options },
+    }),
+  );
+}
+
 /** 선택 학원의 본인 팔로잉 목록과 검색과 무관한 두 전체 카운트입니다. */
 export function listAcademyFollowing(
   client: CrabitApiClient,
