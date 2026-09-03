@@ -25,7 +25,7 @@ describe("/api/demo/persona", () => {
       );
 
       expect(response.status).toBe(204);
-      expect(response.headers.get("set-cookie")).toBe(
+      expect(response.headers.getSetCookie()[0]).toBe(
         `crabit-demo-persona=${persona}; Path=/; HttpOnly; SameSite=Lax`,
       );
       expect(response.headers.get("set-cookie")).not.toContain(
@@ -60,7 +60,7 @@ describe("/api/demo/persona", () => {
     );
 
     expect(response.status).toBe(204);
-    expect(response.headers.get("set-cookie")).toBe(
+    expect(response.headers.getSetCookie()[0]).toBe(
       "crabit-demo-persona=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Secure",
     );
     expect(response.headers.get("set-cookie")).not.toContain(
