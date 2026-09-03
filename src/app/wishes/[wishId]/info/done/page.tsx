@@ -1,9 +1,12 @@
-import { toPeriodLabel } from "../../../_components/wish-period-format";
 import { notFound } from "next/navigation";
 import { getWish } from "@/lib/http/wishes";
 import { unwrapResult } from "@/lib/http/result";
 import { loadAccountContext } from "../../../load-account";
 import { WishEditDoneScreen } from "../../../_components/wish-edit-done-screen";
+import {
+  fromIsoDate,
+  toPeriodLabel,
+} from "../../../_components/wish-period-format";
 
 export default async function WishEditDonePage({
   params,
@@ -20,10 +23,12 @@ export default async function WishEditDonePage({
     <WishEditDoneScreen
       purpose={wish.purpose}
       targetAmount={wish.targetAmount}
-      period={toPeriodLabel({
-        start: wish.startDate?.replaceAll("-", ".") ?? null,
-        end: wish.targetDate?.replaceAll("-", ".") ?? null,
-      })}
+      period={
+        toPeriodLabel({
+          start: fromIsoDate(wish.startDate),
+          end: fromIsoDate(wish.targetDate),
+        }) || null
+      }
     />
   );
 }

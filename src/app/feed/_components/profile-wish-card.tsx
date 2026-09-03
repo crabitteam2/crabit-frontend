@@ -2,16 +2,16 @@ import Image, { type StaticImageData } from "next/image";
 import abandonedThumb from "@/../public/images/feed/thumb-abandoned.png";
 import completedThumb from "@/../public/images/feed/thumb-completed.png";
 import inProgressThumb from "@/../public/images/feed/thumb-in-progress.png";
-import { toProgressPercent } from "@/app/_components/progress-stage";
 import { toSavingPeriodLabel } from "@/app/wishes/_components/wish-period-format";
 import { WishProgressBar } from "@/app/wishes/_components/wish-progress-bar";
 import {
   getWishTheme,
   type WishTone,
 } from "@/app/wishes/_components/wish-theme";
-import type { Wish } from "@/lib/mock/wishes";
+import type { WishItemState } from "@/app/wishes/_components/wish-item";
+import type { ProfileWishItem } from "./feed-item";
 
-const thumbnails: Record<Wish["state"], StaticImageData> = {
+const thumbnails: Record<WishItemState, StaticImageData> = {
   IN_PROGRESS: inProgressThumb,
   AMOUNT_REACHED: inProgressThumb,
   COMPLETED: completedThumb,
@@ -19,12 +19,12 @@ const thumbnails: Record<Wish["state"], StaticImageData> = {
 };
 
 interface ProfileWishCardProps {
-  wish: Wish;
+  wish: ProfileWishItem;
   tone: WishTone;
 }
 
 export function ProfileWishCard({ wish, tone }: ProfileWishCardProps) {
-  const percent = toProgressPercent(wish.amount, wish.targetAmount);
+  const percent = wish.percent;
   const theme = getWishTheme(wish, tone, percent);
   const period = toSavingPeriodLabel({
     start: wish.startDate,

@@ -1,5 +1,8 @@
 import { FormQueryError } from "@/app/wishes/_components/form-query-error";
-import { toSavingPeriodLabel } from "@/app/wishes/_components/wish-period-format";
+import {
+  fromIsoDate,
+  toSavingPeriodLabel,
+} from "@/app/wishes/_components/wish-period-format";
 import { notFound } from "next/navigation";
 import { getWish } from "@/lib/http/wishes";
 import { unwrapResult } from "@/lib/http/result";
@@ -19,16 +22,19 @@ export default async function NewWishDonePage({
   const result = await getWish(client, { cardBalanceAccountId, wishId });
   if (!result.ok && result.error.status === 404) notFound();
   const wish = unwrapResult(result);
-  const period = toSavingPeriodLabel({
-    start: wish.startDate?.replaceAll("-", ".") ?? null,
-    end: wish.targetDate?.replaceAll("-", ".") ?? null,
-  });
+  const period =
+    wish.startDate === null || wish.targetDate === null
+      ? null
+      : toSavingPeriodLabel({
+          start: fromIsoDate(wish.startDate),
+          end: fromIsoDate(wish.targetDate),
+        });
 
   return (
     <WishCreatedScreen
       purpose={wish.purpose}
       targetAmount={wish.targetAmount}
-      period={period || null}
+      period={period}
       photoUrl={wish.photo?.variants.large ?? null}
       depositHref={`/wishes/${wish.id}/deposit/amount`}
       closeHref="/"

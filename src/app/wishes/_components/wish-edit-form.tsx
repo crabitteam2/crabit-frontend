@@ -106,6 +106,7 @@ export function WishEditForm({
       pendingPhoto?.variants.medium ??
       photo?.variants.medium ??
       null);
+  const isSkippingPeriod = isCalendarOpen && range.start === null;
   const canSubmit =
     !purposeError(values.purpose) &&
     !amountError(values.amount, undefined, currentAmount) &&
@@ -393,7 +394,7 @@ export function WishEditForm({
       >
         <Button
           size="xlarge"
-          variant={isCalendarOpen ? "weak" : "fill"}
+          variant={isSkippingPeriod ? "weak" : "fill"}
           className="w-full"
           type={isCalendarOpen ? "button" : "submit"}
           onClick={isCalendarOpen ? () => setIsCalendarOpen(false) : undefined}
@@ -406,7 +407,7 @@ export function WishEditForm({
           }
           onPointerDown={(event) => event.preventDefault()}
         >
-          {isCalendarOpen ? "넘어가기" : "다음"}
+          {isSkippingPeriod ? "넘어가기" : "다음"}
         </Button>
       </div>
     </form>

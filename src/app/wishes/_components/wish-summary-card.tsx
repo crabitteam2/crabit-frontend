@@ -29,7 +29,7 @@ export function WishSummaryCard({ wish }: WishSummaryCardProps) {
   const percent = toProgressPercent(displayAmount, wish.targetAmount);
   const isFinished = isFinishedState(wish.state);
   const period =
-    wish.targetDate === ""
+    wish.startDate === "" || wish.targetDate === ""
       ? ""
       : toSavingPeriodLabel({ start: wish.startDate, end: wish.targetDate });
 

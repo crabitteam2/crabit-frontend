@@ -1,30 +1,66 @@
+"use client";
+
 import Link from "next/link";
-import { toProgressPercent } from "@/app/_components/progress-stage";
+import { useEffect, useRef } from "react";
 import { WishHeroContent } from "@/app/wishes/_components/wish-hero-screen";
 import { toSavingPeriodLabel } from "@/app/wishes/_components/wish-period-format";
 import { getWishShareLook } from "@/app/wishes/_components/wish-share-theme";
-import type { FeedCard as FeedCardData } from "@/lib/mock/feed";
+import type { Impression } from "@/lib/behavior/collector";
+import type { FeedCardItem } from "./feed-item";
+
+const VISIBLE_RATIO = 0.5;
 
 interface FeedCardProps {
-  card: FeedCardData;
+  card: FeedCardItem;
+  /** 방문하기를 눌렀을 때 갈 주소입니다. */
+  href: string;
+  /** 노출과 클릭을 기록할 대상이며, 없으면 기록하지 않습니다. */
+  impression?: Impression;
 }
 
-export function FeedCard({ card }: FeedCardProps) {
-  const { ownerNickname, studentId, wish } = card;
-  const look = getWishShareLook(wish);
+export function FeedCard({ card, href, impression }: FeedCardProps) {
+  const look = getWishShareLook(card);
   const period = toSavingPeriodLabel({
-    start: wish.startDate,
-    end: wish.targetDate,
+    start: card.startDate,
+    end: card.targetDate,
   });
+  const ref = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (impression === undefined || element === null) return;
+
+    let ratio = 0;
+    const report = () =>
+      impression.visibility(
+        ratio >= VISIBLE_RATIO && document.visibilityState === "visible",
+      );
+    const observer = new IntersectionObserver(
+      (entries) => {
+        ratio = entries[0]?.intersectionRatio ?? 0;
+        report();
+      },
+      { threshold: [0, VISIBLE_RATIO, 1] },
+    );
+
+    observer.observe(element);
+    document.addEventListener("visibilitychange", report);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", report);
+      impression.detach();
+    };
+  }, [impression]);
 
   return (
-    <article className="flex flex-col">
+    <article ref={ref} className="flex flex-col">
       <div className="flex items-center justify-between px-4 py-3">
         <p className="text-b2 text-fg-neutral truncate font-medium">
-          {ownerNickname}의 위시리스트
+          {card.ownerNickname}의 위시리스트
         </p>
         <Link
-          href={`/feed/${studentId}`}
+          href={href}
+          onClick={() => impression?.click()}
           className="bg-brand-weak text-fg-brand text-b4 flex h-10 shrink-0 items-center rounded-xl px-4 font-semibold"
         >
           방문하기
@@ -34,16 +70,16 @@ export function FeedCard({ card }: FeedCardProps) {
       <div className="bg-pink-1 flex flex-col pb-6">
         <WishHeroContent
           character={look.character}
-          photoUrl={wish.imageUrl ?? null}
+          photoUrl={card.imageUrl ?? null}
           headline={look.headline}
           headlinePaddingTop={look.headlinePaddingTop}
           headlinePaddingBottom={look.headlinePaddingBottom}
-          percent={toProgressPercent(wish.amount, wish.targetAmount)}
+          percent={card.percent}
           theme={look.theme}
-          purpose={wish.purpose}
+          purpose={card.purpose}
           period={period === "" ? null : period}
-          amount={wish.amount}
-          targetAmount={wish.targetAmount}
+          amount={0}
+          targetAmount={card.targetAmount}
           showAmount={false}
         />
       </div>

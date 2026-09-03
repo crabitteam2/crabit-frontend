@@ -1,4 +1,5 @@
-import { RealFeed } from "./_components/real-feed";
+import { FeedScreen } from "./_components/feed-screen";
+
 export default function FeedPage() {
-  return <RealFeed />;
+  return <FeedScreen />;
 }

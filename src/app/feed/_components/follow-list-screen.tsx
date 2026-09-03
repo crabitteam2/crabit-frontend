@@ -95,8 +95,8 @@ export function FollowListScreen({
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="검색할 친구를 입력해주세요."
-            aria-label="친구 검색"
+            placeholder="검색할 학생을 입력해주세요."
+            aria-label="학생 검색"
             className="text-fg-neutral placeholder:text-gray-5 min-w-0 flex-1 bg-transparent pl-4 text-[16px] leading-[23px] tracking-[-0.3px] outline-none"
           />
         </div>

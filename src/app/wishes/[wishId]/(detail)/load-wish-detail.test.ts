@@ -119,11 +119,11 @@ describe("위시 상세 화면 데이터 조회", () => {
     });
   });
 
-  it("저축 시작일이 없으면 생성 시각을 대신 쓴다", async () => {
+  it("저축 기간을 지정하지 않았으면 빈 문자열로 둔다", async () => {
     getWish.mockResolvedValue({ ok: true, data: wish("IN_PROGRESS", null) });
 
     await expect(loadWishDetail(wishId)).resolves.toMatchObject({
-      wish: { startDate: "26.08.16" },
+      wish: { startDate: "" },
     });
   });
 });
