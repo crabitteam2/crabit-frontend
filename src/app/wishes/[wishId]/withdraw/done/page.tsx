@@ -1,11 +1,8 @@
-import { notFound, redirect } from "next/navigation";
+import { readAmountQuery, queryValue } from "@/lib/forms/wish-form-query";
+import { FormQueryError } from "@/app/wishes/_components/form-query-error";
+import { notFound } from "next/navigation";
 import { WithdrawDoneScreen } from "../../../_components/withdraw-done-screen";
-import {
-  findCounterpart,
-  firstQueryValue,
-  loadFundFlow,
-  parseAmount,
-} from "../../fund-flow";
+import { findCounterpart, loadFundFlow } from "../../fund-flow";
 
 export default async function WithdrawDonePage({
   params,
@@ -19,10 +16,13 @@ export default async function WithdrawDonePage({
   if (view === null) notFound();
 
   const query = await searchParams;
-  const amount = parseAmount(query.amount);
-  if (amount === 0) redirect(`/wishes/${wishId}`);
+  const amount = readAmountQuery(query, Number.MAX_SAFE_INTEGER);
+  if (amount === null)
+    return <FormQueryError backHref={`/wishes/${wishId}/withdraw`} />;
 
-  const destination = findCounterpart(view, firstQueryValue(query.to));
+  const destination = findCounterpart(view, queryValue(query, "to"));
+  if (destination === null)
+    return <FormQueryError backHref={`/wishes/${wishId}/withdraw`} />;
 
   return (
     <WithdrawDoneScreen

@@ -33,7 +33,7 @@ test.describe("new Wish photo flow", () => {
   }) => {
     await reachPhotoStep(page, application.url, "노트북", "150000");
 
-    await page.getByRole("button", { name: "사진 없이 만들기" }).click();
+    await page.getByRole("button", { name: "넘어가기" }).click();
 
     await expect(page.getByText("위시리스트가 생성되었어요!")).toBeVisible();
     expect(application.state.uploads).toHaveLength(0);
@@ -57,7 +57,7 @@ test.describe("new Wish photo flow", () => {
 
     await page.locator('input[type="file"]').setInputFiles(WISH_PHOTO_INPUT);
     await expect(page.getByAltText("선택한 위시 사진")).toBeVisible();
-    await page.getByRole("button", { name: "위시 만들기" }).click();
+    await page.getByRole("button", { name: "다음" }).click();
 
     await expect(page.getByText("위시리스트가 생성되었어요!")).toBeVisible();
     await expect(page.getByAltText("위시 사진")).toBeVisible();

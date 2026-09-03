@@ -1,21 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
 import { ScreenHeader } from "@/app/wishes/_components/screen-header";
 import { PullToRefresh } from "@/app/_components/pull-to-refresh";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useKeyboardViewport } from "@/hooks/use-keyboard-viewport";
+import { useWishForm } from "@/lib/forms/use-wish-form";
+import { formEnter } from "@/lib/forms/form-keyboard";
 import {
-  isValidPurpose,
-  isValidTargetAmount,
+  purposeError,
+  amountError,
   normalizePurpose,
-  stripAmountSeparators,
-  toTargetAmount,
-} from "./wish-goal-validation";
+  parseKrw,
+  formatKrw,
+} from "@/lib/forms/wish-validation";
 
-const FORMAT_ERROR = "올바른 형식이 아니에요";
 const PURPOSE_FIELD_HEIGHT = 161;
 
 interface WishGoalFormProps {
@@ -25,12 +25,6 @@ interface WishGoalFormProps {
   cardBalanceAccountId: string;
 }
 
-function formatAmount(value: string) {
-  const digits = stripAmountSeparators(value);
-  if (!/^\d+$/.test(digits)) return value;
-  return Number(digits).toLocaleString("ko-KR");
-}
-
 export function WishGoalForm({
   backHref,
   nextPath,
@@ -38,35 +32,33 @@ export function WishGoalForm({
   cardBalanceAccountId,
 }: WishGoalFormProps) {
   const router = useRouter();
-  const [purpose, setPurpose] = useState("");
-  const [amountValue, setAmountValue] = useState("");
-  const [isSubmitted, setIsSubmitted] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    setFocus,
+    setValue,
+    getValues,
+    formState: { errors, isSubmitting },
+  } = useWishForm({ defaultValues: { purpose: "", amount: "" } });
   const box = useKeyboardViewport();
   const isKeyboardOpen = box?.isKeyboardOpen ?? false;
-
-  const isPurposeValid = isValidPurpose(purpose);
-  const isAmountValid = isValidTargetAmount(amountValue);
-  const hasPurposeError = isSubmitted && !isPurposeValid;
-  const hasAmountError = isSubmitted && !isAmountValid;
-  const isIncomplete = purpose === "" || amountValue === "";
-
-  const submit = () => {
-    setIsSubmitted(true);
-    if (!isPurposeValid || !isAmountValid) return;
-
+  const submit = handleSubmit(({ purpose, amount }) => {
     const params = new URLSearchParams({
       cardBalanceAccountId,
       purpose: normalizePurpose(purpose),
-      targetAmount: String(toTargetAmount(amountValue)),
+      targetAmount: String(parseKrw(amount)),
     });
     router.push(`${nextPath}?${params.toString()}`);
-  };
+  });
 
   return (
-    <div
+    <form
+      noValidate
+      onSubmit={submit}
+      onKeyDown={formEnter}
       className={
         isKeyboardOpen
-          ? "max-w-app fixed inset-x-0 z-10 mx-auto flex w-full flex-col bg-white"
+          ? "max-w-app fixed inset-x-0 z-10 mx-auto flex w-full flex-col overflow-hidden bg-white [&>header]:shrink-0"
           : "flex min-h-svh flex-col"
       }
       style={
@@ -81,54 +73,67 @@ export function WishGoalForm({
         spacing="loose"
       />
 
-      <PullToRefresh>
-        <div
-          className="shrink-0 px-4 pt-5"
-          style={{ height: PURPOSE_FIELD_HEIGHT }}
-        >
-          <Input
-            label="위시"
-            variant="filled"
-            value={purpose}
-            error={hasPurposeError ? FORMAT_ERROR : undefined}
-            onChange={(event) => setPurpose(event.target.value)}
-          />
-        </div>
+      <div
+        className={
+          isKeyboardOpen ? "min-h-0 flex-1 overflow-y-auto" : undefined
+        }
+      >
+        <PullToRefresh>
+          <div
+            className="shrink-0 px-4 pt-5"
+            style={{ height: PURPOSE_FIELD_HEIGHT }}
+          >
+            <Input
+              label="위시"
+              variant="filled"
+              {...register("purpose", {
+                validate: (value) => purposeError(value) ?? true,
+              })}
+              type="text"
+              enterKeyHint="next"
+              onKeyDown={(event) => formEnter(event, () => setFocus("amount"))}
+              error={errors.purpose?.message}
+            />
+          </div>
 
-        <div className="flex flex-col items-start px-4">
-          <Input
-            label="위시 금액"
-            variant="filled"
-            inputMode="decimal"
-            value={formatAmount(amountValue)}
-            error={hasAmountError ? FORMAT_ERROR : undefined}
-            onChange={(event) =>
-              setAmountValue(stripAmountSeparators(event.target.value))
-            }
-          />
-          <span className="text-e1 text-gray-5 py-2">
-            {available === null
-              ? "사용 가능한 금액을 확인해주세요."
-              : `현재 사용 가능한 금액 : ${available.toLocaleString("ko-KR")}원`}
-          </span>
-        </div>
-      </PullToRefresh>
+          <div className="flex flex-col items-start px-4">
+            <Input
+              label="위시 금액"
+              variant="filled"
+              {...register("amount", {
+                validate: (value) => amountError(value) ?? true,
+                onBlur: () =>
+                  setValue("amount", formatKrw(getValues("amount"))),
+              })}
+              type="text"
+              inputMode="numeric"
+              enterKeyHint="done"
+              error={errors.amount?.message}
+            />
+            <span className="text-e1 text-gray-5 py-2">
+              {available === null
+                ? "사용 가능한 금액을 확인해주세요."
+                : `현재 사용 가능한 금액 : ${available.toLocaleString("ko-KR")}원`}
+            </span>
+          </div>
+        </PullToRefresh>
+      </div>
 
-      <div className="flex-1" />
+      {isKeyboardOpen ? null : <div className="flex-1" />}
 
       <div
-        className={`px-4 ${isKeyboardOpen ? "pb-5" : "pb-[calc(55px+env(safe-area-inset-bottom))]"}`}
+        className={`shrink-0 px-4 ${isKeyboardOpen ? "pb-5" : "pb-[calc(55px+env(safe-area-inset-bottom))]"}`}
       >
         <Button
           size="xlarge"
           className="w-full"
-          disabled={isIncomplete}
+          type="submit"
+          isLoading={isSubmitting}
           onPointerDown={(event) => event.preventDefault()}
-          onClick={submit}
         >
           다음
         </Button>
       </div>
-    </div>
+    </form>
   );
 }

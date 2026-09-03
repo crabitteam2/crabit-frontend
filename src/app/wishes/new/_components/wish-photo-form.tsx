@@ -13,7 +13,6 @@ import {
   uploadWishPhoto,
 } from "@/lib/http/wish-photos";
 import { createWish } from "@/lib/http/wishes";
-import { toIsoDate } from "@/app/wishes/_components/wish-period-format";
 import {
   clampTransform,
   displayedSize,
@@ -33,6 +32,9 @@ import {
   savePendingWishPhoto,
   stableWishPhotoKey,
 } from "./photo-storage";
+
+import { useWishForm } from "@/lib/forms/use-wish-form";
+import { readWishQuery, isoDate } from "@/lib/forms/wish-form-query";
 
 const TAP_SLOP = 8;
 interface WishPhotoFormProps {
@@ -68,6 +70,10 @@ export function WishPhotoForm({
 }: WishPhotoFormProps) {
   const router = useRouter();
   const [client] = useState(() => createBrowserApiClient());
+  const { setValue, handleSubmit } = useWishForm<{ photo: File | null }>({
+    defaultValues: { photo: null },
+  });
+  const busy = useRef(false);
   const scope = `new:${cardBalanceAccountId}`;
   const inputRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
@@ -115,12 +121,15 @@ export function WishPhotoForm({
     setTransform(initialTransform(box, photo));
   }, [photo, box]);
 
-  const openPicker = () => inputRef.current?.click();
+  const openPicker = () => {
+    if (!busy.current) inputRef.current?.click();
+  };
 
   const pick = async (file: File | undefined) => {
-    if (file === undefined) return;
+    if (file === undefined || busy.current) return;
     if (!(await cancelPendingPhoto())) return;
     setError(null);
+    setValue("photo", file, { shouldDirty: true });
     setPhoto(null);
     setPreviewUrl(URL.createObjectURL(file));
   };
@@ -205,8 +214,9 @@ export function WishPhotoForm({
     return true;
   };
 
-  const submit = async () => {
-    if (isSubmitting) return;
+  const submit = handleSubmit(async () => {
+    if (busy.current) return;
+    busy.current = true;
     setIsSubmitting(true);
     setError(null);
 
@@ -236,12 +246,20 @@ export function WishPhotoForm({
         setPendingPhoto(upload.data);
       }
 
-      const params = new URLSearchParams(query);
+      const values = readWishQuery(
+        Object.fromEntries(new URLSearchParams(query)),
+      );
+      if (!values) {
+        setError("위시 정보를 다시 확인해주세요.");
+        return;
+      }
       const body = {
-        purpose: params.get("purpose") ?? "",
-        targetAmount: Number(params.get("targetAmount") ?? 0),
-        startDate: toIsoDate(params.get("startDate")),
-        targetDate: toIsoDate(params.get("targetDate")),
+        purpose: values.purpose,
+        targetAmount: values.targetAmount,
+        startDate:
+          values.range.start === null ? null : isoDate(values.range.start),
+        targetDate:
+          values.range.end === null ? null : isoDate(values.range.end),
         photoId: uploaded?.id ?? null,
       };
       const created = await createWish(client, {
@@ -263,16 +281,17 @@ export function WishPhotoForm({
     } catch {
       setError("사진을 처리하지 못했어요. 잠시 후 다시 시도해주세요.");
     } finally {
+      busy.current = false;
       setIsSubmitting(false);
     }
-  };
+  });
 
   const size = photo === null ? null : displayedSize(transform, box, photo);
   const safeTransform =
     photo === null ? transform : clampTransform(transform, box, photo);
 
   return (
-    <div className="flex min-h-svh flex-col">
+    <form onSubmit={submit} className="flex min-h-svh flex-col">
       <ScreenHeader
         title="사진을 업로드 할까요?"
         backHref={backHref}
@@ -324,7 +343,10 @@ export function WishPhotoForm({
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
             onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") openPicker();
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openPicker();
+              }
             }}
             className="bg-pink-1 relative aspect-square w-full touch-none overflow-hidden rounded-full select-none"
           >
@@ -381,7 +403,8 @@ export function WishPhotoForm({
           size="xlarge"
           className="w-full"
           disabled={isSubmitting}
-          onClick={() => void submit()}
+          type="submit"
+          isLoading={isSubmitting}
         >
           {isSubmitting
             ? "처리 중..."
@@ -390,6 +413,6 @@ export function WishPhotoForm({
               : "다음"}
         </Button>
       </div>
-    </div>
+    </form>
   );
 }

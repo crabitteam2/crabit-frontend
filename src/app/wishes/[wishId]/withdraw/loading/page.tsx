@@ -1,12 +1,12 @@
-import { notFound, redirect } from "next/navigation";
+import { readAmountQuery, queryValue } from "@/lib/forms/wish-form-query";
+import { FormQueryError } from "@/app/wishes/_components/form-query-error";
+import { notFound } from "next/navigation";
 import type { FundCounterpartRef } from "../../../_components/fund-counterpart";
 import { WithdrawLoadingScreen } from "../../../_components/withdraw-loading-screen";
 import {
   CARD_COUNTERPART_ID,
   findCounterpart,
-  firstQueryValue,
   loadFundFlow,
-  parseAmount,
 } from "../../fund-flow";
 
 export default async function WithdrawLoadingPage({
@@ -22,11 +22,15 @@ export default async function WithdrawLoadingPage({
 
   const selectPath = `/wishes/${wishId}/withdraw`;
   const query = await searchParams;
-  const destination = findCounterpart(view, firstQueryValue(query.to));
-  if (destination === null) redirect(selectPath);
+  const destination = findCounterpart(view, queryValue(query, "to"));
+  if (destination === null) return <FormQueryError backHref={selectPath} />;
 
-  const amount = parseAmount(query.amount);
-  if (amount === 0) redirect(selectPath);
+  const room =
+    destination.kind === "card"
+      ? view.wish.amount
+      : destination.wish.targetAmount - destination.wish.amount;
+  const amount = readAmountQuery(query, Math.min(view.wish.amount, room));
+  if (amount === null) return <FormQueryError backHref={selectPath} />;
 
   const destinationId =
     destination.kind === "card" ? CARD_COUNTERPART_ID : destination.wish.id;

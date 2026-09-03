@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef } from "react";
+import { useWishForm } from "@/lib/forms/use-wish-form";
 import radioOffIcon from "@/../public/images/common/radio-off.svg";
 import radioOnIcon from "@/../public/images/common/radio-on.svg";
 import { Button } from "@/components/ui/button";
@@ -28,25 +29,39 @@ export function WishShareWriteForm({
   donePath,
 }: WishShareWriteFormProps) {
   const router = useRouter();
-  const [visibility, setVisibility] = useState<Visibility>("ACADEMY");
-  const [isSharing, setIsSharing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const share = async () => {
-    if (isSharing) return;
-    setIsSharing(true);
-
-    const result = await shareWishAction(wishId, version, visibility);
-    if (result.ok) {
-      router.replace(donePath);
-      return;
+  const {
+    watch,
+    setValue,
+    handleSubmit,
+    setError,
+    clearErrors,
+    formState: { isSubmitting, errors },
+  } = useWishForm<{ visibility: Visibility }>({
+    defaultValues: { visibility: "ACADEMY" },
+  });
+  const visibility = watch("visibility");
+  const sharing = useRef(false);
+  const share = handleSubmit(async ({ visibility }) => {
+    if (sharing.current) return;
+    sharing.current = true;
+    clearErrors("root");
+    try {
+      const result = await shareWishAction(wishId, version, visibility);
+      if (result.ok) {
+        router.replace(donePath);
+        return;
+      }
+      setError("root", { message: result.message });
+      sharing.current = false;
+    } catch {
+      sharing.current = false;
+      setError("root", { message: "공유하지 못했어요. 다시 시도해주세요." });
     }
-    setIsSharing(false);
-    setError(result.message);
-  };
+  });
+  const error = errors.root?.message;
 
   return (
-    <>
+    <form onSubmit={share}>
       <div className="flex items-start px-4 pt-5 pb-6">
         <h2 className="text-fg-neutral text-[24px] leading-7 font-semibold tracking-[-0.3px]">
           공개 대상
@@ -64,7 +79,39 @@ export function WishShareWriteForm({
             type="button"
             role="radio"
             aria-checked={item.value === visibility}
-            onClick={() => setVisibility(item.value)}
+            tabIndex={item.value === visibility ? 0 : -1}
+            onKeyDown={(event) => {
+              if (
+                ![
+                  "ArrowLeft",
+                  "ArrowRight",
+                  "ArrowUp",
+                  "ArrowDown",
+                  "Home",
+                  "End",
+                ].includes(event.key)
+              )
+                return;
+              event.preventDefault();
+              const next =
+                event.key === "Home"
+                  ? "ACADEMY"
+                  : event.key === "End"
+                    ? "FOLLOWERS"
+                    : visibility === "ACADEMY"
+                      ? "FOLLOWERS"
+                      : "ACADEMY";
+              setValue("visibility", next, { shouldDirty: true });
+              const buttons =
+                event.currentTarget.parentElement?.querySelectorAll<HTMLButtonElement>(
+                  '[role="radio"]',
+                );
+              buttons?.[next === "ACADEMY" ? 0 : 1]?.focus();
+            }}
+            disabled={isSubmitting || sharing.current}
+            onClick={() =>
+              setValue("visibility", item.value, { shouldDirty: true })
+            }
             className="flex items-center gap-3 text-left"
           >
             <Image
@@ -87,16 +134,21 @@ export function WishShareWriteForm({
         <Button
           size="xlarge"
           className="w-full"
-          isLoading={isSharing}
-          onClick={() => void share()}
+          type="submit"
+          isLoading={isSubmitting}
+          disabled={sharing.current}
         >
           공유하기
         </Button>
       </div>
 
-      {error === null ? null : (
-        <Toast message={error} tone="danger" onClose={() => setError(null)} />
+      {error === undefined ? null : (
+        <Toast
+          message={error}
+          tone="danger"
+          onClose={() => clearErrors("root")}
+        />
       )}
-    </>
+    </form>
   );
 }

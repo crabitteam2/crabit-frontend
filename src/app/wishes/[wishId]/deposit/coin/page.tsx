@@ -1,12 +1,9 @@
-import { notFound, redirect } from "next/navigation";
+import { readAmountQuery, queryValue } from "@/lib/forms/wish-form-query";
+import { FormQueryError } from "@/app/wishes/_components/form-query-error";
+import { notFound } from "next/navigation";
 import { DepositCoinScreen } from "../../../_components/deposit-coin-screen";
 import type { FundCounterpartRef } from "../../../_components/fund-counterpart";
-import {
-  findCounterpart,
-  firstQueryValue,
-  loadFundFlow,
-  parseAmount,
-} from "../../fund-flow";
+import { findCounterpart, loadFundFlow } from "../../fund-flow";
 
 export default async function DepositCoinPage({
   params,
@@ -21,11 +18,16 @@ export default async function DepositCoinPage({
 
   const selectPath = `/wishes/${wishId}/deposit`;
   const query = await searchParams;
-  const source = findCounterpart(view, firstQueryValue(query.from));
-  if (source === null) redirect(selectPath);
+  const source = findCounterpart(view, queryValue(query, "from"));
+  if (source === null) return <FormQueryError backHref={selectPath} />;
 
-  const amount = parseAmount(query.amount);
-  if (amount === 0) redirect(selectPath);
+  const available =
+    source.kind === "card" ? source.card.availableBalance : source.wish.amount;
+  const amount = readAmountQuery(
+    query,
+    Math.min(available ?? -1, view.wish.targetAmount - view.wish.amount),
+  );
+  if (amount === null) return <FormQueryError backHref={selectPath} />;
 
   const sourceRef: FundCounterpartRef =
     source.kind === "card"

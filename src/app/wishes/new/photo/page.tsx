@@ -1,4 +1,9 @@
-import { notFound } from "next/navigation";
+import {
+  queryValue,
+  readWishQuery,
+  serializeWish,
+} from "@/lib/forms/wish-form-query";
+import { FormQueryError } from "@/app/wishes/_components/form-query-error";
 import { WishPhotoForm } from "../_components/wish-photo-form";
 
 export default async function NewWishPhotoPage({
@@ -7,13 +12,12 @@ export default async function NewWishPhotoPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
-  const cardBalanceAccountId = read(query, "cardBalanceAccountId");
-  if (cardBalanceAccountId === undefined) notFound();
-  const forwarded = new URLSearchParams();
-  for (const [key, value] of Object.entries(query)) {
-    if (value === undefined) continue;
-    forwarded.set(key, Array.isArray(value) ? (value[0] ?? "") : value);
-  }
+  const cardBalanceAccountId = queryValue(query, "cardBalanceAccountId");
+  const values = readWishQuery(query);
+  if (!values || !cardBalanceAccountId?.trim())
+    return <FormQueryError backHref="/wishes/new" />;
+  const forwarded = serializeWish(values);
+  forwarded.set("cardBalanceAccountId", cardBalanceAccountId);
 
   return (
     <WishPhotoForm
@@ -23,12 +27,4 @@ export default async function NewWishPhotoPage({
       cardBalanceAccountId={cardBalanceAccountId}
     />
   );
-}
-
-function read(
-  params: Record<string, string | string[] | undefined>,
-  key: string,
-) {
-  const raw = params[key];
-  return Array.isArray(raw) ? raw[0] : raw;
 }

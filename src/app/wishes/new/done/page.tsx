@@ -1,16 +1,13 @@
+import { FormQueryError } from "@/app/wishes/_components/form-query-error";
+import {
+  fromIsoDate,
+  toSavingPeriodLabel,
+} from "@/app/wishes/_components/wish-period-format";
 import { notFound } from "next/navigation";
 import { getWish } from "@/lib/http/wishes";
 import { unwrapResult } from "@/lib/http/result";
 import { loadAccountContext } from "../../load-account";
 import { WishCreatedScreen } from "../_components/wish-created-screen";
-
-function read(
-  params: Record<string, string | string[] | undefined>,
-  key: string,
-) {
-  const raw = params[key];
-  return Array.isArray(raw) ? raw[0] : raw;
-}
 
 export default async function NewWishDonePage({
   searchParams,
@@ -18,8 +15,9 @@ export default async function NewWishDonePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
-  const wishId = read(query, "wishId");
-  if (wishId === undefined) notFound();
+  const wishId = query.wishId;
+  if (typeof wishId !== "string" || !wishId.trim())
+    return <FormQueryError backHref="/wishes/new" />;
   const { client, cardBalanceAccountId } = await loadAccountContext();
   const result = await getWish(client, { cardBalanceAccountId, wishId });
   if (!result.ok && result.error.status === 404) notFound();
@@ -27,7 +25,10 @@ export default async function NewWishDonePage({
   const period =
     wish.startDate === null || wish.targetDate === null
       ? null
-      : `${toShortDate(wish.startDate)} ~ ${toShortDate(wish.targetDate)}`;
+      : toSavingPeriodLabel({
+          start: fromIsoDate(wish.startDate),
+          end: fromIsoDate(wish.targetDate),
+        });
 
   return (
     <WishCreatedScreen
@@ -39,15 +40,4 @@ export default async function NewWishDonePage({
       closeHref="/"
     />
   );
-}
-
-const shortDateFormatter = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Seoul",
-  year: "2-digit",
-  month: "2-digit",
-  day: "2-digit",
-});
-
-function toShortDate(value: string) {
-  return shortDateFormatter.format(new Date(value)).replaceAll("-", ".");
 }

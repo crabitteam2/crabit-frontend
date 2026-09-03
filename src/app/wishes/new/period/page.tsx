@@ -1,13 +1,6 @@
-import { notFound } from "next/navigation";
+import { queryValue, readWishQuery } from "@/lib/forms/wish-form-query";
+import { FormQueryError } from "@/app/wishes/_components/form-query-error";
 import { WishPeriodForm } from "../_components/wish-period-form";
-
-function read(
-  params: Record<string, string | string[] | undefined>,
-  key: string,
-) {
-  const raw = params[key];
-  return Array.isArray(raw) ? raw[0] : raw;
-}
 
 export default async function NewWishPeriodPage({
   searchParams,
@@ -15,17 +8,19 @@ export default async function NewWishPeriodPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
-  const cardBalanceAccountId = read(query, "cardBalanceAccountId");
-  if (cardBalanceAccountId === undefined) notFound();
-  const parsed = Number(read(query, "targetAmount") ?? 0);
+  const cardBalanceAccountId = queryValue(query, "cardBalanceAccountId");
+  const values = readWishQuery(query);
+  if (!values || !cardBalanceAccountId?.trim())
+    return <FormQueryError backHref="/wishes/new" />;
 
   return (
     <WishPeriodForm
       backHref="/wishes/new"
       nextPath="/wishes/new/photo"
       cardBalanceAccountId={cardBalanceAccountId}
-      purpose={read(query, "purpose") ?? ""}
-      targetAmount={Number.isFinite(parsed) ? parsed : 0}
+      purpose={values.purpose}
+      targetAmount={values.targetAmount}
+      initialRange={values.range}
     />
   );
 }

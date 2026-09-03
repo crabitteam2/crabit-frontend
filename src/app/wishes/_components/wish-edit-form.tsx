@@ -15,6 +15,17 @@ import {
   savePendingWishPhoto,
   stableWishPhotoKey,
 } from "@/app/wishes/new/_components/photo-storage";
+
+import { useWishForm } from "@/lib/forms/use-wish-form";
+import { formEnter } from "@/lib/forms/form-keyboard";
+import {
+  purposeError,
+  amountError,
+  periodError,
+  normalizePurpose,
+  parseKrw,
+  formatKrw,
+} from "@/lib/forms/wish-validation";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -27,11 +38,7 @@ import {
 } from "@/lib/http/wish-photos";
 import { patchWish } from "@/lib/http/wishes";
 import { ScreenHeader } from "./screen-header";
-import {
-  fromPeriodLabel,
-  toIsoDate,
-  toPeriodLabel,
-} from "./wish-period-format";
+import { fromPeriodLabel, toPeriodLabel } from "./wish-period-format";
 
 interface WishEditFormProps {
   backHref: string;
@@ -39,6 +46,7 @@ interface WishEditFormProps {
   purpose: string;
   targetAmount: number;
   period: string | null;
+  currentAmount?: number;
   cardBalanceAccountId: string;
   wishId: string;
   version: number;
@@ -51,6 +59,7 @@ export function WishEditForm({
   purpose,
   targetAmount,
   period,
+  currentAmount = 0,
   cardBalanceAccountId,
   wishId,
   version,
@@ -60,9 +69,23 @@ export function WishEditForm({
   const [client] = useState(() => createBrowserApiClient());
   const scope = `edit:${wishId}`;
   const photoInputRef = useRef<HTMLInputElement>(null);
-  const [nextPurpose, setNextPurpose] = useState("");
-  const [nextAmount, setNextAmount] = useState("");
-  const [range, setRange] = useState(() => fromPeriodLabel(period));
+  const busy = useRef(false);
+  const initialRange = fromPeriodLabel(period);
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    getValues,
+    watch,
+    setFocus,
+    formState: { errors },
+  } = useWishForm({
+    defaultValues: {
+      purpose,
+      amount: formatKrw(String(targetAmount)),
+      range: initialRange,
+    },
+  });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -74,9 +97,8 @@ export function WishEditForm({
   const [error, setError] = useState<string | null>(null);
   const box = useKeyboardViewport();
   const isKeyboardOpen = box?.isKeyboardOpen ?? false;
-
-  const digits = nextAmount.replace(/\D/g, "");
-  const amount = digits === "" ? 0 : Number(digits);
+  const values = watch();
+  const range = values.range;
   const nextPeriod = toPeriodLabel(range);
   const displayedPhotoUrl = removeCurrentPhoto
     ? null
@@ -86,13 +108,16 @@ export function WishEditForm({
       null);
   const isSkippingPeriod = isCalendarOpen && range.start === null;
   const canSubmit =
-    nextPurpose.trim() !== "" ||
-    amount > 0 ||
-    nextPeriod !== (period ?? "") ||
-    selectedPhoto !== null ||
-    pendingPhoto !== null ||
-    removeCurrentPhoto;
-
+    !purposeError(values.purpose) &&
+    !amountError(values.amount, undefined, currentAmount) &&
+    !periodError(range) &&
+    (normalizePurpose(values.purpose) !== normalizePurpose(purpose) ||
+      parseKrw(values.amount) !== targetAmount ||
+      range.start !== initialRange.start ||
+      range.end !== initialRange.end ||
+      selectedPhoto !== null ||
+      pendingPhoto !== null ||
+      removeCurrentPhoto);
   useEffect(() => {
     setPendingPhoto(readWishPhotoUploadState(scope).pendingPhoto);
   }, [scope]);
@@ -102,12 +127,9 @@ export function WishEditForm({
     return () => URL.revokeObjectURL(previewUrl);
   }, [previewUrl]);
 
-  const submit = async () => {
-    if (isCalendarOpen) {
-      setIsCalendarOpen(false);
-      return;
-    }
-    if (!canSubmit || isSubmitting) return;
+  const submit = handleSubmit(async (values) => {
+    if (!canSubmit || busy.current) return;
+    busy.current = true;
     setIsSubmitting(true);
     setError(null);
 
@@ -139,14 +161,18 @@ export function WishEditForm({
 
       const body: components["schemas"]["WishMergePatch"] = {
         expectedVersion: version,
-        ...(nextPurpose.trim() === "" ? {} : { purpose: nextPurpose }),
-        ...(amount === 0 ? {} : { targetAmount: amount }),
-        ...(nextPeriod === (period ?? "")
+        ...(normalizePurpose(values.purpose) === normalizePurpose(purpose)
           ? {}
-          : {
-              startDate: toIsoDate(range.start),
-              targetDate: toIsoDate(range.end),
-            }),
+          : { purpose: normalizePurpose(values.purpose) }),
+        ...(parseKrw(values.amount) === targetAmount
+          ? {}
+          : { targetAmount: parseKrw(values.amount)! }),
+        ...(values.range.start === initialRange.start
+          ? {}
+          : { startDate: values.range.start?.replaceAll(".", "-") ?? null }),
+        ...(values.range.end === initialRange.end
+          ? {}
+          : { targetDate: values.range.end?.replaceAll(".", "-") ?? null }),
         ...(removeCurrentPhoto
           ? { photoId: null }
           : candidate === null
@@ -172,9 +198,10 @@ export function WishEditForm({
     } catch {
       setError("사진을 처리하지 못했어요. 기존 사진은 그대로 유지돼요.");
     } finally {
+      busy.current = false;
       setIsSubmitting(false);
     }
-  };
+  });
 
   const cancelPending = async () => {
     if (pendingPhoto === null) return true;
@@ -191,7 +218,7 @@ export function WishEditForm({
   };
 
   const pickPhoto = async (file: File | undefined) => {
-    if (file === undefined) return;
+    if (file === undefined || busy.current) return;
     setError(null);
     if (!(await cancelPending())) return;
     setSelectedPhoto(file);
@@ -207,10 +234,13 @@ export function WishEditForm({
   };
 
   return (
-    <div
+    <form
+      noValidate
+      onSubmit={submit}
+      onKeyDown={formEnter}
       className={
         isKeyboardOpen
-          ? "max-w-app fixed inset-x-0 z-10 mx-auto flex w-full flex-col bg-white"
+          ? "max-w-app fixed inset-x-0 z-10 mx-auto flex w-full flex-col overflow-hidden bg-white [&>header]:shrink-0"
           : "flex min-h-svh flex-col"
       }
       style={
@@ -225,90 +255,131 @@ export function WishEditForm({
         spacing="loose"
       />
 
-      {isCalendarOpen ? null : (
-        <>
-          <div className="flex flex-col items-center gap-3 px-4 pb-5">
-            {displayedPhotoUrl === null ? (
-              <button
-                type="button"
-                onClick={() => photoInputRef.current?.click()}
-                className="bg-brand-weak text-fg-brand flex size-24 items-center justify-center rounded-full font-semibold"
-              >
-                사진 추가
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => photoInputRef.current?.click()}
-                aria-label="위시 사진 변경"
-              >
-                <Image
-                  src={displayedPhotoUrl}
-                  alt="위시 사진"
-                  width={96}
-                  height={96}
-                  unoptimized
-                  className="size-24 rounded-full object-cover"
-                />
-              </button>
-            )}
-            {photo !== null || previewUrl !== null || pendingPhoto !== null ? (
-              <button
-                type="button"
-                onClick={() => void removePhoto()}
-                className="text-e1 text-error"
-              >
-                사진 삭제
-              </button>
-            ) : null}
-            <input
-              ref={photoInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(event) => void pickPhoto(event.target.files?.[0])}
-            />
-          </div>
-          <div className="px-4 pt-5 pb-[76px]">
-            <Input
-              label="위시"
-              variant="filled"
-              placeholder={purpose}
-              value={nextPurpose}
-              onChange={(event) => setNextPurpose(event.target.value)}
-            />
-          </div>
+      <div
+        className={
+          isKeyboardOpen ? "min-h-0 flex-1 overflow-y-auto" : undefined
+        }
+      >
+        {isCalendarOpen ? null : (
+          <>
+            <div className="flex flex-col items-center gap-3 px-4 pb-5">
+              {displayedPhotoUrl === null ? (
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => photoInputRef.current?.click()}
+                  className="bg-brand-weak text-fg-brand flex size-24 items-center justify-center rounded-full font-semibold"
+                >
+                  사진 추가
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => photoInputRef.current?.click()}
+                  aria-label="위시 사진 변경"
+                >
+                  <Image
+                    src={displayedPhotoUrl}
+                    alt="위시 사진"
+                    width={96}
+                    height={96}
+                    unoptimized
+                    className="size-24 rounded-full object-cover"
+                  />
+                </button>
+              )}
+              {photo !== null ||
+              previewUrl !== null ||
+              pendingPhoto !== null ? (
+                <button
+                  type="button"
+                  disabled={isSubmitting}
+                  onClick={() => void removePhoto()}
+                  className="text-e1 text-error"
+                >
+                  사진 삭제
+                </button>
+              ) : null}
+              <input
+                ref={photoInputRef}
+                type="file"
+                disabled={isSubmitting}
+                accept="image/*"
+                className="hidden"
+                onChange={(event) => void pickPhoto(event.target.files?.[0])}
+              />
+            </div>
+            <div className="px-4 pt-5 pb-[76px]">
+              <Input
+                label="위시"
+                variant="filled"
+                {...register("purpose", {
+                  validate: (value) => purposeError(value) ?? true,
+                })}
+                type="text"
+                enterKeyHint="next"
+                onKeyDown={(event) =>
+                  formEnter(event, () => setFocus("amount"))
+                }
+                error={errors.purpose?.message}
+              />
+            </div>
 
-          <div className="px-4 py-5">
-            <Input
-              label="위시 금액"
-              variant="filled"
-              inputMode="numeric"
-              placeholder={`${targetAmount.toLocaleString("ko-KR")}원`}
-              value={digits === "" ? "" : amount.toLocaleString("ko-KR")}
-              onChange={(event) => setNextAmount(event.target.value)}
-            />
-          </div>
-        </>
-      )}
+            <div className="px-4 py-5">
+              <Input
+                label="위시 금액"
+                variant="filled"
+                {...register("amount", {
+                  validate: (value) =>
+                    amountError(value, undefined, currentAmount) ?? true,
+                  onBlur: () =>
+                    setValue("amount", formatKrw(getValues("amount"))),
+                })}
+                type="text"
+                inputMode="numeric"
+                enterKeyHint="done"
+                error={errors.amount?.message}
+              />
+            </div>
+          </>
+        )}
 
-      <div className={`px-4 py-5 ${isCalendarOpen ? "pt-5" : ""}`}>
-        <Input
-          label="위시 기간"
-          variant="filled"
-          readOnly
-          value={nextPeriod}
-          placeholder="설정된 기간 없음"
-          onFocus={() => setIsCalendarOpen(true)}
-          onClick={() => setIsCalendarOpen(true)}
-        />
-      </div>
-
-      {isCalendarOpen ? (
-        <div className="px-[10px]">
-          <Calendar value={range} onChange={setRange} />
+        <div className={`px-4 py-5 ${isCalendarOpen ? "pt-5" : ""}`}>
+          <Input
+            ref={
+              register("range", {
+                validate: (value) => periodError(value) ?? true,
+              }).ref
+            }
+            error={errors.range?.message}
+            label="위시 기간"
+            variant="filled"
+            readOnly
+            inputMode="none"
+            value={nextPeriod}
+            placeholder="설정된 기간 없음"
+            onClick={() => setIsCalendarOpen(true)}
+            onKeyDown={(event) =>
+              formEnter(event, () => setIsCalendarOpen(true))
+            }
+          />
         </div>
-      ) : null}
+
+        {isCalendarOpen ? (
+          <div className="px-[10px]">
+            <Calendar
+              value={range}
+              onChange={(range) =>
+                setValue("range", range, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+            />
+          </div>
+        ) : null}
+      </div>
 
       {error === null ? null : (
         <p role="alert" className="text-fg-error px-4 pt-4 text-sm">
@@ -316,23 +387,29 @@ export function WishEditForm({
         </p>
       )}
 
-      <div className="flex-1" />
+      {isKeyboardOpen ? null : <div className="flex-1" />}
 
       <div
-        className={`px-4 ${isKeyboardOpen ? "pb-5" : "pb-[calc(55px+env(safe-area-inset-bottom))]"}`}
+        className={`shrink-0 px-4 ${isKeyboardOpen ? "pb-5" : "pb-[calc(55px+env(safe-area-inset-bottom))]"}`}
       >
         <Button
           size="xlarge"
           variant={isSkippingPeriod ? "weak" : "fill"}
           className="w-full"
-          disabled={!isCalendarOpen && !canSubmit}
+          type={isCalendarOpen ? "button" : "submit"}
+          onClick={isCalendarOpen ? () => setIsCalendarOpen(false) : undefined}
           isLoading={isSubmitting}
+          disabled={
+            !isCalendarOpen &&
+            !canSubmit &&
+            !purposeError(values.purpose) &&
+            !amountError(values.amount, undefined, currentAmount)
+          }
           onPointerDown={(event) => event.preventDefault()}
-          onClick={() => void submit()}
         >
           {isSkippingPeriod ? "넘어가기" : "다음"}
         </Button>
       </div>
-    </div>
+    </form>
   );
 }

@@ -1,9 +1,9 @@
+import { queryValue } from "@/lib/forms/wish-form-query";
 import { notFound, redirect } from "next/navigation";
 import { AmountForm } from "../../../_components/amount-form";
 import {
   CARD_COUNTERPART_ID,
   findCounterpart,
-  firstQueryValue,
   loadFundFlow,
 } from "../../fund-flow";
 
@@ -21,7 +21,7 @@ export default async function WithdrawAmountPage({
   const selectPath = `/wishes/${wishId}/withdraw`;
   const destination = findCounterpart(
     view,
-    firstQueryValue((await searchParams).to),
+    queryValue(await searchParams, "to"),
   );
   if (destination === null) redirect(selectPath);
 

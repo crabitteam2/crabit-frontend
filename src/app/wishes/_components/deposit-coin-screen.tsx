@@ -62,7 +62,9 @@ export function DepositCoinScreen({
       return;
     }
 
-    router.replace(`/wishes/${wishId}/deposit/done?amount=${amount}`);
+    router.replace(
+      `/wishes/${wishId}/deposit/done?amount=${amount}&from=${encodeURIComponent(source.kind === "card" ? "card" : source.wishId)}`,
+    );
   };
 
   return (
