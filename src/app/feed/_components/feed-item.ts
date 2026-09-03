@@ -41,11 +41,24 @@ export function toFeedCardItem(
     purpose: card.purpose,
     targetAmount: card.targetAmount,
     percent: card.progressPercent,
-    state: card.kind === "COMPLETION" ? "COMPLETED" : "IN_PROGRESS",
+    state: toWishItemState(card),
     startDate: fromIsoDate(card.startDate),
     targetDate: fromIsoDate(card.targetDate),
     ...(card.photo == null ? {} : { imageUrl: card.photo.variants.large }),
   };
+}
+
+function toWishItemState(
+  card: components["schemas"]["SharedCard"],
+): WishItemState {
+  switch (card.kind) {
+    case "ABANDONMENT":
+      return card.state;
+    case "COMPLETION":
+      return "COMPLETED";
+    case "PROGRESS":
+      return "IN_PROGRESS";
+  }
 }
 
 /** 다른 학생 프로필 화면이 그리는 데 필요한 정보입니다. */

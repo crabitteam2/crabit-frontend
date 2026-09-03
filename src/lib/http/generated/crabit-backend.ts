@@ -202,7 +202,7 @@ export interface paths {
         };
         /**
          * 학원에서 현재 볼 수 있는 공유 카드 목록 조회
-         * @description 조회할 때마다 학원 소속, 위시 visibility, 방향성 팔로우 관계, 양방향 차단을 다시 평가하고 ownerId를 생략하면 소유자 본인은 제외합니다. ownerId를 명시하면 해당 학생의 허용된 카드만 반환하며, 본인을 지정하면 현재 공개 중인 자기 카드도 조회합니다. PRIVATE 카드는 포함하지 않습니다. photoId, object key, 과거 signed URL은 이 권한 검사를 대신하지 않습니다. PRIVATE 위시는 카드를 생성하지 않습니다. 첨부 사진이 하나라도 있으면 모든 항목의 새 5분 비공개 URL을 발급한 뒤에만 전체 페이지를 반환하며 signing 실패는 부분 페이지나 거짓 null 없이 503입니다. 임시 정렬은 contentUpdatedAt DESC, sharedCardId DESC 순입니다. 현재는 정렬 매개변수를 지원하지 않습니다. 이 임시 정책에서는 콘텐츠 또는 게시 상태가 바뀔 때만 카드 순서가 달라집니다. 팔로우 우선순위와 임베딩 기반 추천 정렬은 향후 계약에서 정할 사항이며 이 버전에서는 사용하지 않습니다. FOLLOWERS는 선택 학원의 현재 viewer → owner 팔로우가 있어야 비소유자에게 공개됩니다. owner → viewer만으로는 공개되지 않으며 상호 팔로우는 필요하지 않습니다. 진행·완료 공유 카드의 목록·상세에 동일하게 적용합니다. 기존 소유자 예외, PRIVATE·ACADEMY 의미, 현재 학원 소속, 공유 카드의 카드 계정 자격과 종결 상태 필터, 전역 양방향 차단 우선순위를 유지합니다. 언팔로우·차단 후 다음 조회부터 제한된 카드를 숨기며 직접 조회는 SHARED_CARD_NOT_FOUND 경계를 유지합니다. ownerId 조건은 SQL LIMIT와 keyset pagination 전에 적용합니다. 대상이 없거나 다른 학원·탈퇴·차단 상태이거나 현재 볼 수 있는 카드가 없으면 이유를 구별하지 않고 items: [], nextCursor: null인 빈 페이지를 반환합니다. 모든 페이지에서 현재 조회자와 소유자의 학원 소속, 열린 카드 계정 자격, 공개 상태, 삭제·포기 제외와 양방향 차단을 다시 평가합니다. 새 불투명 커서는 기존 relationship_cursor_key의 HMAC으로 서명하고 형식 version, operation=listAcademySharedCards, viewerId, academyId, ownerId 또는 명시적 무필터 표식, 마지막 contentUpdatedAt/sharedCardId 튜플을 묶습니다. 형식 오류·변조·미지원 버전·구형 무서명 커서 또는 작업·조회자·학원·작성자·필터 유무가 다른 커서는 400 MALFORMED_REQUEST이며 cursor를 제거하고 첫 페이지부터 다시 조회해야 합니다. 같은 문맥의 유효한 cursor는 유효한 limit 변경을 허용합니다. 권한을 커서에 저장해 재사용하지 않습니다. 안정된 데이터는 중복·누락 없이 순회하지만 동시 콘텐츠 변경이나 완료 카드 교체에 대한 스냅샷 보장은 없습니다. 학생 단건 조회와 목록 사이에도 원자적 스냅샷을 보장하지 않습니다.
+         * @description 조회할 때마다 학원 소속, 위시 visibility, 방향성 팔로우 관계, 양방향 차단을 다시 평가하고 ownerId를 생략하면 소유자 본인은 제외합니다. ownerId를 명시하면 해당 학생의 허용된 카드만 반환하며, 본인을 지정하면 현재 공개 중인 자기 카드도 조회합니다. PRIVATE 카드는 포함하지 않습니다. photoId, object key, 과거 signed URL은 이 권한 검사를 대신하지 않습니다. PRIVATE 위시는 카드를 생성하지 않으며 비공개 또는 과거 비공개 상태에서 포기한 위시는 소유자가 FOLLOWERS 또는 ACADEMY로 명시적으로 공개할 때까지 카드를 만들지 않습니다. 첨부 사진이 하나라도 있으면 모든 항목의 새 5분 비공개 URL을 발급한 뒤에만 전체 페이지를 반환하며 signing 실패는 부분 페이지나 거짓 null 없이 503입니다. 임시 정렬은 contentUpdatedAt DESC, sharedCardId DESC 순입니다. 현재는 정렬 매개변수를 지원하지 않습니다. 이 임시 정책에서는 콘텐츠 또는 게시 상태가 바뀔 때만 카드 순서가 달라집니다. 팔로우 우선순위와 임베딩 기반 추천 정렬은 향후 계약에서 정할 사항이며 이 버전에서는 사용하지 않습니다. FOLLOWERS는 선택 학원의 현재 viewer → owner 팔로우가 있어야 비소유자에게 공개됩니다. owner → viewer만으로는 공개되지 않으며 상호 팔로우는 필요하지 않습니다. 진행·완료·포기 공유 카드의 목록·상세에 동일하게 적용합니다. 기존 소유자 예외, PRIVATE·ACADEMY 의미, 현재 학원 소속, 공유 카드의 카드 계정 자격과 각 변형의 게시 규칙, 전역 양방향 차단 우선순위를 유지합니다. 현재 공개된 IN_PROGRESS 또는 AMOUNT_REACHED 위시를 포기하면 같은 sharedCardId의 PROGRESS 카드를 ABANDONMENT 카드 하나로 원자적으로 교체하고 contentUpdatedAt을 한 번만 갱신합니다. 그 포기 요청의 멱등 재생은 다른 카드나 추가 정렬 갱신을 만들지 않습니다. ABANDONMENT의 progressPercent는 포기 직전 고정된 적립액에서 한 번 계산한 공개 값이며 현재 0원 배정이나 정확한 과거 금액은 반환하지 않습니다. 포기 카드는 추천 후보나 대표 위시가 아닙니다. 언팔로우·차단 후 다음 조회부터 제한된 카드를 숨기며 직접 조회는 SHARED_CARD_NOT_FOUND 경계를 유지합니다. ownerId 조건은 SQL LIMIT와 keyset pagination 전에 적용합니다. 대상이 없거나 다른 학원·탈퇴·차단 상태이거나 현재 볼 수 있는 카드가 없으면 이유를 구별하지 않고 items: [], nextCursor: null인 빈 페이지를 반환합니다. 모든 페이지에서 현재 조회자와 소유자의 학원 소속, 열린 카드 계정 자격, 공개 상태, 삭제 여부와 양방향 차단을 다시 평가합니다. 새 불투명 커서는 기존 relationship_cursor_key의 HMAC으로 서명하고 형식 version, operation=listAcademySharedCards, viewerId, academyId, ownerId 또는 명시적 무필터 표식, 마지막 contentUpdatedAt/sharedCardId 튜플을 묶습니다. 형식 오류·변조·미지원 버전·구형 무서명 커서 또는 작업·조회자·학원·작성자·필터 유무가 다른 커서는 400 MALFORMED_REQUEST이며 cursor를 제거하고 첫 페이지부터 다시 조회해야 합니다. 같은 문맥의 유효한 cursor는 유효한 limit 변경을 허용합니다. 권한을 커서에 저장해 재사용하지 않습니다. 안정된 데이터는 중복·누락 없이 순회하지만 동시 콘텐츠 변경이나 완료·포기 카드 교체에 대한 스냅샷 보장은 없습니다. 학생 단건 조회와 목록 사이에도 원자적 스냅샷을 보장하지 않습니다.
          */
         get: operations["listAcademySharedCards"];
         put?: never;
@@ -225,7 +225,7 @@ export interface paths {
         };
         /**
          * 현재 볼 수 있는 공유 카드 조회
-         * @description 소유자는 자신의 카드가 현재 공개 상태라면 조회할 수 있습니다. 다른 호출자는 현재 학원 소속, 위시 visibility, 방향성 팔로우 관계와 양방향 차단을 매번 다시 통과해야 하며 photoId나 과거 signed URL은 권한을 부여하지 않습니다. 사진이 있으면 새 5분 비공개 URL 세 개를 모두 발급한 뒤 반환하고 signing 실패는 거짓 null 없이 503입니다. 이미 발급된 URL은 접근이 철회되어도 최대 기존 5분 만료까지만 유효할 수 있고 새 URL은 발급하지 않습니다. 그 밖의 리소스 부재나 공개 범위 조건 위반은 모두 숨깁니다. FOLLOWERS는 선택 학원의 현재 viewer → owner 팔로우가 있어야 비소유자에게 공개됩니다. owner → viewer만으로는 공개되지 않으며 상호 팔로우는 필요하지 않습니다. 진행·완료 공유 카드의 목록·상세에 동일하게 적용합니다. 기존 소유자 예외, PRIVATE·ACADEMY 의미, 현재 학원 소속, 공유 카드의 카드 계정 자격과 종결 상태 필터, 전역 양방향 차단 우선순위를 유지합니다. 언팔로우·차단 후 다음 조회부터 제한된 카드를 숨기며 직접 조회는 SHARED_CARD_NOT_FOUND 경계를 유지합니다.
+         * @description 소유자는 자신의 카드가 현재 공개 상태라면 조회할 수 있습니다. 다른 호출자는 현재 학원 소속, 위시 visibility, 방향성 팔로우 관계와 양방향 차단을 매번 다시 통과해야 하며 photoId나 과거 signed URL은 권한을 부여하지 않습니다. 사진이 있으면 새 5분 비공개 URL 세 개를 모두 발급한 뒤 반환하고 signing 실패는 거짓 null 없이 503입니다. 이미 발급된 URL은 접근이 철회되어도 최대 기존 5분 만료까지만 유효할 수 있고 새 URL은 발급하지 않습니다. 그 밖의 리소스 부재나 공개 범위 조건 위반은 모두 숨깁니다. FOLLOWERS는 선택 학원의 현재 viewer → owner 팔로우가 있어야 비소유자에게 공개됩니다. owner → viewer만으로는 공개되지 않으며 상호 팔로우는 필요하지 않습니다. 진행·완료·포기 공유 카드의 목록·상세에 동일하게 적용합니다. 기존 소유자 예외, PRIVATE·ACADEMY 의미, 현재 학원 소속, 공유 카드의 카드 계정 자격과 각 변형의 게시 규칙, 전역 양방향 차단 우선순위를 유지합니다. 공개된 진행 카드를 포기하면 같은 sharedCardId의 ABANDONMENT 카드로 원자적으로 교체하며 공개 progressPercent는 포기 직전 고정된 적립액에서 한 번 계산됩니다. 정확한 과거 금액, 포기 뒤 현재 0원 배정, 위시·계정 식별자는 이 응답에 포함하지 않습니다. 비공개 또는 과거 비공개 포기 위시는 명시적으로 공개되기 전까지 조회할 카드가 없고, 삭제하거나 PRIVATE로 바꾸면 카드를 제거합니다. 언팔로우·차단 후 다음 조회부터 제한된 카드를 숨기며 직접 조회는 SHARED_CARD_NOT_FOUND 경계를 유지합니다.
          */
         get: operations["getAcademySharedCard"];
         put?: never;
@@ -704,6 +704,44 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AbandonmentSharedCard: {
+            /** @description 임시 정렬에 사용하는 포기 카드 게시 또는 콘텐츠 변경의 RFC 3339 UTC Z 시점입니다. 공개된 진행 카드가 포기로 교체될 때 한 번 갱신되며 멱등 재생이나 조회 시점 권한 검사는 이 값을 바꾸지 않습니다. */
+            contentUpdatedAt: components["schemas"]["UtcInstant"];
+            /**
+             * @description 포기 결과를 게시한 공유 카드임을 식별하는 ABANDONMENT 판별자입니다. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            kind: "ABANDONMENT";
+            /** @description 작성 학생의 안정적인 UUID입니다. 학생 조회의 studentId와 같으며 sharedCardId 및 비공개 wishId와 구별됩니다. 닉네임 변경이나 완료 카드 교체 또는 포기 카드 교체 후에도 유지됩니다. */
+            ownerId: components["schemas"]["Uuid"];
+            /** @description 소유자의 현재 표시 닉네임이며 식별 키가 아닙니다. 작성자 식별은 ownerId를 사용하며 실명, 별도 studentId 속성, 계정 데이터 또는 실제 카드 데이터는 노출하지 않습니다. */
+            ownerNickname: string;
+            /** @description 현재 권한 검사 뒤 발급된 5분 비공개 사진 URL 세트이며 첨부 사진이 없으면 null입니다. 사진 식별자, object key, 과거 signed URL은 노출하지 않습니다. */
+            photo: components["schemas"]["WishPhoto"] | null;
+            /** @description 포기 직전에 불변으로 캡처한 적립액과 targetAmount에서 floor(abandonmentAmount * 100 / targetAmount)로 한 번 계산한 정수입니다. 캡처 금액이 0이면 0이며 null이나 생략으로 바꾸지 않습니다. 100은 캡처 금액이 targetAmount와 같을 때만 반환합니다. 정확한 KRW 금액과 현재 배정 금액은 노출하지 않습니다. */
+            progressPercent: number;
+            /** @description 게시된 NFC 정규화 위시 목적입니다. */
+            purpose: components["schemas"]["Purpose"];
+            /** @description 개인정보를 노출하지 않는 이 공유 카드 프로젝션의 안정적인 UUID입니다. 기반 위시 또는 계정 식별자는 노출하지 않습니다. */
+            sharedCardId: components["schemas"]["Uuid"];
+            /**
+             * Format: date
+             * @description 저장된 위시 시작 달력 날짜 LocalDate를 YYYY-MM-DD 또는 null로 직접 투영합니다. 필드는 항상 존재하며 미지정은 null입니다. 생성 시각이나 오늘 날짜로 보충하거나 시간대를 변환하지 않습니다.
+             */
+            startDate: string | null;
+            /**
+             * @description 이 포기 공유 카드의 고정된 위시 상태 ABANDONED입니다.
+             * @constant
+             */
+            state: "ABANDONED";
+            /** @description 게시된 양의 정수 KRW 목표 금액입니다. 포기 직전 적립액이나 포기 뒤 현재 0원 배정은 노출하지 않습니다. */
+            targetAmount: components["schemas"]["KrwPositive"];
+            /**
+             * Format: date
+             * @description 저장된 위시 목표 달력 날짜 LocalDate를 YYYY-MM-DD 또는 null로 직접 투영합니다. 필드는 항상 존재하며 미지정은 null입니다. 생성 시각이나 오늘 날짜로 보충하거나 시간대를 변환하지 않습니다.
+             */
+            targetDate: string | null;
+        };
         AccountCardBalanceChange: {
             /** @description 이벤트 직후 부호 있는 원장 기준 가용 계정 잔액 음수 값은 유지되며 표시가 고정되지 않습니다. */
             accountAvailableBalanceAfter: components["schemas"]["KrwSigned"];
@@ -1457,9 +1495,9 @@ export interface components {
             /** @description 이 카드 잔액 계정에서 대표로 선택할, 삭제되지 않은 활성 위시의 UUID입니다. */
             wishId: components["schemas"]["Uuid"];
         };
-        SharedCard: components["schemas"]["ProgressSharedCard"] | components["schemas"]["CompletionSharedCard"];
+        SharedCard: components["schemas"]["ProgressSharedCard"] | components["schemas"]["CompletionSharedCard"] | components["schemas"]["AbandonmentSharedCard"];
         SharedCardPage: {
-            /** @description 현재 조회 가능한 진행 카드와 완료 카드를 임시로 contentUpdatedAt DESC, sharedCardId DESC 순으로 정렬합니다. */
+            /** @description 현재 조회 가능한 진행 카드, 완료 카드, 포기 카드를 임시로 contentUpdatedAt DESC, sharedCardId DESC 순으로 정렬합니다. */
             items: components["schemas"]["SharedCard"][];
             /** @description 현재 조회 문맥에 바인딩된 HMAC 서명 불투명 커서입니다. 추가로 조회 가능한 행이 있을 때만 최종 반환 행의 contentUpdatedAt/sharedCardId에서 생성하며 빈 결과와 마지막 페이지는 null입니다. */
             nextCursor: string | null;
@@ -3002,7 +3040,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 현재 조회 가능한 진행 카드와 완료 카드입니다. */
+            /** @description 현재 조회 가능한 진행 카드, 완료 카드, 포기 카드입니다. */
             200: {
                 headers: {
                     "Cache-Control": components["headers"]["CacheControlNoStore"];
@@ -3031,7 +3069,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 현재 조회 가능한 공유 카드 한 건입니다. */
+            /** @description 현재 조회 가능한 진행 카드, 완료 카드 또는 포기 카드 한 건입니다. */
             200: {
                 headers: {
                     "Cache-Control": components["headers"]["CacheControlNoStore"];
