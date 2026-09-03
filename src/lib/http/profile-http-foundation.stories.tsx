@@ -168,7 +168,7 @@ function ProfileHttpFoundation() {
       <section className="flex flex-col gap-3 rounded-2xl bg-[#5c2343] p-5 text-white">
         <h2 className="text-lg font-bold">기능 코드가 사용하는 모듈</h2>
         <p className="text-sm leading-6 text-[#f4dce8]">
-          <Code>friends.ts</Code>, <Code>wishes.ts</Code>,{" "}
+          <Code>follows.ts</Code>, <Code>wishes.ts</Code>,{" "}
           <Code>card-balance-accounts.ts</Code>가 생성된 계약 타입을 사용합니다.
           각 호출은 raw 응답 대신 <Code>ApiResult</Code>를 반환하며, 예외 흐름이
           필요한 소비자는 <Code>unwrapResult()</Code>를 사용할 수 있습니다.

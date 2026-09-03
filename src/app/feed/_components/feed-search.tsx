@@ -54,7 +54,7 @@ export function FeedSearch({ recentSearches }: FeedSearchProps) {
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="검색할 친구를 입력해주세요."
+            placeholder="검색할 학생를 입력해주세요."
             aria-label="학생 검색"
             className="text-fg-neutral placeholder:text-gray-5 min-w-0 flex-1 bg-transparent pl-4 text-[16px] leading-[23px] tracking-[-0.3px] outline-none"
           />
@@ -71,7 +71,7 @@ export function FeedSearch({ recentSearches }: FeedSearchProps) {
       {results.length === 0 ? null : (
         <section>
           <h2 className="text-t1 text-fg-neutral px-4 pt-3 pb-2 font-bold">
-            친구
+            학생
           </h2>
           <div className="px-4 pb-10">
             <div className="bg-pink-1 flex items-center gap-3 overflow-x-auto rounded-[15px] p-4">
