@@ -3,6 +3,7 @@ import type { DateRange } from "@/components/ui/calendar";
 const SEPARATOR = " - ";
 const FULL_DATE_PATTERN = /^\d{4}\.\d{2}\.\d{2}$/;
 const SHORT_DATE_PATTERN = /^\d{2}\.\d{2}\.\d{2}$/;
+const ISO_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 /** `2026.08.21` 형태의 날짜 키를 표시용 `26.08.21`로 줄입니다. */
 export function toShortDate(key: string) {
@@ -46,4 +47,16 @@ export function toPeriodParams(range: DateRange) {
   if (range.start !== null) params.set("startDate", range.start);
   if (range.end !== null) params.set("targetDate", range.end);
   return params;
+}
+
+/** 달력이 쓰는 `2026.09.05` 키를 API가 받는 `2026-09-05`로 바꾸며, 형식이 다르면 null입니다. */
+export function toIsoDate(key: string | null | undefined): string | null {
+  if (key == null) return null;
+  return FULL_DATE_PATTERN.test(key) ? key.replaceAll(".", "-") : null;
+}
+
+/** API가 준 `2026-09-05`를 달력이 쓰는 `2026.09.05` 키로 바꾸며, 형식이 다르면 null입니다. */
+export function fromIsoDate(iso: string | null | undefined): string | null {
+  if (iso == null) return null;
+  return ISO_DATE_PATTERN.test(iso) ? iso.replaceAll("-", ".") : null;
 }

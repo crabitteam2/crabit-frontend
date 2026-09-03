@@ -107,12 +107,16 @@ export function WishHeroContent({
       </div>
 
       <div className="flex flex-col px-4 pt-5">
-        <p className="text-fg-neutral truncate pb-2 text-[20px] leading-7 font-semibold tracking-[-0.3px]">
+        <p
+          className={`text-fg-neutral truncate text-[20px] leading-7 font-semibold tracking-[-0.3px] ${period === null ? "pb-6" : "pb-2"}`}
+        >
           {purpose}
         </p>
-        <p className="text-gray-6 pb-6 text-[14px] leading-7 tracking-[-0.3px]">
-          기간: {period ?? "설정된 기간 없음"}
-        </p>
+        {period === null ? null : (
+          <p className="text-gray-6 pb-6 text-[14px] leading-7 tracking-[-0.3px]">
+            저축 기간: {period}
+          </p>
+        )}
         {showAmount ? (
           <>
             <p className="text-pink-6 flex justify-end font-bold tracking-[-0.3px]">

@@ -3,6 +3,10 @@ import { getWish } from "@/lib/http/wishes";
 import { unwrapResult } from "@/lib/http/result";
 import { loadAccountContext } from "../../../load-account";
 import { WishEditDoneScreen } from "../../../_components/wish-edit-done-screen";
+import {
+  fromIsoDate,
+  toPeriodLabel,
+} from "../../../_components/wish-period-format";
 
 export default async function WishEditDonePage({
   params,
@@ -20,21 +24,11 @@ export default async function WishEditDonePage({
       purpose={wish.purpose}
       targetAmount={wish.targetAmount}
       period={
-        wish.targetDate === null
-          ? null
-          : `${toDateKey(wish.createdAt)} - ${wish.targetDate.replaceAll("-", ".")}`
+        toPeriodLabel({
+          start: fromIsoDate(wish.startDate),
+          end: fromIsoDate(wish.targetDate),
+        }) || null
       }
     />
   );
-}
-
-const dateFormatter = new Intl.DateTimeFormat("en-CA", {
-  timeZone: "Asia/Seoul",
-  year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
-});
-
-function toDateKey(value: string) {
-  return dateFormatter.format(new Date(value)).replaceAll("-", ".");
 }
