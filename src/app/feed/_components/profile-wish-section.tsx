@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { WISH_TONES } from "@/app/wishes/_components/wish-theme";
 import { Button } from "@/components/ui/button";
-import type { Wish } from "@/lib/mock/wishes";
+import type { ProfileWishItem } from "./feed-item";
 import { ProfileWishCard } from "./profile-wish-card";
 
 const FULL_LIST_MAX = 3;
@@ -18,7 +18,7 @@ function toInitialShown(total: number) {
 
 interface ProfileWishSectionProps {
   title: string;
-  wishes: Wish[];
+  wishes: ProfileWishItem[];
 }
 
 export function ProfileWishSection({ title, wishes }: ProfileWishSectionProps) {

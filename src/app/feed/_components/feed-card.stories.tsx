@@ -12,40 +12,41 @@ type Story = StoryObj<typeof meta>;
 
 export const 진행중: Story = {
   args: {
+    href: "/feed/s1",
     card: {
       id: "f1",
-      studentId: "s1",
+      ownerId: "s1",
       ownerNickname: "선형",
-      wish: {
-        id: "fw1",
-        purpose: "여름 방학 캠프",
-        amount: 20_000,
-        targetAmount: 100_000,
-        state: "IN_PROGRESS",
-        startDate: "26.08.24",
-        targetDate: "26.10.25",
-      },
-      sharedAt: "2026-08-26T09:00:00+09:00",
+      purpose: "여름 방학 캠프",
+      targetAmount: 100_000,
+      percent: 20,
+      state: "IN_PROGRESS",
+      startDate: "2026.08.24",
+      targetDate: "2026.10.25",
     },
   },
 };
 
 export const 완료: Story = {
   args: {
+    href: "/feed/s3",
     card: {
       id: "f3",
-      studentId: "s3",
+      ownerId: "s3",
       ownerNickname: "도윤",
-      wish: {
-        id: "fw3",
-        purpose: "스포츠카 레고",
-        amount: 45_000,
-        targetAmount: 45_000,
-        state: "COMPLETED",
-        startDate: "26.01.05",
-        targetDate: "26.05.31",
-      },
-      sharedAt: "2026-08-28T12:10:00+09:00",
+      purpose: "스포츠카 레고",
+      targetAmount: 45_000,
+      percent: 100,
+      state: "COMPLETED",
+      startDate: "2026.01.05",
+      targetDate: "2026.05.31",
     },
+  },
+};
+
+export const 기간없음: Story = {
+  args: {
+    ...진행중.args,
+    card: { ...진행중.args.card, startDate: null, targetDate: null },
   },
 };
