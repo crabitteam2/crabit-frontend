@@ -5,13 +5,13 @@ import { TopButton } from "@/app/wishes/_components/top-button";
 import heroImage from "@/../public/images/feed/profile-hero.png";
 import searchIcon from "@/../public/images/feed/search.svg";
 import arrowLeftIcon from "@/../public/images/wishes/arrow-left.svg";
-import type { Wish } from "@/lib/mock/wishes";
+import type { ProfileWishItem } from "./feed-item";
 import { ProfileWishSection } from "./profile-wish-section";
 
 interface ProfileScreenProps {
   nickname: string;
-  inProgress: Wish[];
-  finished: Wish[];
+  inProgress: ProfileWishItem[];
+  finished: ProfileWishItem[];
   backHref: string;
   /** 팔로우한 사람 수입니다. */
   followingCount: number;

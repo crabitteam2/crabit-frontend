@@ -4,11 +4,10 @@ import { ProfileWishCard } from "./profile-wish-card";
 const wish = {
   id: "w1",
   purpose: "오시리스 D3 2001",
-  amount: 6_500,
-  targetAmount: 50_000,
+  percent: 13,
   state: "IN_PROGRESS" as const,
-  startDate: "26.08.24",
-  targetDate: "26.08.25",
+  startDate: "2026.08.24",
+  targetDate: "2026.08.25",
 };
 
 const meta = {
@@ -25,12 +24,12 @@ export const 진행중: Story = {};
 
 export const 완료: Story = {
   args: {
-    wish: { ...wish, amount: 50_000, state: "COMPLETED" },
+    wish: { ...wish, percent: 100, state: "COMPLETED" },
   },
 };
 
 export const 포기: Story = {
   args: {
-    wish: { ...wish, amount: 32_000, state: "ABANDONED" },
+    wish: { ...wish, percent: 64, state: "ABANDONED" },
   },
 };

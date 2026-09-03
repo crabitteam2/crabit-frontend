@@ -8,17 +8,17 @@ import searchIcon from "@/../public/images/feed/search.svg";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Toast } from "@/components/ui/toast";
-import type { StudentProfile as StudentProfileData } from "@/lib/mock/feed";
+import type { StudentProfileItem } from "./feed-item";
 import { ProfileScreen } from "./profile-screen";
 
-const BLOCKED_MESSAGE = "친구를 차단했어요. 해제시 다시 친구가 되어요.";
+const BLOCKED_MESSAGE = "친구를 차단했어요.";
 
-const UNBLOCKED_MESSAGE = "차단을 해제했어요. 다시 친구의 활동을 볼 수 있어요.";
+const UNBLOCKED_MESSAGE = "차단을 해제했어요.";
 
 const UNFOLLOWED_MESSAGE = "팔로우 취소가 완료되었어요.";
 
 interface StudentProfileProps {
-  profile: StudentProfileData;
+  profile: StudentProfileItem;
 }
 
 export function StudentProfile({ profile }: StudentProfileProps) {
@@ -49,7 +49,9 @@ export function StudentProfile({ profile }: StudentProfileProps) {
         backHref="/feed"
         followingCount={profile.followingCount}
         followerCount={
-          isFollowing ? profile.followerCount : profile.followerCount - 1
+          isFollowing
+            ? profile.followerCount
+            : Math.max(0, profile.followerCount - 1)
         }
         followsHref={`/feed/${profile.id}/follows`}
         followAction={

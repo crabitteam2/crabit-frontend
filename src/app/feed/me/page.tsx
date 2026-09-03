@@ -1,6 +1,8 @@
+import { toProgressPercent } from "@/app/_components/progress-stage";
 import { homeCard } from "@/lib/mock/home";
-import { resolveWishListData } from "@/lib/mock/wishes";
+import { resolveWishListData, type Wish } from "@/lib/mock/wishes";
 import { ProfileScreen } from "../_components/profile-screen";
+import type { ProfileWishItem } from "../_components/feed-item";
 
 const MY_FOLLOWING_COUNT = 8;
 
@@ -17,12 +19,24 @@ export default async function MyProfilePage({
   return (
     <ProfileScreen
       nickname={homeCard.ownerName}
-      inProgress={inProgress}
-      finished={finished}
+      inProgress={inProgress.map(toProfileWishItem)}
+      finished={finished.map(toProfileWishItem)}
       backHref="/feed"
       followingCount={MY_FOLLOWING_COUNT}
       followerCount={MY_FOLLOWER_COUNT}
       followsHref="/feed/me/follows"
     />
   );
+}
+
+function toProfileWishItem(wish: Wish): ProfileWishItem {
+  return {
+    id: wish.id,
+    purpose: wish.purpose,
+    percent: toProgressPercent(wish.amount, wish.targetAmount),
+    state: wish.state,
+    startDate: wish.startDate === "" ? null : `20${wish.startDate}`,
+    targetDate: wish.targetDate === "" ? null : `20${wish.targetDate}`,
+    ...(wish.imageUrl === undefined ? {} : { imageUrl: wish.imageUrl }),
+  };
 }
