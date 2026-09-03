@@ -18,17 +18,15 @@ describe("mock profile directional visibility", () => {
       screen.getByRole("link", { name: /^팔로워\s*128$/ }),
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "팔로잉" }));
-    await user.click(
-      screen.getByRole("button", { name: "팔로우 취소" }),
-    );
+    await user.click(screen.getByRole("button", { name: "팔로우 취소" }));
     expect(screen.queryByText("여름 방학 캠프")).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /^팔로잉\s*12$/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: /^팔로잉\s*12$/ }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /^팔로워\s*127$/ }),
     ).toBeInTheDocument();
-    await user.click(
-      screen.getByRole("button", { name: "팔로우" }),
-    );
+    await user.click(screen.getByRole("button", { name: "팔로우" }));
     expect(screen.getByText("여름 방학 캠프")).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /^팔로워\s*128$/ }),
@@ -45,9 +43,7 @@ describe("mock profile directional visibility", () => {
     expect(
       screen.getByRole("link", { name: /^팔로워\s*128$/ }),
     ).toBeInTheDocument();
-    await user.click(
-      screen.getByRole("button", { name: "팔로우" }),
-    );
+    await user.click(screen.getByRole("button", { name: "팔로우" }));
     expect(
       screen.getByRole("link", { name: /^팔로워\s*129$/ }),
     ).toBeInTheDocument();
@@ -60,9 +56,7 @@ describe("mock profile directional visibility", () => {
         }}
       />,
     );
-    expect(
-      screen.getByRole("button", { name: "팔로우" }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "팔로우" })).toBeDisabled();
     expect(screen.queryByText("여름 방학 캠프")).not.toBeInTheDocument();
   });
 
@@ -72,10 +66,10 @@ describe("mock profile directional visibility", () => {
     expect(screen.getByText("여름 방학 캠프")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "더보기" }));
     await user.click(screen.getByRole("button", { name: "차단하기" }));
+    expect(screen.getByRole("button", { name: "팔로우" })).toBeDisabled();
     expect(
-      screen.getByRole("button", { name: "팔로우" }),
-    ).toBeDisabled();
-    expect(screen.getByRole("link", { name: /^팔로잉\s*11$/ })).toBeInTheDocument();
+      screen.getByRole("link", { name: /^팔로잉\s*11$/ }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /^팔로워\s*127$/ }),
     ).toBeInTheDocument();
@@ -83,10 +77,10 @@ describe("mock profile directional visibility", () => {
     expect(screen.queryByText("보드게임")).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "더보기" }));
     await user.click(screen.getByRole("button", { name: "해제하기" }));
+    expect(screen.getByRole("button", { name: "팔로우" })).toBeEnabled();
     expect(
-      screen.getByRole("button", { name: "팔로우" }),
-    ).toBeEnabled();
-    expect(screen.getByRole("link", { name: /^팔로잉\s*11$/ })).toBeInTheDocument();
+      screen.getByRole("link", { name: /^팔로잉\s*11$/ }),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("link", { name: /^팔로워\s*127$/ }),
     ).toBeInTheDocument();
