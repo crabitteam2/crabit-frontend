@@ -89,10 +89,14 @@ export function toStudentProfileItem(
   return {
     id: student.studentId,
     nickname: student.nickname,
-    inProgress: items.filter((item) => item.state !== "COMPLETED"),
-    finished: items.filter((item) => item.state === "COMPLETED"),
+    inProgress: items.filter(isInProgressProfileWish),
+    finished: items.filter((item) => !isInProgressProfileWish(item)),
     followingCount: 0,
     followerCount: 0,
     isFollowing: student.isFollowing,
   };
+}
+
+function isInProgressProfileWish(item: ProfileWishItem) {
+  return item.state === "IN_PROGRESS" || item.state === "AMOUNT_REACHED";
 }
