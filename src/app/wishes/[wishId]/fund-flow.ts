@@ -38,6 +38,12 @@ export interface FundFlowView {
   readonly wish: OwnedWishItem;
   /** 상대로 고를 수 있는 같은 계좌의 다른 활성 위시입니다. */
   readonly others: OwnedWishItem[];
+  /**
+   * 카드 잔액이 모자란 금액입니다.
+   *
+   * 잔액을 한 번도 조회하지 못한 계좌에서는 모자란지 알 수 없어 null입니다.
+   */
+  readonly unresolvedShortage: number | null;
 }
 
 /** 돈이 드나드는 상대이며 카드 잔액이거나 같은 계좌의 다른 위시입니다. */
@@ -73,6 +79,7 @@ export async function loadFundFlow(
     others: wishes.filter(
       (item) => item.id !== wishId && !FINISHED_STATES.includes(item.state),
     ),
+    unresolvedShortage: account.unresolvedShortage,
   };
 }
 
