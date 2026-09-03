@@ -25,9 +25,9 @@ export default async function NewWishDonePage({
   if (!result.ok && result.error.status === 404) notFound();
   const wish = unwrapResult(result);
   const period =
-    wish.targetDate === null
+    wish.startDate === null || wish.targetDate === null
       ? null
-      : `${toShortDate(wish.createdAt)} ~ ${toShortDate(wish.targetDate)}`;
+      : `${toShortDate(wish.startDate)} ~ ${toShortDate(wish.targetDate)}`;
 
   return (
     <WishCreatedScreen

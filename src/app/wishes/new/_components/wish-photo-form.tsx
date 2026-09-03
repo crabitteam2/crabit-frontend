@@ -13,6 +13,7 @@ import {
   uploadWishPhoto,
 } from "@/lib/http/wish-photos";
 import { createWish } from "@/lib/http/wishes";
+import { toIsoDate } from "@/app/wishes/_components/wish-period-format";
 import {
   clampTransform,
   displayedSize,
@@ -239,7 +240,8 @@ export function WishPhotoForm({
       const body = {
         purpose: params.get("purpose") ?? "",
         targetAmount: Number(params.get("targetAmount") ?? 0),
-        targetDate: params.get("targetDate"),
+        startDate: toIsoDate(params.get("startDate")),
+        targetDate: toIsoDate(params.get("targetDate")),
         photoId: uploaded?.id ?? null,
       };
       const created = await createWish(client, {
