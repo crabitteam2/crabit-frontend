@@ -51,7 +51,7 @@ export default async function WishlistTabPage({
         <main className="relative -mt-[17px] flex flex-col px-4">
           <ProgressBar
             percent={percent}
-            targetAmount={representativeWish?.targetAmount ?? 0}
+            targetAmount={representativeWish?.targetAmount ?? null}
           />
           {hasShortage ? (
             <div className="pt-10">

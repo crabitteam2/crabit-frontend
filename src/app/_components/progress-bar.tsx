@@ -20,7 +20,8 @@ function toMilestoneAmounts(targetAmount: number) {
 
 interface ProgressBarProps {
   percent: number;
-  targetAmount: number;
+  /** 대표 위시의 목표 금액이며, 대표 위시가 없으면 null입니다. */
+  targetAmount: number | null;
 }
 
 export function ProgressBar({ percent, targetAmount }: ProgressBarProps) {
@@ -38,16 +39,18 @@ export function ProgressBar({ percent, targetAmount }: ProgressBarProps) {
           style={{ width: `${percent}%` }}
         />
       </div>
-      <div className="flex justify-between pr-[6px] pl-[28px]">
-        {toMilestoneAmounts(targetAmount).map((amount, index) => (
-          <span
-            key={index}
-            className="text-b2 text-fg-neutral text-center leading-[19px] whitespace-nowrap"
-          >
-            {formatAmountLabel(amount)}
-          </span>
-        ))}
-      </div>
+      {targetAmount === null ? null : (
+        <div className="flex justify-between pr-[6px] pl-[28px]">
+          {toMilestoneAmounts(targetAmount).map((amount, index) => (
+            <span
+              key={index}
+              className="text-b2 text-fg-neutral text-center leading-[19px] whitespace-nowrap"
+            >
+              {formatAmountLabel(amount)}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
