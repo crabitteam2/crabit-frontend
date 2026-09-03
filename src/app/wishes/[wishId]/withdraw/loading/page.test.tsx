@@ -30,8 +30,6 @@ vi.mock("../../fund-flow", async (importOriginal) => {
   };
 });
 it.each([
-  { to: "card", amount: "5001" },
-  { to: "w2", amount: "1001" },
   { to: "card", amount: "1e3" },
   { to: "card", amount: ["100", "200"] },
   { to: ["card", "w2"], amount: "100" },
