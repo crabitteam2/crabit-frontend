@@ -21,12 +21,7 @@ export default async function DepositCoinPage({
   const source = findCounterpart(view, queryValue(query, "from"));
   if (source === null) return <FormQueryError backHref={selectPath} />;
 
-  const available =
-    source.kind === "card" ? source.card.availableBalance : source.wish.amount;
-  const amount = readAmountQuery(
-    query,
-    Math.min(available ?? -1, view.wish.targetAmount - view.wish.amount),
-  );
+  const amount = readAmountQuery(query, Number.MAX_SAFE_INTEGER);
   if (amount === null) return <FormQueryError backHref={selectPath} />;
 
   const sourceRef: FundCounterpartRef =
