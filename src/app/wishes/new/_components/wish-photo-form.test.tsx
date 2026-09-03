@@ -40,7 +40,7 @@ it.each([
         query={`purpose=선물&targetAmount=10000${dates}`}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "사진 없이 만들기" }));
+    fireEvent.click(screen.getByRole("button", { name: "넘어가기" }));
     await waitFor(() =>
       expect(createWish).toHaveBeenCalledWith(expect.anything(), {
         cardBalanceAccountId: "account",

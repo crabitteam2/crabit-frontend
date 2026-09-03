@@ -23,7 +23,7 @@ it("supports radio keyboard, blocks duplicate requests, and permits failure retr
   const radio = screen.getByRole("radio", { name: "학원 전체" });
   radio.focus();
   await user.keyboard("{ArrowRight}");
-  expect(screen.getByRole("radio", { name: "친한 친구 공개" })).toHaveAttribute(
+  expect(screen.getByRole("radio", { name: "팔로워 공개" })).toHaveAttribute(
     "aria-checked",
     "true",
   );
@@ -31,7 +31,7 @@ it("supports radio keyboard, blocks duplicate requests, and permits failure retr
   await user.click(button);
   fireEvent.submit(button.closest("form")!);
   expect(share).toHaveBeenCalledTimes(1);
-  expect(share).toHaveBeenCalledWith("wish", 7, "FRIENDS");
+  expect(share).toHaveBeenCalledWith("wish", 7, "FOLLOWERS");
   resolve({ ok: false, message: "다시 시도해주세요" });
   await waitFor(() => expect(button).toBeEnabled());
   await user.click(button);

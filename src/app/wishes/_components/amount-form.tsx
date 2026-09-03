@@ -16,6 +16,9 @@ interface AmountFormProps {
   title: string;
   backHref: string;
   nextPath: string;
+  nextParams?: Record<string, string>;
+  max?: number;
+  overMessage?: string;
   available: number;
   availableLabel: string;
   remaining?: number;
@@ -26,6 +29,9 @@ export function AmountForm({
   title,
   backHref,
   nextPath,
+  nextParams,
+  max,
+  overMessage,
   available,
   availableLabel,
   remaining,
@@ -42,7 +48,10 @@ export function AmountForm({
   const box = useKeyboardViewport();
   const isKeyboardOpen = box?.isKeyboardOpen ?? false;
   const submit = handleSubmit(({ amount }) => {
-    const params = new URLSearchParams({ amount: String(parseKrw(amount)) });
+    const params = new URLSearchParams({
+      ...nextParams,
+      amount: String(parseKrw(amount)),
+    });
     if (from) params.set("from", from);
     router.push(`${nextPath}?${params}`);
   });
@@ -93,8 +102,9 @@ export function AmountForm({
               {...register("amount", {
                 validate: (value) =>
                   amountError(value, available) ??
-                  (remaining !== undefined && (parseKrw(value) ?? 0) > remaining
-                    ? "목표까지 남은 금액을 넘었어요."
+                  ((max ?? remaining) !== undefined &&
+                  (parseKrw(value) ?? 0) > (max ?? remaining)!
+                    ? (overMessage ?? "목표까지 남은 금액을 넘었어요.")
                     : true),
                 onBlur: () =>
                   setValue("amount", formatKrw(getValues("amount"))),

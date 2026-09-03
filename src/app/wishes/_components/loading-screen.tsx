@@ -2,7 +2,7 @@
 
 import Image, { type StaticImageData } from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import laptopImage from "@/../public/images/wishes/loading-laptop.png";
 import runImage from "@/../public/images/wishes/loading-run.png";
 import searchImage from "@/../public/images/wishes/loading-search.png";
@@ -23,12 +23,21 @@ const STAGES: Stage[] = [
 
 interface LoadingScreenProps {
   label: string;
-  donePath: string;
+  /** 진행 막대가 끝나면 이동할 경로이며, onFinish를 주면 쓰지 않습니다. */
+  donePath?: string;
+  /** 진행 막대가 끝났을 때 이동 대신 실행할 처리입니다. */
+  onFinish?: () => void;
 }
 
-export function LoadingScreen({ label, donePath }: LoadingScreenProps) {
+export function LoadingScreen({
+  label,
+  donePath,
+  onFinish,
+}: LoadingScreenProps) {
   const router = useRouter();
   const [ratio, setRatio] = useState(0);
+  const onFinishRef = useRef(onFinish);
+  onFinishRef.current = onFinish;
 
   useEffect(() => {
     let frame = 0;
@@ -44,7 +53,12 @@ export function LoadingScreen({ label, donePath }: LoadingScreenProps) {
         frame = requestAnimationFrame(tick);
         return;
       }
-      router.replace(donePath);
+      const finish = onFinishRef.current;
+      if (finish !== undefined) {
+        finish();
+        return;
+      }
+      if (donePath !== undefined) router.replace(donePath);
     };
 
     frame = requestAnimationFrame(tick);

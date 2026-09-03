@@ -12,7 +12,7 @@ import { shareWishAction } from "../wish-actions";
 
 const VISIBILITIES = [
   { value: "ACADEMY", label: "학원 전체" },
-  { value: "FRIENDS", label: "친한 친구 공개" },
+  { value: "FOLLOWERS", label: "팔로워 공개" },
 ] as const;
 
 type Visibility = (typeof VISIBILITIES)[number]["value"];
@@ -97,9 +97,9 @@ export function WishShareWriteForm({
                 event.key === "Home"
                   ? "ACADEMY"
                   : event.key === "End"
-                    ? "FRIENDS"
+                    ? "FOLLOWERS"
                     : visibility === "ACADEMY"
-                      ? "FRIENDS"
+                      ? "FOLLOWERS"
                       : "ACADEMY";
               setValue("visibility", next, { shouldDirty: true });
               const buttons =

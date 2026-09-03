@@ -28,3 +28,22 @@ export function getCardBalanceAccount(
     }),
   );
 }
+
+/** 카드 잔액 새로고침에 필요한 경로 변수입니다. */
+export interface RefreshCardBalanceOptions {
+  /** 잔액을 새로 조회할 카드잔액계좌 식별자입니다. */
+  readonly cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+}
+
+/** 카드사에 현재 잔액을 다시 조회해 계좌 스냅샷을 갱신합니다. */
+export function refreshCardBalance(
+  client: CrabitApiClient,
+  options: RefreshCardBalanceOptions,
+): Promise<ApiResult<components["schemas"]["BalanceRefreshResult"]>> {
+  return apiResult<components["schemas"]["BalanceRefreshResult"]>(() =>
+    client.POST(
+      "/v1/card-balance-accounts/{cardBalanceAccountId}/balance-refreshes",
+      { params: { path: options } },
+    ),
+  );
+}

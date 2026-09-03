@@ -298,3 +298,97 @@ export function selectRepresentativeWish(
     ),
   );
 }
+
+/** 위시 입금에 필요한 식별자, 멱등성 키, 계약 본문입니다. */
+export interface DepositToWishOptions {
+  /** 위시가 속한 카드잔액계좌 식별자입니다. */
+  readonly cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+  /** 돈을 넣을 위시 식별자입니다. */
+  readonly wishId: components["parameters"]["WishId"];
+  /** 재시도 중 중복 처리를 막는 멱등성 키입니다. */
+  readonly idempotencyKey: components["parameters"]["IdempotencyKey"];
+  /** OpenAPI 계약이 정의한 금액과 기대 버전 본문입니다. */
+  readonly body: operations["depositToWish"]["requestBody"]["content"]["application/json"];
+}
+
+/** 카드 잔액에서 위시로 금액을 옮깁니다. */
+export function depositToWish(
+  client: CrabitApiClient,
+  options: DepositToWishOptions,
+): Promise<ApiResult<components["schemas"]["WishMutationResult"]>> {
+  return apiResult<components["schemas"]["WishMutationResult"]>(() =>
+    client.POST(
+      "/v1/card-balance-accounts/{cardBalanceAccountId}/wishes/{wishId}/deposits",
+      {
+        params: {
+          path: {
+            cardBalanceAccountId: options.cardBalanceAccountId,
+            wishId: options.wishId,
+          },
+          header: { "Idempotency-Key": options.idempotencyKey },
+        },
+        body: options.body,
+      },
+    ),
+  );
+}
+
+/** 위시 출금에 필요한 식별자, 멱등성 키, 계약 본문입니다. */
+export interface WithdrawFromWishOptions {
+  /** 위시가 속한 카드잔액계좌 식별자입니다. */
+  readonly cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+  /** 돈을 꺼낼 위시 식별자입니다. */
+  readonly wishId: components["parameters"]["WishId"];
+  /** 재시도 중 중복 처리를 막는 멱등성 키입니다. */
+  readonly idempotencyKey: components["parameters"]["IdempotencyKey"];
+  /** OpenAPI 계약이 정의한 금액과 기대 버전 본문입니다. */
+  readonly body: operations["withdrawFromWish"]["requestBody"]["content"]["application/json"];
+}
+
+/** 위시에서 카드 잔액으로 금액을 되돌립니다. */
+export function withdrawFromWish(
+  client: CrabitApiClient,
+  options: WithdrawFromWishOptions,
+): Promise<ApiResult<components["schemas"]["WishMutationResult"]>> {
+  return apiResult<components["schemas"]["WishMutationResult"]>(() =>
+    client.POST(
+      "/v1/card-balance-accounts/{cardBalanceAccountId}/wishes/{wishId}/withdrawals",
+      {
+        params: {
+          path: {
+            cardBalanceAccountId: options.cardBalanceAccountId,
+            wishId: options.wishId,
+          },
+          header: { "Idempotency-Key": options.idempotencyKey },
+        },
+        body: options.body,
+      },
+    ),
+  );
+}
+
+/** 위시 사이 이체에 필요한 계좌 식별자, 멱등성 키, 계약 본문입니다. */
+export interface TransferWishFundsOptions {
+  /** 두 위시가 모두 속한 카드잔액계좌 식별자입니다. */
+  readonly cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+  /** 재시도 중 중복 처리를 막는 멱등성 키입니다. */
+  readonly idempotencyKey: components["parameters"]["IdempotencyKey"];
+  /** OpenAPI 계약이 정의한 출발·도착 위시와 금액 본문입니다. */
+  readonly body: operations["transferWishFunds"]["requestBody"]["content"]["application/json"];
+}
+
+/** 같은 계좌의 두 위시 사이에서 금액을 한 번에 옮깁니다. */
+export function transferWishFunds(
+  client: CrabitApiClient,
+  options: TransferWishFundsOptions,
+): Promise<ApiResult<components["schemas"]["WishTransferResult"]>> {
+  return apiResult<components["schemas"]["WishTransferResult"]>(() =>
+    client.POST("/v1/card-balance-accounts/{cardBalanceAccountId}/transfers", {
+      params: {
+        path: { cardBalanceAccountId: options.cardBalanceAccountId },
+        header: { "Idempotency-Key": options.idempotencyKey },
+      },
+      body: options.body,
+    }),
+  );
+}

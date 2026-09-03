@@ -17,9 +17,11 @@ const AXIS_LOCK = 8;
 
 interface PullToRefreshProps {
   children: ReactNode;
+  /** 화면을 다시 그리기 전에 실행할 서버 요청입니다. */
+  onRefresh?: () => Promise<unknown>;
 }
 
-export function PullToRefresh({ children }: PullToRefreshProps) {
+export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState(0);
@@ -30,6 +32,8 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
   const axis = useRef<"x" | "y" | null>(null);
   const offsetRef = useRef(0);
   const refreshingRef = useRef(false);
+  const onRefreshRef = useRef(onRefresh);
+  onRefreshRef.current = onRefresh;
 
   const setPull = useCallback((next: number) => {
     offsetRef.current = next;
@@ -97,13 +101,23 @@ export function PullToRefresh({ children }: PullToRefreshProps) {
       refreshingRef.current = true;
       setIsRefreshing(true);
       setPull(PULL_THRESHOLD);
-      router.refresh();
 
-      window.setTimeout(() => {
-        refreshingRef.current = false;
-        setIsRefreshing(false);
-        setPull(0);
-      }, MIN_SPIN_MS);
+      const request = onRefreshRef.current?.() ?? Promise.resolve();
+      const spin = new Promise((resolve) =>
+        window.setTimeout(resolve, MIN_SPIN_MS),
+      );
+
+      void request
+        .catch(() => undefined)
+        .then(() => {
+          router.refresh();
+          return spin;
+        })
+        .then(() => {
+          refreshingRef.current = false;
+          setIsRefreshing(false);
+          setPull(0);
+        });
     };
 
     container.addEventListener("touchstart", start, { passive: true });
