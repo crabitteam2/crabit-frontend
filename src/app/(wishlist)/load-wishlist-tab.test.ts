@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const listMyCardBalanceAccounts = vi.fn();
 const getRepresentativeWish = vi.fn();
+const getWeeklyRecap = vi.fn();
+const getMonthlyRecap = vi.fn();
 
 vi.mock("server-only", () => ({}));
 vi.mock("next/headers", () => ({
@@ -16,6 +18,10 @@ vi.mock("@/lib/http/card-balance-accounts", () => ({
 }));
 vi.mock("@/lib/http/wishes", () => ({
   getRepresentativeWish: (...args: unknown[]) => getRepresentativeWish(...args),
+}));
+vi.mock("@/lib/http/recaps", () => ({
+  getWeeklyRecap: (...args: unknown[]) => getWeeklyRecap(...args),
+  getMonthlyRecap: (...args: unknown[]) => getMonthlyRecap(...args),
 }));
 
 const { loadWishlistTab } = await import("./load-wishlist-tab");
@@ -44,6 +50,14 @@ beforeEach(() => {
       targetAmount: 1_500_000,
     },
   });
+  getWeeklyRecap.mockResolvedValue({
+    ok: true,
+    data: recap("WEEKLY", "NOT_GENERATED", "2026-08-24", "2026-08-31"),
+  });
+  getMonthlyRecap.mockResolvedValue({
+    ok: true,
+    data: recap("MONTHLY", "NOT_ELIGIBLE", "2026-08-01", "2026-09-01", 1),
+  });
 });
 
 describe("위시리스트 탭 데이터 조회", () => {
@@ -55,6 +69,14 @@ describe("위시리스트 탭 데이터 조회", () => {
         targetAmount: 1_500_000,
       },
       unresolvedShortage: 0,
+      weeklyRecap: recap("WEEKLY", "NOT_GENERATED", "2026-08-24", "2026-08-31"),
+      monthlyRecap: recap(
+        "MONTHLY",
+        "NOT_ELIGIBLE",
+        "2026-08-01",
+        "2026-09-01",
+        1,
+      ),
     });
   });
 
@@ -81,4 +103,32 @@ describe("위시리스트 탭 데이터 조회", () => {
       unresolvedShortage: null,
     });
   });
+
+  it("대표 위시와 두 리캡을 같은 계좌로 함께 조회한다", async () => {
+    await loadWishlistTab();
+
+    const expected = [{}, { cardBalanceAccountId: accountId }];
+    expect(getRepresentativeWish).toHaveBeenCalledWith(...expected);
+    expect(getWeeklyRecap).toHaveBeenCalledWith(...expected);
+    expect(getMonthlyRecap).toHaveBeenCalledWith(...expected);
+  });
 });
+
+function recap(
+  kind: "WEEKLY" | "MONTHLY",
+  status: "NOT_GENERATED" | "NOT_ELIGIBLE",
+  startDate: string,
+  endDateExclusive: string,
+  generationVersion: number | null = null,
+) {
+  return {
+    kind,
+    status,
+    period: { startDate, endDateExclusive, timezone: "Asia/Seoul" },
+    generationVersion,
+    schemaVersion: 1,
+    algorithmVersion: generationVersion === null ? null : "recap-1",
+    generatedAt: status === "NOT_ELIGIBLE" ? "2026-09-01T00:10:00Z" : null,
+    result: null,
+  } as const;
+}
