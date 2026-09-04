@@ -21,7 +21,8 @@ export default async function WishlistTabPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
-  const { representativeWish, unresolvedShortage } = await loadWishlistTab();
+  const { representativeWish, unresolvedShortage, weeklyRecap, monthlyRecap } =
+    await loadWishlistTab();
 
   const rawToast = query.toast;
   const toastKey = (Array.isArray(rawToast) ? rawToast[0] : rawToast) ?? null;
@@ -65,7 +66,7 @@ export default async function WishlistTabPage({
             <AcademySection academyName={ACADEMY_NAME} />
           </div>
           <div className="pt-[68px]">
-            <RecapSection />
+            <RecapSection weekly={weeklyRecap} monthly={monthlyRecap} />
           </div>
         </main>
 
