@@ -282,6 +282,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/academies/{academyId}/students/{studentId}/followers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description 관계 상대방의 UUID입니다. 인증된 소유자 정보는 항상 현재 인증 주체에서 가져오며 이 매개변수로 받지 않습니다. */
+                studentId: components["parameters"]["StudentId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * 같은 학원 다른 학생의 팔로워 목록 조회
+         * @description 경로 studentId는 목록 소유자이고 인증된 SyntheticBearer 주체는 조회자입니다. 조회자 자신의 studentId를 요청하면 기존 /v1/academies/{academyId}/followers와 같은 관찰 가능한 목록 의미로 성공합니다. 먼저 조회자의 현재 academyId 소속을 확인하고, 이어 목록 소유자의 현재 소속과 조회자-소유자 사이 양방향 활성 차단 부재를 확인합니다. 소유자가 없거나 탈퇴·다른 학원·차단으로 접근할 수 없으면 차단 방향이나 이유를 구별하지 않는 STUDENT_NOT_FOUND이며, 목록 소유자를 열거하지 않습니다. 카드 계정, 활성 카드 또는 위시 공개 자격은 요구하지 않습니다. 보이는 소유자의 항목은 academyId에서 현재 활성인 항목 학생 → 소유자 관계와 항목 학생의 현재 소속만으로 결정합니다. 조회자와 항목 학생 사이의 차단은 제3자인 소유자의 목록이나 nickname 검색에서 그 항목을 숨기지 않습니다. followedAt은 항목 학생 → 소유자 관계의 시작 시점이고, isFollowing과 isFollowedBy는 각각 조회자 → 항목 및 항목 → 조회자의 독립적인 현재 관계입니다. followingCount와 followerCount는 nickname, cursor, limit, 반환된 항목 수와 무관한 소유자의 현재 유효 outgoing·incoming 관계 수입니다. followedAt DESC, studentId DESC로 정렬합니다. 불투명 서명 커서는 형식·정렬 버전, 작업과 방향, 조회자 ID, 목록 소유자 studentId, academyId, 정규화 nickname 또는 명시적 필터 없음 표식, 최초 watermark와 snapshot discriminator, 마지막 followedAt/studentId 튜플에 결속합니다. 다른 조회자·소유자·학원·방향·작업·nickname·서명·형식·정렬 문맥의 커서는 부분 페이지 없이 400 MALFORMED_REQUEST와 cursor 필드 오류를 반환하며 유효한 limit 변경은 커서를 무효화하지 않습니다. 요청은 페이지 행과 소유자 카운트를 repeatable-read 스냅샷에서 읽고 최초 watermark 뒤에 새로 생성되거나 재팔로우된 관계를 기존 순회에 넣지 않습니다. 각 다음 페이지는 현재 소유자 접근, 관계, 소속, nickname, 차단 상태를 다시 확인합니다. 그 뒤 소유자가 접근 불가하면 부분 결과 대신 STUDENT_NOT_FOUND를 반환하며, 후속 독립 요청은 follow, unfollow, block, unblock, 소속 또는 닉네임 변경을 현재 규칙으로 반영합니다. 성공과 오류 모두 Cache-Control: no-store입니다.
+         */
+        get: operations["listAcademyStudentFollowers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academies/{academyId}/students/{studentId}/following": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description 관계 상대방의 UUID입니다. 인증된 소유자 정보는 항상 현재 인증 주체에서 가져오며 이 매개변수로 받지 않습니다. */
+                studentId: components["parameters"]["StudentId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * 같은 학원 다른 학생의 팔로잉 목록 조회
+         * @description 경로 studentId는 목록 소유자이고 인증된 SyntheticBearer 주체는 조회자입니다. 조회자 자신의 studentId를 요청하면 기존 /v1/academies/{academyId}/following과 같은 관찰 가능한 목록 의미로 성공합니다. 먼저 조회자의 현재 academyId 소속을 확인하고, 이어 목록 소유자의 현재 소속과 조회자-소유자 사이 양방향 활성 차단 부재를 확인합니다. 소유자가 없거나 탈퇴·다른 학원·차단으로 접근할 수 없으면 차단 방향이나 이유를 구별하지 않는 STUDENT_NOT_FOUND이며, 목록 소유자를 열거하지 않습니다. 카드 계정, 활성 카드 또는 위시 공개 자격은 요구하지 않습니다. 보이는 소유자의 항목은 academyId에서 현재 활성인 소유자 → 항목 학생 관계와 항목 학생의 현재 소속만으로 결정합니다. 조회자와 항목 학생 사이의 차단은 제3자인 소유자의 목록이나 nickname 검색에서 그 항목을 숨기지 않습니다. followedAt은 소유자 → 항목 관계의 시작 시점이고, isFollowing과 isFollowedBy는 각각 조회자 → 항목 및 항목 → 조회자의 독립적인 현재 관계입니다. followingCount와 followerCount는 nickname, cursor, limit, 반환된 항목 수와 무관한 소유자의 현재 유효 outgoing·incoming 관계 수입니다. followedAt DESC, studentId DESC로 정렬합니다. 불투명 서명 커서는 형식·정렬 버전, 작업과 방향, 조회자 ID, 목록 소유자 studentId, academyId, 정규화 nickname 또는 명시적 필터 없음 표식, 최초 watermark와 snapshot discriminator, 마지막 followedAt/studentId 튜플에 결속합니다. 다른 조회자·소유자·학원·방향·작업·nickname·서명·형식·정렬 문맥의 커서는 부분 페이지 없이 400 MALFORMED_REQUEST와 cursor 필드 오류를 반환하며 유효한 limit 변경은 커서를 무효화하지 않습니다. 요청은 페이지 행과 소유자 카운트를 repeatable-read 스냅샷에서 읽고 최초 watermark 뒤에 새로 생성되거나 재팔로우된 관계를 기존 순회에 넣지 않습니다. 각 다음 페이지는 현재 소유자 접근, 관계, 소속, nickname, 차단 상태를 다시 확인합니다. 그 뒤 소유자가 접근 불가하면 부분 결과 대신 STUDENT_NOT_FOUND를 반환하며, 후속 독립 요청은 follow, unfollow, block, unblock, 소속 또는 닉네임 변경을 현재 규칙으로 반영합니다. 성공과 오류 모두 Cache-Control: no-store입니다.
+         */
+        get: operations["listAcademyStudentFollowing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/card-balance-accounts/{cardBalanceAccountId}": {
         parameters: {
             query?: never;
@@ -1341,11 +1389,11 @@ export interface components {
             message: string;
         };
         Follow: {
-            /** @description 이 목록이 나타내는 현재 관계의 시작 시점입니다. 팔로잉은 본인 → 상대방, 팔로워는 상대방 → 본인이며 역방향 관계의 시작 시점과 같을 필요가 없습니다. */
+            /** @description 이 목록을 정의하는 현재 관계의 시작 시점입니다. 팔로잉은 목록 소유자 → 항목 학생, 팔로워는 항목 학생 → 목록 소유자이며 조회자와 항목 학생 사이 역방향 관계의 시작 시점과 같을 필요가 없습니다. */
             followedAt: components["schemas"]["UtcInstant"];
-            /** @description 선택 학원에서 현재 상대방 → 본인의 유효 팔로우 여부입니다. */
+            /** @description 선택 학원에서 현재 항목 학생 → 조회자의 유효 팔로우 여부입니다. 목록 소유자의 관계 상태를 나타내지 않습니다. */
             isFollowedBy: boolean;
-            /** @description 선택 학원에서 현재 본인 → 상대방의 유효 팔로우 여부입니다. */
+            /** @description 선택 학원에서 현재 조회자 → 항목 학생의 유효 팔로우 여부입니다. 목록 소유자의 관계 상태를 나타내지 않습니다. */
             isFollowing: boolean;
             /** @description 현재 상대 학생의 비어 있지 않은 닉네임입니다. */
             nickname: string;
@@ -1355,15 +1403,15 @@ export interface components {
         FollowPage: {
             /**
              * Format: int64
-             * @description 검색·커서·페이지 크기와 무관한 선택 학원의 모든 유효 incoming 관계 수입니다.
+             * @description 검색·커서·페이지 크기와 무관한 목록 소유자의 선택 학원 모든 유효 incoming 관계 수입니다.
              */
             followerCount: number;
             /**
              * Format: int64
-             * @description 검색·커서·페이지 크기와 무관한 선택 학원의 모든 유효 outgoing 관계 수입니다.
+             * @description 검색·커서·페이지 크기와 무관한 목록 소유자의 선택 학원 모든 유효 outgoing 관계 수입니다.
              */
             followingCount: number;
-            /** @description 현재 학원의 유효 관계 검색 결과이며 followedAt DESC, studentId DESC 순입니다. */
+            /** @description 현재 학원의 목록 소유자 유효 관계 검색 결과이며 followedAt DESC, studentId DESC 순입니다. 조회자와 항목 사이 차단은 제3자 목록 항목을 제거하지 않습니다. */
             items: components["schemas"]["Follow"][];
             /** @description 다음 검색 결과를 이어 읽는 불투명 커서이며 더 없으면 null입니다. */
             nextCursor: string | null;
@@ -2196,9 +2244,10 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description ACADEMY_NOT_FOUND 또는 STUDENT_NOT_FOUND — 학원 범위 검증 실패와 숨겨진 직접 대상의 세부 정보를 공개하지 않습니다. */
+        /** @description ACADEMY_NOT_FOUND 또는 STUDENT_NOT_FOUND — 학원 범위 검증 실패와 부재·탈퇴·다른 학원·조회자와의 양방향 차단으로 접근할 수 없는 직접 대상 또는 목록 소유자의 세부 정보와 차단 방향을 공개하지 않습니다. */
         StudentOrAcademyNotFound: {
             headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
                 [name: string]: unknown;
             };
             content: {
@@ -2208,6 +2257,7 @@ export interface components {
         /** @description ACADEMY_NOT_FOUND — 학원이 없거나, 다른 학원이거나, 현재 소속 학원이 아닌 범위를 숨깁니다. */
         StudentRelationshipAcademyNotFound: {
             headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
                 [name: string]: unknown;
             };
             content: {
@@ -2217,6 +2267,7 @@ export interface components {
         /** @description AUTH_REQUIRED — Bearer 토큰이 없거나 유효하지 않습니다. */
         StudentRelationshipAuthRequired: {
             headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
                 "WWW-Authenticate": "Bearer";
                 [name: string]: unknown;
             };
@@ -2227,6 +2278,7 @@ export interface components {
         /** @description FORBIDDEN — 인증 주체가 학생이 아닙니다. */
         StudentRelationshipForbidden: {
             headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
                 [name: string]: unknown;
             };
             content: {
@@ -2236,6 +2288,7 @@ export interface components {
         /** @description MALFORMED_REQUEST — JSON, UUID, nickname, limit 또는 불투명 커서의 형식이 잘못되었습니다. */
         StudentRelationshipMalformedRequest: {
             headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
                 [name: string]: unknown;
             };
             content: {
@@ -3100,6 +3153,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudentRelationship"];
+                };
+            };
+            400: components["responses"]["StudentRelationshipMalformedRequest"];
+            401: components["responses"]["StudentRelationshipAuthRequired"];
+            403: components["responses"]["StudentRelationshipForbidden"];
+            404: components["responses"]["StudentOrAcademyNotFound"];
+        };
+    };
+    listAcademyStudentFollowers: {
+        parameters: {
+            query?: {
+                /** @description 이 API 작업의 고정 정렬 순서에 바인딩된 불투명 커서입니다. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description 생략하면 닉네임 필터를 적용하지 않습니다. 제공하면 앞뒤의 유니코드 Space_Separator 코드 포인트를 반복해서 제거하고 NFC로 정규화한 뒤, Cc, Cf, Zl, Zp를 거부하며 1~80개의 유니코드 코드 포인트를 요구합니다. 저장된 NFC 정규화 닉네임에서 대소문자를 구분하는 연속 유니코드 코드 포인트 부분 문자열로 일치 여부를 판단합니다. 빈 값 또는 공백만 있는 값은 400 MALFORMED_REQUEST입니다. 요청한 팔로잉·팔로워 목록 안에서만 검색합니다. */
+                nickname?: components["parameters"]["OptionalRelationshipNickname"];
+            };
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description 관계 상대방의 UUID입니다. 인증된 소유자 정보는 항상 현재 인증 주체에서 가져오며 이 매개변수로 받지 않습니다. */
+                studentId: components["parameters"]["StudentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 접근 가능한 목록 소유자의 현재 팔로워 페이지와 소유자의 전체 관계 수입니다. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowPage"];
+                };
+            };
+            400: components["responses"]["StudentRelationshipMalformedRequest"];
+            401: components["responses"]["StudentRelationshipAuthRequired"];
+            403: components["responses"]["StudentRelationshipForbidden"];
+            404: components["responses"]["StudentOrAcademyNotFound"];
+        };
+    };
+    listAcademyStudentFollowing: {
+        parameters: {
+            query?: {
+                /** @description 이 API 작업의 고정 정렬 순서에 바인딩된 불투명 커서입니다. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description 생략하면 닉네임 필터를 적용하지 않습니다. 제공하면 앞뒤의 유니코드 Space_Separator 코드 포인트를 반복해서 제거하고 NFC로 정규화한 뒤, Cc, Cf, Zl, Zp를 거부하며 1~80개의 유니코드 코드 포인트를 요구합니다. 저장된 NFC 정규화 닉네임에서 대소문자를 구분하는 연속 유니코드 코드 포인트 부분 문자열로 일치 여부를 판단합니다. 빈 값 또는 공백만 있는 값은 400 MALFORMED_REQUEST입니다. 요청한 팔로잉·팔로워 목록 안에서만 검색합니다. */
+                nickname?: components["parameters"]["OptionalRelationshipNickname"];
+            };
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description 관계 상대방의 UUID입니다. 인증된 소유자 정보는 항상 현재 인증 주체에서 가져오며 이 매개변수로 받지 않습니다. */
+                studentId: components["parameters"]["StudentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 접근 가능한 목록 소유자의 현재 팔로잉 페이지와 소유자의 전체 관계 수입니다. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowPage"];
                 };
             };
             400: components["responses"]["StudentRelationshipMalformedRequest"];

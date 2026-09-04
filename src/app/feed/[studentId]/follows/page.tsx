@@ -1,9 +1,9 @@
-import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import {
-  FOLLOWER_ENTRIES,
-  FOLLOWING_ENTRIES,
-  findStudentProfile,
-} from "@/lib/mock/feed";
+  listAcademyStudentFollowers,
+  listAcademyStudentFollowing,
+} from "@/lib/http/follows";
+import { createServerApiClient } from "@/lib/http/server";
 import {
   FollowListScreen,
   type FollowTab,
@@ -17,25 +17,55 @@ export default async function StudentFollowsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { studentId } = await params;
-  if (findStudentProfile(studentId) === null) notFound();
-
   const query = await searchParams;
-  const raw = query.tab;
+  const raw = firstQueryValue(query.tab);
   const tab: FollowTab =
-    (Array.isArray(raw) ? raw[0] : raw) === "followers"
-      ? "followers"
-      : "following";
+    raw === "followers" ? "followers" : "following";
+  const academyId = firstQueryValue(query.academyId);
+  const base = `/feed/${encodeURIComponent(studentId)}/follows`;
+  const academyQuery = academyId === undefined
+    ? ""
+    : `?academyId=${encodeURIComponent(academyId)}`;
 
-  const base = `/feed/${studentId}/follows`;
+  if (academyId === undefined) {
+    return (
+      <FollowListScreen
+        backHref={`/feed/${encodeURIComponent(studentId)}`}
+        tab={tab}
+        followingHref={`${base}${academyQuery}`}
+        followersHref={`${base}${academyQuery}&tab=followers`}
+        academyId=""
+        ownerStudentId={studentId}
+        initialError="unavailable"
+      />
+    );
+  }
+
+  const client = createServerApiClient({ request: { headers: await headers() } });
+  const result = tab === "followers"
+    ? await listAcademyStudentFollowers(client, { academyId, studentId })
+    : await listAcademyStudentFollowing(client, { academyId, studentId });
+
+  const initialError = result.ok
+    ? undefined
+    : result.error.status === 404
+      ? "unavailable"
+      : "failed";
 
   return (
     <FollowListScreen
-      backHref={`/feed/${studentId}`}
+      key={`${academyId}:${studentId}:${tab}`}
+      backHref={`/feed/${encodeURIComponent(studentId)}${academyQuery}`}
       tab={tab}
-      followingHref={base}
-      followersHref={`${base}?tab=followers`}
-      following={FOLLOWING_ENTRIES}
-      followers={FOLLOWER_ENTRIES}
+      followingHref={`${base}${academyQuery}`}
+      followersHref={`${base}${academyQuery}&tab=followers`}
+      academyId={academyId}
+      ownerStudentId={studentId}
+      {...(result.ok ? { initialPage: result.data } : { initialError })}
     />
   );
+}
+
+function firstQueryValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
 }

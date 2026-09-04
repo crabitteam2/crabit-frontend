@@ -7,6 +7,8 @@ import {
   getAcademyStudent,
   listAcademyFollowers,
   listAcademyFollowing,
+  listAcademyStudentFollowers,
+  listAcademyStudentFollowing,
   listMyStudentBlocks,
   searchAcademyStudents,
   unblockStudent,
@@ -84,6 +86,39 @@ describe("directional follow HTTP contract", () => {
     );
     expect(new URL(requests[1].url).pathname).toBe("/v1/me/student-blocks");
     expect(new URL(requests[1].url).searchParams.get("cursor")).toBe("blocks");
+  });
+
+  it("binds an other-student list request to both the academy and owner", async () => {
+    const requests: Request[] = [];
+    const page: components["schemas"]["FollowPage"] = {
+      items: [],
+      nextCursor: null,
+      followingCount: 7,
+      followerCount: 50,
+    };
+    const client = createClient<paths>({
+      baseUrl: "https://backend.test",
+      fetch: async (request) => {
+        requests.push(request);
+        return json(page);
+      },
+    });
+
+    await listAcademyStudentFollowing(client, {
+      academyId,
+      studentId,
+      cursor: "owner-bound-cursor",
+      nickname: "민",
+    });
+    await listAcademyStudentFollowers(client, { academyId, studentId });
+
+    expect(requests.map((request) => new URL(request.url).pathname)).toEqual([
+      `/v1/academies/${academyId}/students/${studentId}/following`,
+      `/v1/academies/${academyId}/students/${studentId}/followers`,
+    ]);
+    const query = new URL(requests[0].url).searchParams;
+    expect(query.get("cursor")).toBe("owner-bound-cursor");
+    expect(query.get("nickname")).toBe("민");
   });
 
   it("sends PUT/DELETE bodyless and treats repeated follow/unfollow as successful current-state requests", async () => {
