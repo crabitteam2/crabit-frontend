@@ -19,21 +19,23 @@ export default async function StudentFollowsPage({
   const { studentId } = await params;
   const query = await searchParams;
   const raw = firstQueryValue(query.tab);
-  const tab: FollowTab =
-    raw === "followers" ? "followers" : "following";
+  const tab: FollowTab = raw === "followers" ? "followers" : "following";
   const academyId = firstQueryValue(query.academyId);
   const base = `/feed/${encodeURIComponent(studentId)}/follows`;
-  const academyQuery = academyId === undefined
-    ? ""
-    : `?academyId=${encodeURIComponent(academyId)}`;
+  const academyQuery =
+    academyId === undefined
+      ? ""
+      : `?academyId=${encodeURIComponent(academyId)}`;
+  const followingHref = `${base}${academyQuery}`;
+  const followersHref = withSearchParameter(followingHref, "tab", "followers");
 
   if (academyId === undefined) {
     return (
       <FollowListScreen
         backHref={`/feed/${encodeURIComponent(studentId)}`}
         tab={tab}
-        followingHref={`${base}${academyQuery}`}
-        followersHref={`${base}${academyQuery}&tab=followers`}
+        followingHref={followingHref}
+        followersHref={followersHref}
         academyId=""
         ownerStudentId={studentId}
         initialError="unavailable"
@@ -41,10 +43,13 @@ export default async function StudentFollowsPage({
     );
   }
 
-  const client = createServerApiClient({ request: { headers: await headers() } });
-  const result = tab === "followers"
-    ? await listAcademyStudentFollowers(client, { academyId, studentId })
-    : await listAcademyStudentFollowing(client, { academyId, studentId });
+  const client = createServerApiClient({
+    request: { headers: await headers() },
+  });
+  const result =
+    tab === "followers"
+      ? await listAcademyStudentFollowers(client, { academyId, studentId })
+      : await listAcademyStudentFollowing(client, { academyId, studentId });
 
   const initialError = result.ok
     ? undefined
@@ -57,8 +62,8 @@ export default async function StudentFollowsPage({
       key={`${academyId}:${studentId}:${tab}`}
       backHref={`/feed/${encodeURIComponent(studentId)}${academyQuery}`}
       tab={tab}
-      followingHref={`${base}${academyQuery}`}
-      followersHref={`${base}${academyQuery}&tab=followers`}
+      followingHref={followingHref}
+      followersHref={followersHref}
       academyId={academyId}
       ownerStudentId={studentId}
       {...(result.ok ? { initialPage: result.data } : { initialError })}
@@ -68,4 +73,12 @@ export default async function StudentFollowsPage({
 
 function firstQueryValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
+}
+
+function withSearchParameter(href: string, key: string, value: string) {
+  const [path, fragment] = href.split("#", 2);
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}${
+    fragment === undefined ? "" : `#${fragment}`
+  }`;
 }
