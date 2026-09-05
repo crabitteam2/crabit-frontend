@@ -79,6 +79,35 @@ describe("FollowListScreen", () => {
     unfollowAcademyStudent.mockResolvedValue({ ok: true, data: undefined });
   });
 
+  it.each([
+    ["following", true],
+    ["followers", false],
+  ] as const)(
+    "toggles an own %s row in both directions",
+    (tab, isFollowing) => {
+      const item = { id: listedStudentId, nickname: "민지", isFollowing };
+      render(
+        <FollowListScreen
+          backHref="/feed/me"
+          followingHref="/feed/me/follows"
+          followersHref="/feed/me/follows?tab=followers"
+          tab={tab}
+          following={[item]}
+          followers={[item]}
+        />,
+      );
+      const initialLabel = isFollowing ? "팔로잉" : "팔로우";
+      const toggledLabel = isFollowing ? "팔로우" : "팔로잉";
+
+      fireEvent.click(screen.getByRole("button", { name: initialLabel }));
+      expect(screen.getByRole("button", { name: toggledLabel })).toBeEnabled();
+      fireEvent.click(screen.getByRole("button", { name: toggledLabel }));
+      expect(screen.getByRole("button", { name: initialLabel })).toBeEnabled();
+      expect(followAcademyStudent).not.toHaveBeenCalled();
+      expect(unfollowAcademyStudent).not.toHaveBeenCalled();
+    },
+  );
+
   it("uses an owner-addressed BFF request for remote nickname search", async () => {
     renderRemote();
 

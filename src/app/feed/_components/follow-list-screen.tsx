@@ -254,7 +254,7 @@ export function FollowListScreen(props: FollowListScreenProps) {
       {remoteError === null ? (
         <ul aria-label={tab === "following" ? "팔로잉 목록" : "팔로워 목록"}>
           {items.map((item) => {
-            const isFollowing = item.isFollowing;
+            const isFollowing = changed[item.id] ?? item.isFollowing;
             return (
               <li
                 key={item.id}
