@@ -2,6 +2,8 @@ import { findWish } from "./wishes";
 
 export const ACADEMY_NAME = "크래빗 영어학원";
 
+export const NICKNAME = "아라";
+
 export interface HomeCard {
   ownerName: string;
   balance: number;

@@ -25,11 +25,7 @@ export default async function WithdrawLoadingPage({
   const destination = findCounterpart(view, queryValue(query, "to"));
   if (destination === null) return <FormQueryError backHref={selectPath} />;
 
-  const room =
-    destination.kind === "card"
-      ? view.wish.amount
-      : destination.wish.targetAmount - destination.wish.amount;
-  const amount = readAmountQuery(query, Math.min(view.wish.amount, room));
+  const amount = readAmountQuery(query, Number.MAX_SAFE_INTEGER);
   if (amount === null) return <FormQueryError backHref={selectPath} />;
 
   const destinationId =
