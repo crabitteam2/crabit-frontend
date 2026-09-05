@@ -122,6 +122,7 @@ describe("FollowListScreen", () => {
           academyId,
           studentId: ownerStudentId,
           cursor: undefined,
+          limit: 100,
           nickname: "민",
         },
       ),
@@ -168,28 +169,6 @@ describe("FollowListScreen", () => {
     },
   );
 
-  it("re-enables pagination immediately when a pending search is cleared", async () => {
-    let resolveSearch!: (value: unknown) => void;
-    const searchRequest = new Promise((resolve) => {
-      resolveSearch = resolve;
-    });
-    listAcademyStudentFollowing.mockReturnValueOnce(searchRequest);
-    renderRemote({ initialPage: { ...page(), nextCursor: "next-page" } });
-    const search = screen.getByRole("textbox", { name: "학생 검색" });
-    const loadMore = screen.getByRole("button", { name: "더 보기" });
-
-    fireEvent.change(search, { target: { value: "검색" } });
-    expect(loadMore).toBeDisabled();
-    fireEvent.change(search, { target: { value: "" } });
-    expect(loadMore).toBeEnabled();
-
-    await act(async () => {
-      resolveSearch({ ok: true, data: page("검색 결과") });
-      await searchRequest;
-    });
-    expect(loadMore).toBeEnabled();
-  });
-
   it("prevents duplicate follow requests while the current mutation is pending", async () => {
     let resolveFollow!: (value: { ok: true; data: undefined }) => void;
     followAcademyStudent.mockReturnValue(
@@ -215,9 +194,7 @@ describe("FollowListScreen", () => {
   it("does not explain why an owner-addressed list is unavailable", () => {
     renderRemote({ initialError: "unavailable", initialPage: undefined });
 
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "이 목록을 볼 수 없어요.",
-    );
     expect(screen.queryByRole("list")).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 });

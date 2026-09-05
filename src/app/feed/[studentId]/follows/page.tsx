@@ -9,6 +9,8 @@ import {
   type FollowTab,
 } from "../../_components/follow-list-screen";
 
+const PAGE_LIMIT = 100;
+
 export default async function StudentFollowsPage({
   params,
   searchParams,
@@ -48,8 +50,16 @@ export default async function StudentFollowsPage({
   });
   const result =
     tab === "followers"
-      ? await listAcademyStudentFollowers(client, { academyId, studentId })
-      : await listAcademyStudentFollowing(client, { academyId, studentId });
+      ? await listAcademyStudentFollowers(client, {
+          academyId,
+          studentId,
+          limit: PAGE_LIMIT,
+        })
+      : await listAcademyStudentFollowing(client, {
+          academyId,
+          studentId,
+          limit: PAGE_LIMIT,
+        });
 
   const initialError = result.ok
     ? undefined

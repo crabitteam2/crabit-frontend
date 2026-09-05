@@ -16,6 +16,8 @@ import {
 import { createBrowserApiClient } from "@/lib/http/browser";
 
 /** 팔로잉과 팔로워 중 어느 목록을 보고 있는지 나타냅니다. */
+const PAGE_LIMIT = 100;
+
 export type FollowTab = "following" | "followers";
 
 /** 목록 한 줄에 그릴 학생입니다. */
@@ -72,7 +74,6 @@ export function FollowListScreen(props: FollowListScreenProps) {
   const [remoteError, setRemoteError] = useState<RemoteError>(
     () => remoteProps?.initialError ?? null,
   );
-  const [isLoading, setIsLoading] = useState(false);
   const [pending, setPending] = useState<Readonly<Record<string, boolean>>>({});
   const [mutationError, setMutationError] = useState<string | null>(null);
   const requestVersion = useRef(0);
@@ -88,7 +89,6 @@ export function FollowListScreen(props: FollowListScreenProps) {
       }
 
       const version = ++requestVersion.current;
-      setIsLoading(true);
       setRemoteError(null);
       const nickname = query.trim() || undefined;
       const request =
@@ -97,18 +97,18 @@ export function FollowListScreen(props: FollowListScreenProps) {
               academyId: remoteProps.academyId,
               studentId: remoteProps.ownerStudentId,
               cursor,
+              limit: PAGE_LIMIT,
               nickname,
             })
           : listAcademyStudentFollowing(browserClient, {
               academyId: remoteProps.academyId,
               studentId: remoteProps.ownerStudentId,
               cursor,
+              limit: PAGE_LIMIT,
               nickname,
             });
       const result = await request;
       if (version !== requestVersion.current) return false;
-
-      setIsLoading(false);
       if (!result.ok) {
         setRemoteError(result.error.status === 404 ? "unavailable" : "failed");
         return false;
@@ -127,7 +127,6 @@ export function FollowListScreen(props: FollowListScreenProps) {
     if (remoteProps === null || remoteProps.initialError !== undefined) return;
     if (query.trim() === "") {
       ++requestVersion.current;
-      setIsLoading(false);
       setPage(remoteProps.initialPage ?? null);
       setRemoteError(null);
       return;
@@ -227,14 +226,6 @@ export function FollowListScreen(props: FollowListScreenProps) {
         </div>
       </div>
 
-      {remoteError === "unavailable" ? (
-        <p
-          role="status"
-          className="text-fg-neutral-muted px-4 py-10 text-center text-[16px] leading-[23px]"
-        >
-          이 목록을 볼 수 없어요.
-        </p>
-      ) : null}
       {remoteError === "failed" ? (
         <p
           role="alert"
@@ -282,32 +273,6 @@ export function FollowListScreen(props: FollowListScreenProps) {
             );
           })}
         </ul>
-      ) : null}
-      {remote &&
-      remoteError === null &&
-      page !== null &&
-      page.nextCursor !== null ? (
-        <div className="px-4 py-4">
-          <Button
-            size="large"
-            variant="weak"
-            className="w-full"
-            isLoading={isLoading}
-            onClick={() =>
-              void loadRemotePage(page.nextCursor ?? undefined, true)
-            }
-          >
-            더 보기
-          </Button>
-        </div>
-      ) : null}
-      {remote && remoteError === null && isLoading && page === null ? (
-        <p
-          role="status"
-          className="text-fg-neutral-muted px-4 py-4 text-center"
-        >
-          불러오는 중이에요.
-        </p>
       ) : null}
     </div>
   );
