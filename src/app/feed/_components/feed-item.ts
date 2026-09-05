@@ -71,18 +71,32 @@ export interface StudentProfileItem {
   readonly inProgress: ProfileWishItem[];
   /** 완료한 위시로 공유한 카드입니다. */
   readonly finished: ProfileWishItem[];
-  /** 이 학생이 팔로우한 사람 수이며 대응 API가 없어 0입니다. */
+  /** 이 학생이 팔로우한 사람 수입니다. */
   readonly followingCount: number;
-  /** 이 학생을 팔로우한 사람 수이며 대응 API가 없어 0입니다. */
+  /** 이 학생을 팔로우한 사람 수입니다. */
   readonly followerCount: number;
   /** 내가 이 학생을 팔로우하고 있는지 여부입니다. */
   readonly isFollowing: boolean;
 }
 
+/** 목록 소유자 기준의 팔로잉과 팔로워 전체 수입니다. */
+export interface StudentFollowCounts {
+  /** 이 학생이 팔로우한 사람 수입니다. */
+  readonly followingCount: number;
+  /** 이 학생을 팔로우한 사람 수입니다. */
+  readonly followerCount: number;
+}
+
+const EMPTY_COUNTS: StudentFollowCounts = {
+  followingCount: 0,
+  followerCount: 0,
+};
+
 /** 학생 조회와 공유 카드 목록을 프로필 화면 모델로 합칩니다. */
 export function toStudentProfileItem(
   student: components["schemas"]["StudentRelationship"],
   cards: components["schemas"]["SharedCard"][],
+  counts: StudentFollowCounts = EMPTY_COUNTS,
 ): StudentProfileItem {
   const items = cards.map(toFeedCardItem);
 
@@ -91,8 +105,8 @@ export function toStudentProfileItem(
     nickname: student.nickname,
     inProgress: items.filter(isInProgressProfileWish),
     finished: items.filter((item) => !isInProgressProfileWish(item)),
-    followingCount: 0,
-    followerCount: 0,
+    followingCount: counts.followingCount,
+    followerCount: counts.followerCount,
     isFollowing: student.isFollowing,
   };
 }
