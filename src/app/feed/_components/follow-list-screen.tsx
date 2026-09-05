@@ -52,8 +52,7 @@ interface RemoteFollowListScreenProps extends FollowListScreenBaseProps {
 }
 
 type FollowListScreenProps =
-  | MockFollowListScreenProps
-  | RemoteFollowListScreenProps;
+  MockFollowListScreenProps | RemoteFollowListScreenProps;
 
 type RemoteError = "unavailable" | "failed" | null;
 
@@ -78,54 +77,57 @@ export function FollowListScreen(props: FollowListScreenProps) {
   const [mutationError, setMutationError] = useState<string | null>(null);
   const requestVersion = useRef(0);
 
-  const loadRemotePage = useCallback(async (
-    cursor?: string,
-    append = false,
-  ) => {
-    if (
-      remoteProps === null ||
-      browserClient === null ||
-      remoteProps.initialError !== undefined
-    ) {
-      return false;
-    }
+  const loadRemotePage = useCallback(
+    async (cursor?: string, append = false) => {
+      if (
+        remoteProps === null ||
+        browserClient === null ||
+        remoteProps.initialError !== undefined
+      ) {
+        return false;
+      }
 
-    const version = ++requestVersion.current;
-    setIsLoading(true);
-    setRemoteError(null);
-    const nickname = query.trim() || undefined;
-    const request = tab === "followers"
-      ? listAcademyStudentFollowers(browserClient, {
-          academyId: remoteProps.academyId,
-          studentId: remoteProps.ownerStudentId,
-          cursor,
-          nickname,
-        })
-      : listAcademyStudentFollowing(browserClient, {
-          academyId: remoteProps.academyId,
-          studentId: remoteProps.ownerStudentId,
-          cursor,
-          nickname,
-        });
-    const result = await request;
-    if (version !== requestVersion.current) return false;
+      const version = ++requestVersion.current;
+      setIsLoading(true);
+      setRemoteError(null);
+      const nickname = query.trim() || undefined;
+      const request =
+        tab === "followers"
+          ? listAcademyStudentFollowers(browserClient, {
+              academyId: remoteProps.academyId,
+              studentId: remoteProps.ownerStudentId,
+              cursor,
+              nickname,
+            })
+          : listAcademyStudentFollowing(browserClient, {
+              academyId: remoteProps.academyId,
+              studentId: remoteProps.ownerStudentId,
+              cursor,
+              nickname,
+            });
+      const result = await request;
+      if (version !== requestVersion.current) return false;
 
-    setIsLoading(false);
-    if (!result.ok) {
-      setRemoteError(result.error.status === 404 ? "unavailable" : "failed");
-      return false;
-    }
-    setPage((current) =>
-      append && current !== null
-        ? { ...result.data, items: [...current.items, ...result.data.items] }
-        : result.data,
-    );
-    return true;
-  }, [browserClient, query, remoteProps, tab]);
+      setIsLoading(false);
+      if (!result.ok) {
+        setRemoteError(result.error.status === 404 ? "unavailable" : "failed");
+        return false;
+      }
+      setPage((current) =>
+        append && current !== null
+          ? { ...result.data, items: [...current.items, ...result.data.items] }
+          : result.data,
+      );
+      return true;
+    },
+    [browserClient, query, remoteProps, tab],
+  );
 
   useEffect(() => {
     if (remoteProps === null || remoteProps.initialError !== undefined) return;
     if (query.trim() === "") {
+      ++requestVersion.current;
+      setIsLoading(false);
       setPage(remoteProps.initialPage ?? null);
       setRemoteError(null);
       return;
@@ -141,8 +143,9 @@ export function FollowListScreen(props: FollowListScreenProps) {
         isFollowing: changed[item.studentId] ?? item.isFollowing,
       }))
     : (tab === "following"
-      ? (props as MockFollowListScreenProps).following
-      : (props as MockFollowListScreenProps).followers).filter((item) =>
+        ? (props as MockFollowListScreenProps).following
+        : (props as MockFollowListScreenProps).followers
+      ).filter((item) =>
         keyword === "" ? true : item.nickname.includes(keyword),
       );
 
@@ -166,7 +169,9 @@ export function FollowListScreen(props: FollowListScreenProps) {
         });
     setPending((current) => ({ ...current, [id]: false }));
     if (!result.ok) {
-      setMutationError("팔로우 상태를 변경하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setMutationError(
+        "팔로우 상태를 변경하지 못했어요. 잠시 후 다시 시도해 주세요.",
+      );
       return;
     }
     setChanged((current) => ({ ...current, [id]: !isFollowing }));
@@ -239,57 +244,68 @@ export function FollowListScreen(props: FollowListScreenProps) {
         </p>
       ) : null}
       {mutationError === null ? null : (
-        <p role="alert" className="px-4 pb-3 text-center text-[14px] text-error">
+        <p
+          role="alert"
+          className="text-error px-4 pb-3 text-center text-[14px]"
+        >
           {mutationError}
         </p>
       )}
       {remoteError === null ? (
         <ul aria-label={tab === "following" ? "팔로잉 목록" : "팔로워 목록"}>
-        {items.map((item) => {
-          const isFollowing = item.isFollowing;
-          return (
-            <li
-              key={item.id}
-              className="flex items-center justify-between px-4 py-3"
-            >
-              <Link
-                href={`/feed/${item.id}`}
-                className="text-t2 text-fg-neutral font-semibold"
+          {items.map((item) => {
+            const isFollowing = item.isFollowing;
+            return (
+              <li
+                key={item.id}
+                className="flex items-center justify-between px-4 py-3"
               >
-                {item.nickname}
-              </Link>
-              <Button
-                size="medium"
-                variant={isFollowing ? "weak" : "fill"}
-                isLoading={remote && pending[item.id] === true}
-                onClick={() =>
-                  remote
-                    ? void toggleRemote(item.id, isFollowing)
-                    : toggleMock(item.id, isFollowing)
-                }
-              >
-                {isFollowing ? "팔로잉" : "팔로우"}
-              </Button>
-            </li>
-          );
-        })}
+                <Link
+                  href={`/feed/${item.id}`}
+                  className="text-t2 text-fg-neutral font-semibold"
+                >
+                  {item.nickname}
+                </Link>
+                <Button
+                  size="medium"
+                  variant={isFollowing ? "weak" : "fill"}
+                  isLoading={remote && pending[item.id] === true}
+                  onClick={() =>
+                    remote
+                      ? void toggleRemote(item.id, isFollowing)
+                      : toggleMock(item.id, isFollowing)
+                  }
+                >
+                  {isFollowing ? "팔로잉" : "팔로우"}
+                </Button>
+              </li>
+            );
+          })}
         </ul>
       ) : null}
-      {remote && remoteError === null && page !== null && page.nextCursor !== null ? (
+      {remote &&
+      remoteError === null &&
+      page !== null &&
+      page.nextCursor !== null ? (
         <div className="px-4 py-4">
           <Button
             size="large"
             variant="weak"
             className="w-full"
             isLoading={isLoading}
-            onClick={() => void loadRemotePage(page.nextCursor ?? undefined, true)}
+            onClick={() =>
+              void loadRemotePage(page.nextCursor ?? undefined, true)
+            }
           >
             더 보기
           </Button>
         </div>
       ) : null}
       {remote && remoteError === null && isLoading && page === null ? (
-        <p role="status" className="px-4 py-4 text-center text-fg-neutral-muted">
+        <p
+          role="status"
+          className="text-fg-neutral-muted px-4 py-4 text-center"
+        >
           불러오는 중이에요.
         </p>
       ) : null}

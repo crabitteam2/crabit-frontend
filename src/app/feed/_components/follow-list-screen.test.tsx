@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/image", () => ({
@@ -47,7 +53,9 @@ const page = (nickname = "민지", isFollowing = false) => ({
   followerCount: 50,
 });
 
-function renderRemote(options: Partial<React.ComponentProps<typeof FollowListScreen>> = {}) {
+function renderRemote(
+  options: Partial<React.ComponentProps<typeof FollowListScreen>> = {},
+) {
   return render(
     <FollowListScreen
       backHref={`/feed/${ownerStudentId}?academyId=${academyId}`}
@@ -95,11 +103,71 @@ describe("FollowListScreen", () => {
     );
   });
 
+  it.each([
+    ["success", { ok: true, data: page("검색 결과") }],
+    ["unavailable", { ok: false, error: { status: 404 } }],
+    ["failure", { ok: false, error: { status: 500 } }],
+  ])(
+    "keeps the initial list after clearing a pending search that returns %s",
+    async (_outcome, result) => {
+      let resolveSearch!: (value: unknown) => void;
+      const searchRequest = new Promise((resolve) => {
+        resolveSearch = resolve;
+      });
+      listAcademyStudentFollowing.mockReturnValueOnce(searchRequest);
+      renderRemote();
+      const search = screen.getByRole("textbox", { name: "학생 검색" });
+
+      fireEvent.change(search, { target: { value: "검색" } });
+      expect(listAcademyStudentFollowing).toHaveBeenCalledTimes(1);
+      fireEvent.change(search, { target: { value: "" } });
+      expect(screen.getByRole("link", { name: "민지" })).toBeInTheDocument();
+
+      await act(async () => {
+        resolveSearch(result);
+        await searchRequest;
+      });
+
+      expect(search).toHaveValue("");
+      expect(screen.getByRole("link", { name: "민지" })).toBeInTheDocument();
+      expect(
+        screen.queryByRole("link", { name: "검색 결과" }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      expect(listAcademyStudentFollowing).toHaveBeenCalledTimes(1);
+    },
+  );
+
+  it("re-enables pagination immediately when a pending search is cleared", async () => {
+    let resolveSearch!: (value: unknown) => void;
+    const searchRequest = new Promise((resolve) => {
+      resolveSearch = resolve;
+    });
+    listAcademyStudentFollowing.mockReturnValueOnce(searchRequest);
+    renderRemote({ initialPage: { ...page(), nextCursor: "next-page" } });
+    const search = screen.getByRole("textbox", { name: "학생 검색" });
+    const loadMore = screen.getByRole("button", { name: "더 보기" });
+
+    fireEvent.change(search, { target: { value: "검색" } });
+    expect(loadMore).toBeDisabled();
+    fireEvent.change(search, { target: { value: "" } });
+    expect(loadMore).toBeEnabled();
+
+    await act(async () => {
+      resolveSearch({ ok: true, data: page("검색 결과") });
+      await searchRequest;
+    });
+    expect(loadMore).toBeEnabled();
+  });
+
   it("prevents duplicate follow requests while the current mutation is pending", async () => {
     let resolveFollow!: (value: { ok: true; data: undefined }) => void;
-    followAcademyStudent.mockReturnValue(new Promise((resolve) => {
-      resolveFollow = resolve;
-    }));
+    followAcademyStudent.mockReturnValue(
+      new Promise((resolve) => {
+        resolveFollow = resolve;
+      }),
+    );
     renderRemote();
 
     const follow = screen.getByRole("button", { name: "팔로우" });
@@ -110,13 +178,17 @@ describe("FollowListScreen", () => {
     expect(follow).toBeDisabled();
     resolveFollow({ ok: true, data: undefined });
 
-    await waitFor(() => expect(listAcademyStudentFollowing).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(listAcademyStudentFollowing).toHaveBeenCalledTimes(1),
+    );
   });
 
   it("does not explain why an owner-addressed list is unavailable", () => {
     renderRemote({ initialError: "unavailable", initialPage: undefined });
 
-    expect(screen.getByRole("status")).toHaveTextContent("이 목록을 볼 수 없어요.");
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "이 목록을 볼 수 없어요.",
+    );
     expect(screen.queryByRole("list")).not.toBeInTheDocument();
   });
 });

@@ -74,5 +74,7 @@ export function StudentProfileScreen({ studentId }: StudentProfileScreenProps) {
 
   if (profile === null || session === null) return null;
 
-  return <StudentProfile academyId={session.context.academyId} profile={profile} />;
+  return (
+    <StudentProfile academyId={session.context.academyId} profile={profile} />
+  );
 }
