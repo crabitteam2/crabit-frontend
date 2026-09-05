@@ -2,26 +2,71 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import chipCloseIcon from "@/../public/images/feed/chip-close.svg";
 import searchIcon from "@/../public/images/feed/search.svg";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { searchStudents } from "@/lib/mock/feed";
+import { createBrowserApiClient } from "@/lib/http/browser";
+import { searchAcademyStudents } from "@/lib/http/follows";
+import type { components } from "@/lib/http/generated/crabit-backend";
+import { useBehaviorSession } from "./behavior-session";
+import {
+  readRecentSearches,
+  saveRecentSearches,
+  withRecentSearch,
+} from "./recent-search-storage";
+
+const DEBOUNCE_MS = 250;
+
+const PAGE_LIMIT = 20;
+
+type Student = components["schemas"]["StudentRelationship"];
 
 const CHIP_STYLE =
   "border-gray-7 text-gray-7 flex shrink-0 items-center gap-[7px] rounded-[15px] border px-[10px] py-[6px] text-b4";
 
-interface FeedSearchProps {
-  recentSearches: string[];
-}
-
-export function FeedSearch({ recentSearches }: FeedSearchProps) {
+export function FeedSearch() {
   const router = useRouter();
+  const session = useBehaviorSession();
+  const client = useMemo(() => createBrowserApiClient(), []);
   const [query, setQuery] = useState("");
-  const [recent, setRecent] = useState(recentSearches);
+  const [recent, setRecent] = useState<string[]>([]);
+  const [results, setResults] = useState<Student[]>([]);
+  const [hasError, setHasError] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const version = useRef(0);
 
-  const results = searchStudents(query);
+  useEffect(() => setRecent(readRecentSearches()), []);
+
+  useEffect(() => {
+    const academyId = session?.context.academyId;
+    const nickname = query.trim();
+    if (academyId === undefined || nickname === "") {
+      setResults([]);
+      setHasError(false);
+      return;
+    }
+
+    const current = ++version.current;
+    const timer = setTimeout(async () => {
+      const result = await searchAcademyStudents(client, {
+        academyId,
+        nickname,
+        limit: PAGE_LIMIT,
+      });
+      if (version.current !== current) return;
+
+      setHasError(!result.ok);
+      setResults(result.ok ? result.data.items : []);
+    }, DEBOUNCE_MS);
+
+    return () => clearTimeout(timer);
+  }, [client, query, session?.context.academyId]);
+
+  const remember = (keywords: string[]) => {
+    setRecent(keywords);
+    saveRecentSearches(keywords);
+  };
 
   const cancel = () => {
     if (window.history.length > 1) {
@@ -32,11 +77,13 @@ export function FeedSearch({ recentSearches }: FeedSearchProps) {
   };
 
   const visit = (studentId: string, nickname: string) => {
-    setRecent((keywords) => [
-      nickname,
-      ...keywords.filter((keyword) => keyword !== nickname),
-    ]);
-    router.push(`/feed/${studentId}`);
+    remember(withRecentSearch(recent, nickname));
+    const academyId = session?.context.academyId;
+    router.push(
+      academyId === undefined
+        ? `/feed/${studentId}`
+        : `/feed/${studentId}?academyId=${encodeURIComponent(academyId)}`,
+    );
   };
 
   return (
@@ -68,6 +115,15 @@ export function FeedSearch({ recentSearches }: FeedSearchProps) {
         </button>
       </header>
 
+      {hasError ? (
+        <p
+          role="alert"
+          className="text-gray-7 px-4 pb-10 text-center text-[16px] leading-[23px] font-medium tracking-[-0.3px]"
+        >
+          검색하지 못했어요. 잠시 후 다시 시도해주세요.
+        </p>
+      ) : null}
+
       {results.length === 0 ? null : (
         <section>
           <h2 className="text-t1 text-fg-neutral px-4 pt-3 pb-2 font-bold">
@@ -77,9 +133,9 @@ export function FeedSearch({ recentSearches }: FeedSearchProps) {
             <div className="bg-pink-1 flex items-center gap-3 overflow-x-auto rounded-[15px] p-4">
               {results.map((student) => (
                 <button
-                  key={student.id}
+                  key={student.studentId}
                   type="button"
-                  onClick={() => visit(student.id, student.nickname)}
+                  onClick={() => visit(student.studentId, student.nickname)}
                   className={CHIP_STYLE}
                 >
                   {student.nickname}
@@ -122,9 +178,7 @@ export function FeedSearch({ recentSearches }: FeedSearchProps) {
                     type="button"
                     aria-label={`${keyword} 검색어 삭제`}
                     onClick={() =>
-                      setRecent((keywords) =>
-                        keywords.filter((item) => item !== keyword),
-                      )
+                      remember(recent.filter((item) => item !== keyword))
                     }
                     className="block size-2"
                   >
@@ -143,7 +197,7 @@ export function FeedSearch({ recentSearches }: FeedSearchProps) {
         primaryLabel="삭제하기"
         secondaryLabel="취소하기"
         onPrimary={() => {
-          setRecent([]);
+          remember([]);
           setIsDeleteOpen(false);
         }}
         onSecondary={() => setIsDeleteOpen(false)}
