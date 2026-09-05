@@ -7,7 +7,50 @@ type Weekly = components["schemas"]["WeeklyRecapResponse"];
 type Monthly = components["schemas"]["MonthlyRecapResponse"];
 
 describe("RecapSection", () => {
-  it("생성 전과 월간 부적격을 결과나 링크로 오해하지 않는다", () => {
+  it("리캡이 없거나 부적격이면 상세로 가는 링크를 걸지 않는다", () => {
+    render(
+      <RecapSection
+        weekly={weeklyState("NOT_GENERATED")}
+        monthly={monthlyState("NOT_ELIGIBLE")}
+      />,
+    );
+
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("생성 중이거나 실패해도 링크를 걸지 않는다", () => {
+    render(
+      <RecapSection
+        weekly={weeklyState("GENERATING")}
+        monthly={monthlyState("FAILED")}
+      />,
+    );
+
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+  });
+
+  it("성공한 리캡은 상세로 가는 링크를 건다", () => {
+    render(
+      <RecapSection weekly={weeklySucceeded()} monthly={monthlySucceeded()} />,
+    );
+
+    expect(
+      screen.getByRole("link", { name: "주간 리플레이 보기" }),
+    ).toHaveAttribute("href", "/recaps/weekly?weekStart=2026-08-24");
+    expect(
+      screen.getByRole("link", { name: "월간 리플레이 보기" }),
+    ).toHaveAttribute("href", "/recaps/monthly?month=2026-08");
+  });
+
+  it("월간 카드에 조회한 리캡의 월을 표시한다", () => {
+    render(
+      <RecapSection weekly={weeklySucceeded()} monthly={monthlySucceeded()} />,
+    );
+
+    expect(screen.getByText("8월")).toBeInTheDocument();
+  });
+
+  it("주간 카드 문구는 리캡 상태와 무관하게 같다", () => {
     render(
       <RecapSection
         weekly={weeklyState("NOT_GENERATED")}
@@ -16,43 +59,8 @@ describe("RecapSection", () => {
     );
 
     expect(
-      screen.getByText("아직 주간 리플레이가 없어요."),
+      screen.getByText("지난주 동안 내가 가장 많이 한 행동은?"),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("저축 기록이 3번 모이면 월간 리플레이가 열려요."),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
-  });
-
-  it("생성 중과 실패를 서로 다른 상태로 안내한다", () => {
-    render(
-      <RecapSection
-        weekly={weeklyState("GENERATING")}
-        monthly={monthlyState("FAILED")}
-      />,
-    );
-
-    expect(
-      screen.getByText("주간 리플레이를 만들고 있어요."),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText("월간 리플레이를 불러오지 못했어요."),
-    ).toBeInTheDocument();
-  });
-
-  it("활동이 0인 성공도 상세 링크가 있는 성공 리캡으로 표시한다", () => {
-    render(
-      <RecapSection weekly={weeklySucceeded()} monthly={monthlySucceeded()} />,
-    );
-
-    expect(screen.getByText("지난주는 조용히 쉬어갔어요.")).toBeInTheDocument();
-    expect(screen.getByText("소액이라도 꾸준히 모았어요!")).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "주간 리플레이 자세히 보기" }),
-    ).toHaveAttribute("href", "/recaps/weekly?weekStart=2026-08-24");
-    expect(
-      screen.getByRole("link", { name: "월간 리플레이 자세히 보기" }),
-    ).toHaveAttribute("href", "/recaps/monthly?month=2026-08");
   });
 });
 
