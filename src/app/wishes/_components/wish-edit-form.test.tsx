@@ -310,7 +310,8 @@ describe("WishEditForm photo replacement", () => {
       "20000",
     );
     await user.click(screen.getByRole("textbox", { name: "위시 기간" }));
-    await user.click(screen.getByRole("button", { name: "기간 해제" }));
+    await user.click(screen.getByRole("button", { name: "2026년 9월 11일" }));
+    await user.click(screen.getByRole("button", { name: "2026년 9월 11일" }));
     await user.click(screen.getByRole("button", { name: "넘어가기" }));
     await user.click(screen.getByRole("button", { name: "다음" }));
     await waitFor(() =>
@@ -348,6 +349,7 @@ describe("WishEditForm photo replacement", () => {
     );
     await user.click(screen.getByRole("textbox", { name: "위시 기간" }));
     await user.click(screen.getByRole("button", { name: "2026년 9월 11일" }));
+    await user.click(screen.getByRole("button", { name: "2026년 9월 20일" }));
     await user.click(screen.getByRole("button", { name: "다음" }));
     await user.click(screen.getByRole("button", { name: "다음" }));
     await waitFor(() =>
