@@ -18,10 +18,11 @@ const UNBLOCKED_MESSAGE = "차단을 해제했어요.";
 const UNFOLLOWED_MESSAGE = "팔로우 취소가 완료되었어요.";
 
 interface StudentProfileProps {
+  academyId: string;
   profile: StudentProfileItem;
 }
 
-export function StudentProfile({ profile }: StudentProfileProps) {
+export function StudentProfile({ academyId, profile }: StudentProfileProps) {
   const [isBlocked, setIsBlocked] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isFollowing, setIsFollowing] = useState(profile.isFollowing);
@@ -46,14 +47,14 @@ export function StudentProfile({ profile }: StudentProfileProps) {
         nickname={profile.nickname}
         inProgress={isBlocked ? [] : profile.inProgress}
         finished={isBlocked ? [] : profile.finished}
-        backHref="/feed"
+        backHref={`/feed?academyId=${encodeURIComponent(academyId)}`}
         followingCount={profile.followingCount}
         followerCount={
           isFollowing
             ? profile.followerCount
             : Math.max(0, profile.followerCount - 1)
         }
-        followsHref={`/feed/${profile.id}/follows`}
+        followsHref={`/feed/${profile.id}/follows?academyId=${encodeURIComponent(academyId)}`}
         followAction={
           <Button
             size="medium"

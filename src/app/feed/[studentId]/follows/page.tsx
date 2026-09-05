@@ -1,13 +1,15 @@
-import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import {
-  FOLLOWER_ENTRIES,
-  FOLLOWING_ENTRIES,
-  findStudentProfile,
-} from "@/lib/mock/feed";
+  listAcademyStudentFollowers,
+  listAcademyStudentFollowing,
+} from "@/lib/http/follows";
+import { createServerApiClient } from "@/lib/http/server";
 import {
   FollowListScreen,
   type FollowTab,
 } from "../../_components/follow-list-screen";
+
+const PAGE_LIMIT = 100;
 
 export default async function StudentFollowsPage({
   params,
@@ -17,25 +19,76 @@ export default async function StudentFollowsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { studentId } = await params;
-  if (findStudentProfile(studentId) === null) notFound();
-
   const query = await searchParams;
-  const raw = query.tab;
-  const tab: FollowTab =
-    (Array.isArray(raw) ? raw[0] : raw) === "followers"
-      ? "followers"
-      : "following";
+  const raw = firstQueryValue(query.tab);
+  const tab: FollowTab = raw === "followers" ? "followers" : "following";
+  const academyId = firstQueryValue(query.academyId);
+  const base = `/feed/${encodeURIComponent(studentId)}/follows`;
+  const academyQuery =
+    academyId === undefined
+      ? ""
+      : `?academyId=${encodeURIComponent(academyId)}`;
+  const followingHref = `${base}${academyQuery}`;
+  const followersHref = withSearchParameter(followingHref, "tab", "followers");
 
-  const base = `/feed/${studentId}/follows`;
+  if (academyId === undefined) {
+    return (
+      <FollowListScreen
+        backHref={`/feed/${encodeURIComponent(studentId)}`}
+        tab={tab}
+        followingHref={followingHref}
+        followersHref={followersHref}
+        academyId=""
+        ownerStudentId={studentId}
+        initialError="unavailable"
+      />
+    );
+  }
+
+  const client = createServerApiClient({
+    request: { headers: await headers() },
+  });
+  const result =
+    tab === "followers"
+      ? await listAcademyStudentFollowers(client, {
+          academyId,
+          studentId,
+          limit: PAGE_LIMIT,
+        })
+      : await listAcademyStudentFollowing(client, {
+          academyId,
+          studentId,
+          limit: PAGE_LIMIT,
+        });
+
+  const initialError = result.ok
+    ? undefined
+    : result.error.status === 404
+      ? "unavailable"
+      : "failed";
 
   return (
     <FollowListScreen
-      backHref={`/feed/${studentId}`}
+      key={`${academyId}:${studentId}:${tab}`}
+      backHref={`/feed/${encodeURIComponent(studentId)}${academyQuery}`}
       tab={tab}
-      followingHref={base}
-      followersHref={`${base}?tab=followers`}
-      following={FOLLOWING_ENTRIES}
-      followers={FOLLOWER_ENTRIES}
+      followingHref={followingHref}
+      followersHref={followersHref}
+      academyId={academyId}
+      ownerStudentId={studentId}
+      {...(result.ok ? { initialPage: result.data } : { initialError })}
     />
   );
+}
+
+function firstQueryValue(value: string | string[] | undefined) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function withSearchParameter(href: string, key: string, value: string) {
+  const [path, fragment] = href.split("#", 2);
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}${
+    fragment === undefined ? "" : `#${fragment}`
+  }`;
 }

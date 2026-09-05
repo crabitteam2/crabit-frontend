@@ -82,7 +82,7 @@ export function ProfileScreen({
           <ProfileCount
             label="팔로워"
             value={String(followerCount)}
-            href={`${followsHref}?tab=followers`}
+            href={withSearchParameter(followsHref, "tab", "followers")}
           />
           <ProfileCount
             label="진행중"
@@ -97,6 +97,14 @@ export function ProfileScreen({
       <TopButton />
     </div>
   );
+}
+
+function withSearchParameter(href: string, key: string, value: string) {
+  const [path, fragment] = href.split("#", 2);
+  const separator = path.includes("?") ? "&" : "?";
+  return `${path}${separator}${encodeURIComponent(key)}=${encodeURIComponent(value)}${
+    fragment === undefined ? "" : `#${fragment}`
+  }`;
 }
 
 function ProfileCount({

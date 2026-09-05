@@ -20,6 +20,11 @@ export interface SearchAcademyStudentsOptions
 export interface ListAcademyFollowsOptions extends AcademyOptions, PageOptions {
   readonly nickname?: components["parameters"]["OptionalRelationshipNickname"];
 }
+/** 다른 학생이 소유한 팔로잉 또는 팔로워 목록을 읽는 조건입니다. */
+export interface ListAcademyStudentFollowsOptions
+  extends ListAcademyFollowsOptions {
+  readonly studentId: components["parameters"]["StudentId"];
+}
 /** 본인에서 대상으로 향하는 선택 학원의 관계만 변경합니다. */
 export interface FollowAcademyStudentOptions extends AcademyOptions {
   readonly studentId: components["parameters"]["StudentId"];
@@ -80,6 +85,31 @@ export function listAcademyFollowers(
 ) {
   return listFollows(client, "/v1/academies/{academyId}/followers", options);
 }
+
+/** 선택한 학생이 팔로우한 목록과 그 학생의 전체 관계 수를 읽습니다. */
+export function listAcademyStudentFollowing(
+  client: CrabitApiClient,
+  options: ListAcademyStudentFollowsOptions,
+): Promise<ApiResult<components["schemas"]["FollowPage"]>> {
+  return listStudentFollows(
+    client,
+    "/v1/academies/{academyId}/students/{studentId}/following",
+    options,
+  );
+}
+
+/** 선택한 학생의 팔로워 목록과 그 학생의 전체 관계 수를 읽습니다. */
+export function listAcademyStudentFollowers(
+  client: CrabitApiClient,
+  options: ListAcademyStudentFollowsOptions,
+): Promise<ApiResult<components["schemas"]["FollowPage"]>> {
+  return listStudentFollows(
+    client,
+    "/v1/academies/{academyId}/students/{studentId}/followers",
+    options,
+  );
+}
+
 function listFollows(
   client: CrabitApiClient,
   path:
@@ -91,6 +121,30 @@ function listFollows(
     client.GET(path, {
       params: {
         path: { academyId: options.academyId },
+        query: {
+          cursor: options.cursor,
+          limit: options.limit,
+          nickname: options.nickname,
+        },
+      },
+    }),
+  );
+}
+
+function listStudentFollows(
+  client: CrabitApiClient,
+  path:
+    | "/v1/academies/{academyId}/students/{studentId}/following"
+    | "/v1/academies/{academyId}/students/{studentId}/followers",
+  options: ListAcademyStudentFollowsOptions,
+): Promise<ApiResult<components["schemas"]["FollowPage"]>> {
+  return apiResult<components["schemas"]["FollowPage"]>(() =>
+    client.GET(path, {
+      params: {
+        path: {
+          academyId: options.academyId,
+          studentId: options.studentId,
+        },
         query: {
           cursor: options.cursor,
           limit: options.limit,
