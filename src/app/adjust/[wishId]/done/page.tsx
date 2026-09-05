@@ -1,8 +1,8 @@
-import { readAmountQuery } from "@/lib/forms/wish-form-query";
-import { FormQueryError } from "@/app/wishes/_components/form-query-error";
 import { notFound } from "next/navigation";
+import { FormQueryError } from "@/app/wishes/_components/form-query-error";
 import { WithdrawDoneScreen } from "@/app/wishes/_components/withdraw-done-screen";
-import { findWish } from "@/lib/mock/wishes";
+import { loadFundFlow } from "@/app/wishes/[wishId]/fund-flow";
+import { readAmountQuery } from "@/lib/forms/wish-form-query";
 
 export default async function AdjustDonePage({
   params,
@@ -12,19 +12,18 @@ export default async function AdjustDonePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { wishId } = await params;
-  const wish = findWish(wishId);
-  if (wish === null) notFound();
+  const view = await loadFundFlow(wishId);
+  if (view === null) notFound();
 
-  const query = await searchParams;
-  const amount = readAmountQuery(query, wish.amount);
+  const amount = readAmountQuery(await searchParams, Number.MAX_SAFE_INTEGER);
   if (amount === null)
     return <FormQueryError backHref={`/adjust/${wishId}/amount`} />;
 
   return (
     <WithdrawDoneScreen
-      purpose={wish.purpose}
+      purpose={view.wish.purpose}
       amount={amount}
-      balanceAfter={wish.amount - amount}
+      balanceAfter={view.wish.amount}
     />
   );
 }

@@ -370,6 +370,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/card-balance-accounts/{cardBalanceAccountId}/recaps/monthly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * 소유한 계정의 완료된 월간 리캡 조회
+         * @description 인증된 학생이 소유한 활성 카드 잔액 계정에서 Asia/Seoul 기준으로 완료된 월간 리캡 하나를 조회합니다. month를 생략하면 가장 최근 완료된 달을 선택합니다. 제공한 값은 정확한 YYYY-MM 형식이어야 하고 미래 또는 진행 중인 달, 반복되거나 알 수 없는 쿼리 매개 변수는 400 MALFORMED_REQUEST입니다. 유효 입금이 세 건 미만이면 transport 오류가 아닌 확정 NOT_ELIGIBLE 상태를 200으로 반환합니다. 생성 이력이 없거나 진행 중이거나 최종 실패한 경우도 200 상태 리소스이며, 재생성이 진행 중이거나 실패했더라도 이전 current 성공이 있으면 그 불변 버전을 SUCCEEDED로 계속 반환합니다. 내부 생성 오류, QA 메트릭, peer identity와 원장 행은 공개하지 않습니다.
+         */
+        get: operations["getMonthlyRecap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/card-balance-accounts/{cardBalanceAccountId}/recaps/weekly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * 소유한 계정의 완료된 주간 리캡 조회
+         * @description 인증된 학생이 소유한 활성 카드 잔액 계정에서 Asia/Seoul 기준으로 완료된 주간 리캡 하나를 조회합니다. weekStart를 생략하면 가장 최근 완료된 월요일~다음 월요일 기간을 선택합니다. 제공한 값은 월요일이어야 하고 미래 또는 진행 중인 주, 반복되거나 알 수 없는 쿼리 매개 변수는 400 MALFORMED_REQUEST입니다. 생성 이력이 없거나 진행 중이거나 최종 실패한 경우도 200 상태 리소스로 반환하며, 활동이 0인 성공 결과는 SUCCEEDED입니다. 재생성이 진행 중이거나 실패했더라도 이전 current 성공이 있으면 그 불변 버전을 SUCCEEDED로 계속 반환합니다. 성공 story는 저장된 wishId와 typeTitle을 기반으로 매 조회마다 현재 공유 카드 공개 범위, 논리 삭제, 양방향 차단, viewer에서 owner로의 팔로우와 학원 소속을 다시 검증해 허용된 ownerStudentId와 sharedCardId만 보강합니다. 허용되지 않은 story만 생략하며 저장된 결과는 바꾸지 않습니다.
+         */
+        get: operations["getWeeklyRecap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/card-balance-accounts/{cardBalanceAccountId}/representative-wish": {
         parameters: {
             query?: never;
@@ -1320,7 +1364,7 @@ export interface components {
         };
         Cursor: string;
         /** @enum {string} */
-        ErrorCode: "SELF_PROFILE_VISIT" | "EVENT_TIME_OUT_OF_RANGE" | "PROFILE_NOT_FOUND" | "FEED_CONTEXT_NOT_FOUND" | "FEED_CONTEXT_EXPIRED" | "EVENT_ID_CONFLICT" | "IMPRESSION_CONFLICT" | "IMPRESSION_ALREADY_EXPOSED" | "MALFORMED_REQUEST" | "EXPECTED_VERSION_REQUIRED" | "IDEMPOTENCY_KEY_REQUIRED" | "AUTH_REQUIRED" | "FORBIDDEN" | "CARD_BALANCE_ACCOUNT_NOT_FOUND" | "WISH_NOT_FOUND" | "ACADEMY_NOT_FOUND" | "SHARED_CARD_NOT_FOUND" | "VERSION_CONFLICT" | "INVALID_STATE_TRANSITION" | "BALANCE_MISMATCH_LOCKED" | "INSUFFICIENT_AVAILABLE_BALANCE" | "INSUFFICIENT_WISH_AMOUNT" | "TARGET_AMOUNT_EXCEEDED" | "CROSS_ACCOUNT_TRANSFER_FORBIDDEN" | "IDEMPOTENCY_KEY_REUSED" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_AMOUNT" | "INVALID_PURPOSE" | "INVALID_DATE_RANGE" | "INVALID_VERSION" | "BALANCE_SYNC_FAILED" | "STUDENT_NOT_FOUND" | "STUDENT_BLOCK_NOT_FOUND" | "SELF_RELATIONSHIP" | "STUDENT_BLOCK_ALREADY_ACTIVE" | "WISH_PHOTO_NOT_FOUND" | "WISH_PHOTO_EXPIRED" | "WISH_PHOTO_ALREADY_ATTACHED" | "PHOTO_TOO_LARGE" | "UNSUPPORTED_PHOTO_TYPE" | "INVALID_PHOTO" | "PHOTO_CONTENT_NOT_ALLOWED" | "PHOTO_UPLOAD_RATE_LIMITED" | "PHOTO_PROCESSING_UNAVAILABLE" | "PHOTO_DELIVERY_UNAVAILABLE";
+        ErrorCode: "SELF_PROFILE_VISIT" | "EVENT_TIME_OUT_OF_RANGE" | "PROFILE_NOT_FOUND" | "FEED_CONTEXT_NOT_FOUND" | "FEED_CONTEXT_EXPIRED" | "EVENT_ID_CONFLICT" | "IMPRESSION_CONFLICT" | "IMPRESSION_ALREADY_EXPOSED" | "MALFORMED_REQUEST" | "EXPECTED_VERSION_REQUIRED" | "IDEMPOTENCY_KEY_REQUIRED" | "AUTH_REQUIRED" | "FORBIDDEN" | "CARD_BALANCE_ACCOUNT_NOT_FOUND" | "WISH_NOT_FOUND" | "ACADEMY_NOT_FOUND" | "SHARED_CARD_NOT_FOUND" | "VERSION_CONFLICT" | "INVALID_STATE_TRANSITION" | "BALANCE_MISMATCH_LOCKED" | "INSUFFICIENT_AVAILABLE_BALANCE" | "INSUFFICIENT_WISH_AMOUNT" | "TARGET_AMOUNT_EXCEEDED" | "CROSS_ACCOUNT_TRANSFER_FORBIDDEN" | "IDEMPOTENCY_KEY_REUSED" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_AMOUNT" | "INVALID_PURPOSE" | "INVALID_DATE_RANGE" | "INVALID_VERSION" | "BALANCE_SYNC_FAILED" | "RECAP_QUERY_UNAVAILABLE" | "STUDENT_NOT_FOUND" | "STUDENT_BLOCK_NOT_FOUND" | "SELF_RELATIONSHIP" | "STUDENT_BLOCK_ALREADY_ACTIVE" | "WISH_PHOTO_NOT_FOUND" | "WISH_PHOTO_EXPIRED" | "WISH_PHOTO_ALREADY_ATTACHED" | "PHOTO_TOO_LARGE" | "UNSUPPORTED_PHOTO_TYPE" | "INVALID_PHOTO" | "PHOTO_CONTENT_NOT_ALLOWED" | "PHOTO_UPLOAD_RATE_LIMITED" | "PHOTO_PROCESSING_UNAVAILABLE" | "PHOTO_DELIVERY_UNAVAILABLE";
         ErrorEnvelope: {
             /** @description 선언된 모든 실패 JSON 응답이 공통으로 사용하는 구조화된 오류 페이로드입니다. */
             error: {
@@ -1334,7 +1378,7 @@ export interface components {
                 fieldErrors: components["schemas"]["FieldError"][];
                 /** @description 이번 오류 발생을 사람이 읽을 수 있게 설명한 문장입니다. 안정적인 기계 판정 키가 아닙니다. */
                 message: string;
-                /** @description BALANCE_SYNC_FAILED, PHOTO_UPLOAD_RATE_LIMITED, PHOTO_PROCESSING_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE일 때만 true입니다. 정의된 그 밖의 클라이언트, 인가, 리소스 없음, 유효성 검사, 상태 충돌 오류에는 false입니다. */
+                /** @description BALANCE_SYNC_FAILED, RECAP_QUERY_UNAVAILABLE, PHOTO_UPLOAD_RATE_LIMITED, PHOTO_PROCESSING_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE일 때만 true입니다. 정의된 그 밖의 클라이언트, 인가, 리소스 없음, 유효성 검사, 상태 충돌 오류에는 false입니다. */
                 retryable: boolean;
                 /** @description 진단과 지원에 사용하는 불투명한 서버 상관관계 식별자입니다. 도메인 의미는 없습니다. */
                 traceId: string;
@@ -1445,6 +1489,134 @@ export interface components {
         KrwSigned: number;
         /** @enum {string} */
         LedgerEventType: "CARD_BALANCE_CHANGE" | "WISH_DEPOSIT" | "WISH_WITHDRAWAL" | "WISH_TRANSFER" | "WISH_COMPLETION_RETURN" | "WISH_ABANDONMENT_RETURN" | "WISH_DELETION_RETURN";
+        MonthlyRecapGroupComparison: {
+            /** @description achievementPercentileStatus가 ok일 때의 1~99 백분위이며 나머지 상태에서는 null입니다. */
+            achievementPercentile: number | null;
+            /**
+             * @description 목표 달성 비교 결과이며 viewer의 대표 위시 달성값 자체가 없으면 null입니다.
+             * @enum {string|null}
+             */
+            achievementPercentileStatus: "ok" | "no_peers" | "all_tied" | null;
+            /** @description habitPercentileStatus가 ok일 때의 1~99 백분위이며 나머지 상태에서는 null입니다. */
+            habitPercentile: number | null;
+            /**
+             * @description 습관 비교값이 계산되었는지, peer가 없는지, 모두 동점인지 구분합니다.
+             * @enum {string}
+             */
+            habitPercentileStatus: "ok" | "no_peers" | "all_tied";
+            /** @description 목표 달성 백분위 상태 문구이며 viewer의 비교값이 없으면 null입니다. */
+            messageAchievement: string | null;
+            /** @description 습관 백분위 상태에 대응하며 peer identity를 포함하지 않는 문구입니다. */
+            messageHabit: string;
+        } & (unknown & unknown & unknown & unknown);
+        MonthlyRecapObjectivePerformance: {
+            /** @description 완료 월에 종결된 소유 위시 수입니다. */
+            completedWishCount: number;
+            /** @description 대표 위시의 완료 월말 달성률이며 대표 위시가 없으면 null입니다. */
+            currRatePct: number | null;
+            /** @description 완료 월의 위시 완료 수를 설명하는 결정적 문구입니다. */
+            messageCompletedCount: string;
+            /** @description 대표 위시 달성률 변화를 설명하며 대표 위시가 없으면 null입니다. */
+            messageRateChange: string | null;
+            /** @description 완료 월의 총 순저축액을 설명하는 결정적 문구입니다. */
+            messageTotalSavings: string;
+            /** @description 대표 위시의 이전 월말 달성률이며 대표 위시가 없으면 null입니다. */
+            prevRatePct: number | null;
+            /** @description 생성 snapshot의 대표 위시 제목이며 대표 위시가 없으면 null입니다. */
+            representativeWishTitle: string | null;
+            /** @description 완료 월의 유효 입금에서 출금과 반환 효과를 반영한 순저축 원화 금액입니다. */
+            totalSavings: components["schemas"]["KrwSigned"];
+        };
+        MonthlyRecapPacePrediction: {
+            /** @description 완료 월 전체 계정 순저축액을 달력 일수로 나눈 일평균 원화 속도입니다. */
+            dailyPace: number;
+            /**
+             * Format: date
+             * @description 대표 위시의 동결된 속도로 계산한 예상 완료일이며 계산할 수 없으면 null입니다.
+             */
+            expectedCompletionDate: string | null;
+            /** @description 완료 월의 계정 전체 일평균 속도를 설명하는 문구입니다. */
+            messageDailyPace: string;
+            /** @description 예상 완료일 또는 이미 달성한 상태를 설명하며 계산할 수 없으면 null입니다. */
+            messageExpectedDate: string | null;
+            /** @description 목표일까지 필요한 추가 일평균 저축액을 설명하며 계산할 수 없으면 null입니다. */
+            messageRequiredDaily: string | null;
+            /** @description 대표 위시 목표일까지 필요한 일평균 원화 금액이며 계산 대상이나 유효 기한이 없으면 null입니다. */
+            requiredDailyAmount: number | null;
+        };
+        MonthlyRecapPatternAnalysis: {
+            /** @description 완료 월의 1회 평균 저축액을 설명하는 문구입니다. */
+            messageAvgAmount: string;
+            /** @description 입금 날짜 간격으로 계산한 규칙성 안내 문구입니다. */
+            messageRegularity: string;
+            /** @description 최다 저축 주차와 요일 또는 데이터 부족을 설명하는 문구입니다. */
+            messageWeekWeekday: string;
+            /** @description 완료 월에서 유효 입금 합계가 가장 큰 1~5주차이며 입금이 없으면 null입니다. */
+            topWeek: number | null;
+            /**
+             * @description 완료 월에서 유효 입금 빈도가 가장 높은 요일이며 입금이 없으면 null입니다.
+             * @enum {string|null}
+             */
+            topWeekday: "월요일" | "화요일" | "수요일" | "목요일" | "금요일" | "토요일" | "일요일" | null;
+        };
+        MonthlyRecapResponse: {
+            /** @description 생성 행이 결속한 고정 알고리즘 버전이며 생성 이력이 없으면 null입니다. */
+            algorithmVersion: "recap-1" | null;
+            /** @description current 성공 또는 확정 부적격 상태를 영속 저장한 UTC 시점이며 아직 확정되지 않았으면 null입니다. */
+            generatedAt: components["schemas"]["UtcInstant"] | null;
+            /** @description 논리 월간 기간의 단조 증가 생성 버전이며 생성 이력이 없으면 null입니다. */
+            generationVersion: number | null;
+            /**
+             * @description 이 리소스가 완료된 월간 리캡임을 나타내는 고정 판별자입니다.
+             * @constant
+             */
+            kind: "MONTHLY";
+            /** @description 요청에서 선택된 완료 월의 반개구간 Asia/Seoul 날짜 경계입니다. */
+            period: components["schemas"]["RecapPeriod"];
+            /** @description SUCCEEDED일 때만 존재하는 불변 월간 view이며 나머지 공개 상태에서는 null입니다. */
+            result: components["schemas"]["MonthlyRecapResult"] | null;
+            /**
+             * @description 이 공개 응답과 저장 view를 해석하는 고정 스키마 버전입니다.
+             * @constant
+             */
+            schemaVersion: 1;
+            /**
+             * @description 사용 가능한 current 성공을 우선하며 유효 입금 세 건 미만을 NOT_ELIGIBLE로 구분하는 월간 공개 상태입니다.
+             * @enum {string}
+             */
+            status: "NOT_GENERATED" | "GENERATING" | "NOT_ELIGIBLE" | "FAILED" | "SUCCEEDED";
+        } & (unknown & unknown & unknown & unknown);
+        MonthlyRecapResult: {
+            /** @description 식별자를 제거한 peer scalar 배열로 계산한 비교 결과입니다. */
+            groupComparison: components["schemas"]["MonthlyRecapGroupComparison"];
+            /** @description 생성 시점 분류에서 이 월간 view가 활동 기준을 충족했는지 나타냅니다. */
+            isActive: boolean;
+            /** @description 완료 월의 저축액, 완료 위시와 대표 위시 달성률 변화입니다. */
+            objectivePerformance: components["schemas"]["MonthlyRecapObjectivePerformance"];
+            /** @description 동결된 reference date와 대표 위시 snapshot으로 계산한 페이스 예측입니다. */
+            pacePrediction: components["schemas"]["MonthlyRecapPacePrediction"];
+            /** @description 완료 월의 저축 주차·요일·규칙성·평균 금액 문구입니다. */
+            patternAnalysis: components["schemas"]["MonthlyRecapPatternAnalysis"];
+            /** @description 저장된 Python 월간 view가 표시하는 연도와 월입니다. */
+            period: components["schemas"]["MonthlyRecapViewPeriod"];
+            /** @description 동결된 recap-1 분류 우선순위로 선택한 저축 유형입니다. */
+            typeSection: components["schemas"]["MonthlyRecapTypeSection"];
+        };
+        MonthlyRecapTypeSection: {
+            /** @description 선택된 저축 유형과 fallback 여부에 대응하는 결정적 문구입니다. */
+            message: string;
+            /**
+             * @description recap-1의 네 가지 저축 유형 중 우선순위 규칙으로 선택한 제목입니다.
+             * @enum {string}
+             */
+            typeTitle: "불도저형 토끼" | "꾸준형 토끼" | "단기 집중형 토끼" | "탐색형 토끼";
+        };
+        MonthlyRecapViewPeriod: {
+            /** @description Python 월간 view가 표시하는 1부터 12까지의 월입니다. */
+            month: number;
+            /** @description Python 월간 view가 표시하는 달의 네 자리 연도입니다. */
+            year: number;
+        };
         ProgressSharedCard: {
             /** @description 응답 조회 시점에 소유자의 카드 잔액 계정에 OPEN 잔액 조정 건이 있을 때만 true입니다. 잔액 조정 건이 없거나 RESOLVED 이력만 있으면 false입니다. 이 값은 공유 카드에 저장되지 않으며 contentUpdatedAt이나 정렬 순서를 갱신하지 않습니다. */
             balanceAdjustmentInProgress: boolean;
@@ -1491,6 +1663,23 @@ export interface components {
          *     5. NFC 정규화 후 유니코드 코드 포인트 수를 셉니다. 1~200개이면 저장하고 반환하며, 그 밖의 경우 422 INVALID_PURPOSE를 반환합니다.
          */
         PurposeInput: string;
+        RecapPeriod: {
+            /**
+             * Format: date
+             * @description 선택한 리캡 기간의 Asia/Seoul 제외 종료일입니다.
+             */
+            endDateExclusive: string;
+            /**
+             * Format: date
+             * @description 선택한 리캡 기간의 Asia/Seoul 포함 시작일입니다.
+             */
+            startDate: string;
+            /**
+             * @description 기간 날짜 경계를 해석하는 고정 IANA 시간대입니다.
+             * @constant
+             */
+            timezone: "Asia/Seoul";
+        };
         RepresentativeWishSelectionRequest: {
             /** @description 이 카드 잔액 계정에서 대표로 선택할, 삭제되지 않은 활성 위시의 UUID입니다. */
             wishId: components["schemas"]["Uuid"];
@@ -1572,6 +1761,117 @@ export interface components {
         UtcInstant: string;
         /** Format: uuid */
         Uuid: string;
+        WeeklyRecapAcademySuccessStories: {
+            /** @description 현재 노출 가능한 성공 story 수에 맞춘 결정적 요약 문구입니다. */
+            messageSummary: string;
+            /** @description 저장 후보 중 현재 공개 조건을 다시 통과한 최대 다섯 건의 결정적 순서 목록입니다. */
+            stories: components["schemas"]["WeeklyRecapStory"][];
+        };
+        WeeklyRecapAchievement: {
+            /** @description 정해진 알고리즘 문구로 만든 주간 성취 안내입니다. */
+            message: string;
+            /** @description 완료 주의 유효 입금에서 출금을 뺀 순저축 원화 금액입니다. */
+            netSavings: components["schemas"]["KrwSigned"];
+            /** @description 완료 주에 생성된 소유 위시 수입니다. */
+            newWishCount: number;
+            /** @description 완료 주의 유효 입금 횟수입니다. */
+            saveCount: number;
+        };
+        WeeklyRecapGrowthReport: {
+            /** @description 이전 주 방문이 0보다 클 때의 반올림 증감률이며 기준 방문이 0이면 null입니다. */
+            growthPct: number | null;
+            /** @description 이전 주 대비 증감률 안내이며 증감률을 정의할 수 없으면 null입니다. */
+            messageGrowth: string | null;
+            /** @description 완료 주 방문 횟수와 고유 방문자 수를 설명하는 문구입니다. */
+            messageVisits: string;
+            /** @description 완료 주에 받은 유효 프로필 방문 횟수입니다. */
+            totalVisits: number;
+            /** @description 완료 주에 방문한 고유한 유효 학생 수입니다. */
+            uniqueVisitors: number;
+        };
+        WeeklyRecapLastWeekPerformance: {
+            /** @description 완료 주의 유효 저축 횟수, 순저축액과 새 위시 수입니다. */
+            achievement: components["schemas"]["WeeklyRecapAchievement"];
+            /** @description 완료 주에 대표 위시가 통과한 마일스톤 표시 정보입니다. */
+            milestone: components["schemas"]["WeeklyRecapMilestone"];
+            /** @description 완료 주부터 과거로 이어진 연속 저축 주 정보입니다. */
+            streak: components["schemas"]["WeeklyRecapStreak"];
+        };
+        WeeklyRecapMilestone: {
+            /** @description 마일스톤을 통과했을 때의 안내 문구이며 통과하지 않았거나 대표 위시가 없으면 null입니다. */
+            message: string | null;
+            /** @description 완료 주 종료 시점 대표 위시 달성률의 반올림 정수이며 계산 대상이 없으면 null입니다. */
+            rateAfter: number | null;
+            /** @description 완료 주 시작 직전 대표 위시 달성률의 반올림 정수이며 계산 대상이 없으면 null입니다. */
+            rateBefore: number | null;
+            /** @description 완료 주 기준 대표 위시 제목이며 대표 위시가 없으면 null입니다. */
+            wishTitle: string | null;
+        };
+        WeeklyRecapResponse: {
+            /** @description 생성 행이 결속한 고정 알고리즘 버전이며 생성 이력이 없으면 null입니다. */
+            algorithmVersion: "recap-1" | null;
+            /** @description current 성공 결과를 영속 저장한 UTC 시점이며 성공 결과가 없으면 null입니다. */
+            generatedAt: components["schemas"]["UtcInstant"] | null;
+            /** @description 논리 주간 기간의 단조 증가 생성 버전이며 생성 이력이 없으면 null입니다. */
+            generationVersion: number | null;
+            /**
+             * @description 이 리소스가 완료된 주간 리캡임을 나타내는 고정 판별자입니다.
+             * @constant
+             */
+            kind: "WEEKLY";
+            /** @description 요청에서 선택된 완료 주의 반개구간 Asia/Seoul 날짜 경계입니다. */
+            period: components["schemas"]["RecapPeriod"];
+            /** @description SUCCEEDED일 때만 존재하는 불변 주간 view이며 활동 0도 null 대신 이 객체로 표현합니다. */
+            result: components["schemas"]["WeeklyRecapResult"] | null;
+            /**
+             * @description 이 공개 응답과 저장 view를 해석하는 고정 스키마 버전입니다.
+             * @constant
+             */
+            schemaVersion: 1;
+            /**
+             * @description 사용 가능한 current 성공을 우선한 주간 공개 생성 상태입니다. SUPERSEDED는 노출하지 않습니다.
+             * @enum {string}
+             */
+            status: "NOT_GENERATED" | "GENERATING" | "FAILED" | "SUCCEEDED";
+        } & (unknown & unknown & unknown);
+        WeeklyRecapResult: {
+            /** @description 지난주 저축 성과, 대표 위시 마일스톤과 연속 저축 기간입니다. */
+            page1LastWeekPerformance: components["schemas"]["WeeklyRecapLastWeekPerformance"];
+            /** @description 지난주 수신 프로필 방문과 이전 주 대비 변화입니다. */
+            page2GrowthReport: components["schemas"]["WeeklyRecapGrowthReport"];
+            /** @description 현재 읽기 권한을 다시 통과한 학원 성공 story 목록입니다. */
+            page3AcademySuccessStories: components["schemas"]["WeeklyRecapAcademySuccessStories"];
+            /** @description 저장된 Python 주간 view의 포함 시작일과 포함 종료일입니다. */
+            period: components["schemas"]["WeeklyRecapViewPeriod"];
+        };
+        WeeklyRecapStory: {
+            /** @description 현재 조회 시점에 허용된 공유 카드 소유 학생 UUID입니다. */
+            ownerStudentId: components["schemas"]["Uuid"];
+            /** @description 현재 조회 시점에 허용된 공유 카드 프로젝션 UUID입니다. */
+            sharedCardId: components["schemas"]["Uuid"];
+            /** @description 작성자의 완료 달 이전 달 집계로 계산해 저장한 유형 제목이며 계산할 수 없으면 null입니다. */
+            typeTitle: string | null;
+            /** @description 저장된 성공 story 후보가 가리키는 위시 UUID입니다. */
+            wishId: components["schemas"]["Uuid"];
+        };
+        WeeklyRecapStreak: {
+            /** @description 연속 저축 주 수에 대응하는 결정적 안내 문구입니다. */
+            message: string;
+            /** @description 완료 주부터 연속으로 유효 입금이 있었던 주 수입니다. */
+            streakWeeks: number;
+        };
+        WeeklyRecapViewPeriod: {
+            /**
+             * Format: date
+             * @description Python 주간 view가 표시하는 포함 일요일입니다. wrapper period의 endDateExclusive 하루 전입니다.
+             */
+            weekEnd: string;
+            /**
+             * Format: date
+             * @description Python 주간 view가 표시하는 포함 월요일입니다.
+             */
+            weekStart: string;
+        };
         Wish: {
             /** @description 성공적으로 포기하기 직전에 이 위시에 할당되어 있던 불변의 소유자 전용 금액입니다. ABANDONED에서는 0을 포함해 targetAmount 이하의 정확한 정수 KRW이고, IN_PROGRESS, AMOUNT_REACHED, COMPLETED에서는 명시적인 null입니다. 현재 할당액, 실제 카드 잔액, 반환 합계, targetAmount 또는 삭제 값이 아닙니다. 포기 후 논리 삭제와 멱등 재생에서도 최초 값을 그대로 보존합니다. */
             abandonmentAmount: components["schemas"]["KrwNonNegative"] | null;
@@ -2165,6 +2465,16 @@ export interface components {
         /** @description PHOTO_PROCESSING_UNAVAILABLE — 새 업로드의 필수 변환, 안전성 검사, 비공개 저장 또는 영속화 의존성을 일시적으로 사용할 수 없습니다. attachable identity 없이 부분 레코드와 객체를 보상 정리하며 terminal receipt를 생성하지 않아 같은 key와 콘텐츠를 재시도할 수 있습니다. PHOTO_DELIVERY_UNAVAILABLE — 보존 중인 유효한 ACTIVE_SUCCESS 재생에 필요한 새 5분 비공개 URL을 모두 발급할 수 없습니다. 부분 representation을 반환하거나 receipt를 변경·삭제하지 않습니다. 두 오류 모두 retryable true이며 사진 바이트, digest, photoId, receipt, URL, path, 안전성·provider 정보를 노출하지 않습니다. */
         PhotoUploadUnavailable: {
             headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description RECAP_QUERY_UNAVAILABLE — 저장된 리캡 상태를 일시적으로 읽을 수 없습니다. 생성 부재나 진행·부적격·실패 상태를 이 오류로 대체하지 않습니다. */
+        RecapQueryUnavailable: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
                 [name: string]: unknown;
             };
             content: {
@@ -3255,6 +3565,68 @@ export interface operations {
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["CardBalanceAccountNotFound"];
+        };
+    };
+    getMonthlyRecap: {
+        parameters: {
+            query?: {
+                /** @description 조회할 완료 월의 Asia/Seoul YYYY-MM 값입니다. 생략하면 가장 최근 완료 월을 선택합니다. */
+                month?: string;
+            };
+            header?: never;
+            path: {
+                cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 선택한 완료 월의 현재 공개 리캡 상태와 불변 결과입니다. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonthlyRecapResponse"];
+                };
+            };
+            400: components["responses"]["MalformedRequest"];
+            401: components["responses"]["AuthRequired"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CardBalanceAccountNotFound"];
+            503: components["responses"]["RecapQueryUnavailable"];
+        };
+    };
+    getWeeklyRecap: {
+        parameters: {
+            query?: {
+                /** @description 조회할 완료 주의 Asia/Seoul 월요일 시작일입니다. 생략하면 가장 최근 완료 주를 선택합니다. */
+                weekStart?: string;
+            };
+            header?: never;
+            path: {
+                cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 선택한 완료 주의 현재 공개 리캡 상태와 불변 결과입니다. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyRecapResponse"];
+                };
+            };
+            400: components["responses"]["MalformedRequest"];
+            401: components["responses"]["AuthRequired"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CardBalanceAccountNotFound"];
+            503: components["responses"]["RecapQueryUnavailable"];
         };
     };
     getRepresentativeWish: {

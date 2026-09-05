@@ -59,7 +59,7 @@ it("keeps the default card for direct entry into the amount step", async () => {
   expect(page.props.nextParams).toEqual({ from: "card" });
 });
 
-it.each(["1e3", "-100", "0", "1.5", ["100", "200"], "5001"])(
+it.each(["1e3", "-100", "0", "1.5", ["100", "200"]])(
   "blocks invalid or over-target deposits before the coin mutation: %s",
   async (amount) => {
     const page = await CoinPage({

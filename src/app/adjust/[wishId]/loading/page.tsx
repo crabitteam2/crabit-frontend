@@ -1,8 +1,8 @@
-import { readAmountQuery } from "@/lib/forms/wish-form-query";
-import { FormQueryError } from "@/app/wishes/_components/form-query-error";
 import { notFound } from "next/navigation";
-import { LoadingScreen } from "@/app/wishes/_components/loading-screen";
-import { findWish } from "@/lib/mock/wishes";
+import { FormQueryError } from "@/app/wishes/_components/form-query-error";
+import { WithdrawLoadingScreen } from "@/app/wishes/_components/withdraw-loading-screen";
+import { loadFundFlow } from "@/app/wishes/[wishId]/fund-flow";
+import { readAmountQuery } from "@/lib/forms/wish-form-query";
 
 export default async function AdjustLoadingPage({
   params,
@@ -12,18 +12,21 @@ export default async function AdjustLoadingPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { wishId } = await params;
-  const wish = findWish(wishId);
-  if (wish === null) notFound();
+  const view = await loadFundFlow(wishId);
+  if (view === null) notFound();
 
-  const query = await searchParams;
-  const amount = readAmountQuery(query, wish.amount);
+  const amount = readAmountQuery(await searchParams, Number.MAX_SAFE_INTEGER);
   if (amount === null)
     return <FormQueryError backHref={`/adjust/${wishId}/amount`} />;
 
   return (
-    <LoadingScreen
-      label="돈 꺼내는 중"
-      donePath={`/adjust/${wishId}/done?amount=${amount}`}
+    <WithdrawLoadingScreen
+      wishId={wishId}
+      amount={amount}
+      expectedVersion={view.wish.version}
+      destination={{ kind: "card" }}
+      amountHref={`/adjust/${wishId}/amount`}
+      doneHref={`/adjust/${wishId}/done?amount=${amount}`}
     />
   );
 }
