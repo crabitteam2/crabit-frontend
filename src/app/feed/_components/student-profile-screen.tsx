@@ -1,12 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { createBrowserApiClient } from "@/lib/http/browser";
+import { listAcademyStudentFollowing } from "@/lib/http/follows";
+import type { CrabitApiClient } from "@/lib/http/follows";
 import type { components } from "@/lib/http/generated/crabit-backend";
 import { behaviorRead, useBehaviorSession } from "./behavior-session";
-import { toStudentProfileItem, type StudentProfileItem } from "./feed-item";
+import {
+  toStudentProfileItem,
+  type StudentFollowCounts,
+  type StudentProfileItem,
+} from "./feed-item";
+import { findMyStudentBlock } from "./student-blocks";
 import { StudentProfile } from "./student-profile";
 
 const CARD_PAGE_LIMIT = 100;
+
+const COUNT_PAGE_LIMIT = 1;
+
+const EMPTY_COUNTS: StudentFollowCounts = {
+  followingCount: 0,
+  followerCount: 0,
+};
 
 type Student = components["schemas"]["StudentRelationship"];
 type SharedCardPage = components["schemas"]["SharedCardPage"];
@@ -15,17 +30,24 @@ interface StudentProfileScreenProps {
   studentId: string;
 }
 
+interface ProfileView {
+  readonly profile: StudentProfileItem;
+  readonly isBlocked: boolean;
+}
+
 export function StudentProfileScreen({ studentId }: StudentProfileScreenProps) {
   const session = useBehaviorSession();
-  const [profile, setProfile] = useState<StudentProfileItem | null>(null);
+  const client = useMemo(() => createBrowserApiClient(), []);
+  const [view, setView] = useState<ProfileView | null>(null);
   const [hasError, setHasError] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (session === null) return;
 
     let isActive = true;
     const { context, entry } = session;
-    setProfile(null);
+    setView(null);
     setHasError(false);
 
     const load = async () => {
@@ -47,17 +69,44 @@ export function StudentProfileScreen({ studentId }: StudentProfileScreenProps) {
         context,
         `shared-cards?ownerId=${encodeURIComponent(studentId)}&limit=${CARD_PAGE_LIMIT}`,
       );
-      if (isActive) setProfile(toStudentProfileItem(student, cards.items));
+      const counts = await readFollowCounts(
+        client,
+        context.academyId,
+        studentId,
+      );
+      if (isActive) {
+        setView({
+          profile: toStudentProfileItem(student, cards.items, counts),
+          isBlocked: false,
+        });
+      }
     };
 
-    void load().catch(() => {
-      if (isActive) setHasError(true);
-    });
+    // 내가 차단한 학생은 프로필 조회가 404라 차단 목록으로 화면을 결정한다.
+    const loadBlocked = async () => {
+      const block = await findMyStudentBlock(client, studentId);
+      if (!isActive) return;
+      if (block === null) {
+        setHasError(true);
+        return;
+      }
+
+      setView({
+        profile: toBlockedProfile(studentId, block.nickname),
+        isBlocked: true,
+      });
+    };
+
+    void load().catch(() =>
+      loadBlocked().catch(() => {
+        if (isActive) setHasError(true);
+      }),
+    );
 
     return () => {
       isActive = false;
     };
-  }, [studentId, session]);
+  }, [client, studentId, session, reloadKey]);
 
   if (hasError) {
     return (
@@ -72,9 +121,47 @@ export function StudentProfileScreen({ studentId }: StudentProfileScreenProps) {
     );
   }
 
-  if (profile === null || session === null) return null;
+  if (view === null || session === null) return null;
 
   return (
-    <StudentProfile academyId={session.context.academyId} profile={profile} />
+    <StudentProfile
+      academyId={session.context.academyId}
+      profile={view.profile}
+      isBlocked={view.isBlocked}
+      onUnblocked={() => setReloadKey((key) => key + 1)}
+    />
   );
+}
+
+async function readFollowCounts(
+  client: CrabitApiClient,
+  academyId: string,
+  studentId: string,
+): Promise<StudentFollowCounts> {
+  const result = await listAcademyStudentFollowing(client, {
+    academyId,
+    studentId,
+    limit: COUNT_PAGE_LIMIT,
+  });
+
+  return result.ok
+    ? {
+        followingCount: result.data.followingCount,
+        followerCount: result.data.followerCount,
+      }
+    : EMPTY_COUNTS;
+}
+
+function toBlockedProfile(
+  studentId: string,
+  nickname: string,
+): StudentProfileItem {
+  return {
+    id: studentId,
+    nickname,
+    inProgress: [],
+    finished: [],
+    ...EMPTY_COUNTS,
+    isFollowing: false,
+  };
 }
