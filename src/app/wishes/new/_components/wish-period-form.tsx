@@ -42,7 +42,7 @@ export function WishPeriodForm({
   } = useWishForm({ defaultValues: { range: initialRange } });
   const range = watch("range");
 
-  const hasPeriod = range.start !== null || range.end !== null;
+  const hasPeriod = range.start !== null;
 
   const submit = handleSubmit(() => {
     const params = toPeriodParams(range);
