@@ -40,9 +40,11 @@ export function ProfileWishCard({ wish, tone }: ProfileWishCardProps) {
           <p className="text-t3 text-fg-neutral truncate font-bold">
             {wish.purpose}
           </p>
-          <p className="text-b4 text-fg-neutral flex h-7 items-center font-medium">
-            기간: {period === "" ? "설정된 기간 없음" : period}
-          </p>
+          {period === "" ? null : (
+            <p className="text-b4 text-fg-neutral flex h-7 items-center font-medium">
+              기간: {period}
+            </p>
+          )}
         </div>
         {wish.imageUrl === undefined ? (
           <Image

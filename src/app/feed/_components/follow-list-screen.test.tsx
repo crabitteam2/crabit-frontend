@@ -16,6 +16,8 @@ vi.mock("next/image", () => ({
 
 const listAcademyStudentFollowing = vi.fn();
 const listAcademyStudentFollowers = vi.fn();
+const listAcademyFollowing = vi.fn();
+const listAcademyFollowers = vi.fn();
 const followAcademyStudent = vi.fn();
 const unfollowAcademyStudent = vi.fn();
 
@@ -27,6 +29,8 @@ vi.mock("@/lib/http/follows", () => ({
     listAcademyStudentFollowing(...args),
   listAcademyStudentFollowers: (...args: unknown[]) =>
     listAcademyStudentFollowers(...args),
+  listAcademyFollowing: (...args: unknown[]) => listAcademyFollowing(...args),
+  listAcademyFollowers: (...args: unknown[]) => listAcademyFollowers(...args),
   followAcademyStudent: (...args: unknown[]) => followAcademyStudent(...args),
   unfollowAcademyStudent: (...args: unknown[]) =>
     unfollowAcademyStudent(...args),
@@ -75,38 +79,31 @@ describe("FollowListScreen", () => {
     vi.clearAllMocks();
     listAcademyStudentFollowing.mockResolvedValue({ ok: true, data: page() });
     listAcademyStudentFollowers.mockResolvedValue({ ok: true, data: page() });
+    listAcademyFollowing.mockResolvedValue({ ok: true, data: page() });
+    listAcademyFollowers.mockResolvedValue({ ok: true, data: page() });
     followAcademyStudent.mockResolvedValue({ ok: true, data: undefined });
     unfollowAcademyStudent.mockResolvedValue({ ok: true, data: undefined });
   });
 
   it.each([
-    ["following", true],
-    ["followers", false],
-  ] as const)(
-    "toggles an own %s row in both directions",
-    (tab, isFollowing) => {
-      const item = { id: listedStudentId, nickname: "민지", isFollowing };
-      render(
-        <FollowListScreen
-          backHref="/feed/me"
-          followingHref="/feed/me/follows"
-          followersHref="/feed/me/follows?tab=followers"
-          tab={tab}
-          following={[item]}
-          followers={[item]}
-        />,
-      );
-      const initialLabel = isFollowing ? "팔로잉" : "팔로우";
-      const toggledLabel = isFollowing ? "팔로우" : "팔로잉";
+    ["following", listAcademyFollowing],
+    ["followers", listAcademyFollowers],
+  ] as const)("reads my own %s list without an owner", async (tab, list) => {
+    renderRemote({ tab, ownerStudentId: undefined });
 
-      fireEvent.click(screen.getByRole("button", { name: initialLabel }));
-      expect(screen.getByRole("button", { name: toggledLabel })).toBeEnabled();
-      fireEvent.click(screen.getByRole("button", { name: toggledLabel }));
-      expect(screen.getByRole("button", { name: initialLabel })).toBeEnabled();
-      expect(followAcademyStudent).not.toHaveBeenCalled();
-      expect(unfollowAcademyStudent).not.toHaveBeenCalled();
-    },
-  );
+    fireEvent.change(screen.getByRole("textbox", { name: "학생 검색" }), {
+      target: { value: "민" },
+    });
+
+    await waitFor(() => expect(list).toHaveBeenCalledTimes(1));
+    expect(list.mock.calls[0][1]).toMatchObject({
+      academyId,
+      nickname: "민",
+    });
+    expect(list.mock.calls[0][1]).not.toHaveProperty("studentId");
+    expect(listAcademyStudentFollowing).not.toHaveBeenCalled();
+    expect(listAcademyStudentFollowers).not.toHaveBeenCalled();
+  });
 
   it("uses an owner-addressed BFF request for remote nickname search", async () => {
     renderRemote();
@@ -189,6 +186,35 @@ describe("FollowListScreen", () => {
     await waitFor(() =>
       expect(listAcademyStudentFollowing).toHaveBeenCalledTimes(1),
     );
+  });
+
+  it("asks before unfollowing and sends the request only after confirming", async () => {
+    renderRemote({ initialPage: page("민지", true) });
+
+    fireEvent.click(screen.getByRole("button", { name: "팔로잉" }));
+    expect(screen.getByRole("dialog")).toBeVisible();
+    expect(unfollowAcademyStudent).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "팔로우 취소" }));
+
+    await waitFor(() =>
+      expect(unfollowAcademyStudent).toHaveBeenCalledWith(expect.anything(), {
+        academyId,
+        studentId: listedStudentId,
+      }),
+    );
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  });
+
+  it("keeps the relationship when the unfollow dialog is dismissed", () => {
+    renderRemote({ initialPage: page("민지", true) });
+
+    fireEvent.click(screen.getByRole("button", { name: "팔로잉" }));
+    fireEvent.click(screen.getByRole("button", { name: "아니요" }));
+
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(unfollowAcademyStudent).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "팔로잉" })).toBeVisible();
   });
 
   it("does not explain why an owner-addressed list is unavailable", () => {

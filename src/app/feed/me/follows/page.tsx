@@ -1,8 +1,11 @@
-import { FOLLOWER_ENTRIES, FOLLOWING_ENTRIES } from "@/lib/mock/feed";
+import { loadAccountContext } from "@/app/wishes/load-account";
+import { listAcademyFollowers, listAcademyFollowing } from "@/lib/http/follows";
 import {
   FollowListScreen,
   type FollowTab,
 } from "../../_components/follow-list-screen";
+
+const PAGE_LIMIT = 100;
 
 export default async function MyFollowsPage({
   searchParams,
@@ -16,14 +19,28 @@ export default async function MyFollowsPage({
       ? "followers"
       : "following";
 
+  const { client, account } = await loadAccountContext();
+  const result =
+    tab === "followers"
+      ? await listAcademyFollowers(client, {
+          academyId: account.academyId,
+          limit: PAGE_LIMIT,
+        })
+      : await listAcademyFollowing(client, {
+          academyId: account.academyId,
+          limit: PAGE_LIMIT,
+        });
+
   return (
     <FollowListScreen
       backHref="/feed/me"
       tab={tab}
       followingHref="/feed/me/follows"
       followersHref="/feed/me/follows?tab=followers"
-      following={FOLLOWING_ENTRIES}
-      followers={FOLLOWER_ENTRIES}
+      academyId={account.academyId}
+      {...(result.ok
+        ? { initialPage: result.data }
+        : { initialError: "failed" as const })}
     />
   );
 }
