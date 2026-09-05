@@ -6,9 +6,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import searchIcon from "@/../public/images/feed/search.svg";
 import arrowLeftIcon from "@/../public/images/wishes/arrow-left.svg";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { components } from "@/lib/http/generated/crabit-backend";
 import {
   followAcademyStudent,
+  listAcademyFollowers,
+  listAcademyFollowing,
   listAcademyStudentFollowers,
   listAcademyStudentFollowing,
   unfollowAcademyStudent,
@@ -19,13 +22,6 @@ import { createBrowserApiClient } from "@/lib/http/browser";
 const PAGE_LIMIT = 100;
 
 export type FollowTab = "following" | "followers";
-
-/** 목록 한 줄에 그릴 학생입니다. */
-export interface FollowItem {
-  id: string;
-  nickname: string;
-  isFollowing: boolean;
-}
 
 const TABS: { value: FollowTab; label: string }[] = [
   { value: "following", label: "팔로잉" },
@@ -41,73 +37,62 @@ interface FollowListScreenBaseProps {
   followersHref: string;
 }
 
-interface MockFollowListScreenProps extends FollowListScreenBaseProps {
-  following: FollowItem[];
-  followers: FollowItem[];
-}
-
-interface RemoteFollowListScreenProps extends FollowListScreenBaseProps {
+interface FollowListScreenProps extends FollowListScreenBaseProps {
   academyId: string;
-  ownerStudentId: string;
+  /** 목록 소유자이며, 생략하면 내 팔로잉과 팔로워를 읽습니다. */
+  ownerStudentId?: string;
   initialPage?: components["schemas"]["FollowPage"];
   initialError?: "unavailable" | "failed";
 }
 
-type FollowListScreenProps =
-  MockFollowListScreenProps | RemoteFollowListScreenProps;
-
 type RemoteError = "unavailable" | "failed" | null;
 
 export function FollowListScreen(props: FollowListScreenProps) {
-  const { backHref, tab, followingHref, followersHref } = props;
-  const remoteProps = isRemoteFollowList(props) ? props : null;
-  const remote = remoteProps !== null;
-  const browserClient = useMemo(
-    () => (remote ? createBrowserApiClient() : null),
-    [remote],
-  );
+  const {
+    backHref,
+    tab,
+    followingHref,
+    followersHref,
+    academyId,
+    ownerStudentId,
+    initialPage,
+    initialError,
+  } = props;
+  const browserClient = useMemo(() => createBrowserApiClient(), []);
   const [query, setQuery] = useState("");
   const [changed, setChanged] = useState<Readonly<Record<string, boolean>>>({});
   const [page, setPage] = useState<components["schemas"]["FollowPage"] | null>(
-    () => remoteProps?.initialPage ?? null,
+    () => initialPage ?? null,
   );
   const [remoteError, setRemoteError] = useState<RemoteError>(
-    () => remoteProps?.initialError ?? null,
+    () => initialError ?? null,
   );
   const [pending, setPending] = useState<Readonly<Record<string, boolean>>>({});
+  const [unfollowTarget, setUnfollowTarget] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const requestVersion = useRef(0);
 
   const loadRemotePage = useCallback(
     async (cursor?: string, append = false) => {
-      if (
-        remoteProps === null ||
-        browserClient === null ||
-        remoteProps.initialError !== undefined
-      ) {
-        return false;
-      }
+      if (initialError !== undefined) return false;
 
       const version = ++requestVersion.current;
       setRemoteError(null);
       const nickname = query.trim() || undefined;
-      const request =
-        tab === "followers"
+      const options = { academyId, cursor, limit: PAGE_LIMIT, nickname };
+      const result = await (ownerStudentId === undefined
+        ? tab === "followers"
+          ? listAcademyFollowers(browserClient, options)
+          : listAcademyFollowing(browserClient, options)
+        : tab === "followers"
           ? listAcademyStudentFollowers(browserClient, {
-              academyId: remoteProps.academyId,
-              studentId: remoteProps.ownerStudentId,
-              cursor,
-              limit: PAGE_LIMIT,
-              nickname,
+              ...options,
+              studentId: ownerStudentId,
             })
           : listAcademyStudentFollowing(browserClient, {
-              academyId: remoteProps.academyId,
-              studentId: remoteProps.ownerStudentId,
-              cursor,
-              limit: PAGE_LIMIT,
-              nickname,
-            });
-      const result = await request;
+              ...options,
+              studentId: ownerStudentId,
+            }));
       if (version !== requestVersion.current) return false;
       if (!result.ok) {
         setRemoteError(result.error.status === 404 ? "unavailable" : "failed");
@@ -120,52 +105,37 @@ export function FollowListScreen(props: FollowListScreenProps) {
       );
       return true;
     },
-    [browserClient, query, remoteProps, tab],
+    [academyId, browserClient, initialError, ownerStudentId, query, tab],
   );
 
   useEffect(() => {
-    if (remoteProps === null || remoteProps.initialError !== undefined) return;
+    if (initialError !== undefined) return;
     if (query.trim() === "") {
       ++requestVersion.current;
-      setPage(remoteProps.initialPage ?? null);
+      setPage(initialPage ?? null);
       setRemoteError(null);
       return;
     }
     void loadRemotePage();
-  }, [loadRemotePage, query, remoteProps]);
+  }, [initialPage, initialError, loadRemotePage, query]);
 
-  const keyword = query.trim();
-  const items = remote
-    ? (page?.items ?? []).map((item) => ({
-        id: item.studentId,
-        nickname: item.nickname,
-        isFollowing: changed[item.studentId] ?? item.isFollowing,
-      }))
-    : (tab === "following"
-        ? (props as MockFollowListScreenProps).following
-        : (props as MockFollowListScreenProps).followers
-      ).filter((item) =>
-        keyword === "" ? true : item.nickname.includes(keyword),
-      );
+  const items = (page?.items ?? []).map((item) => ({
+    id: item.studentId,
+    nickname: item.nickname,
+    isFollowing: changed[item.studentId] ?? item.isFollowing,
+  }));
 
-  const toggleMock = (id: string, isFollowing: boolean) => {
-    setChanged((current) => ({ ...current, [id]: !isFollowing }));
-  };
-
-  const toggleRemote = async (id: string, isFollowing: boolean) => {
-    if (remoteProps === null || browserClient === null || pending[id]) return;
+  const toggle = async (id: string, isFollowing: boolean) => {
+    if (pending[id]) return;
 
     setPending((current) => ({ ...current, [id]: true }));
     setMutationError(null);
     const result = isFollowing
       ? await unfollowAcademyStudent(browserClient, {
-          academyId: remoteProps.academyId,
+          academyId,
           studentId: id,
         })
-      : await followAcademyStudent(browserClient, {
-          academyId: remoteProps.academyId,
-          studentId: id,
-        });
+      : await followAcademyStudent(browserClient, { academyId, studentId: id });
     setPending((current) => ({ ...current, [id]: false }));
     if (!result.ok) {
       setMutationError(
@@ -175,6 +145,13 @@ export function FollowListScreen(props: FollowListScreenProps) {
     }
     setChanged((current) => ({ ...current, [id]: !isFollowing }));
     await loadRemotePage();
+  };
+
+  const confirmUnfollow = async () => {
+    if (unfollowTarget === null) return;
+
+    await toggle(unfollowTarget, true);
+    setUnfollowTarget(null);
   };
 
   return (
@@ -260,11 +237,11 @@ export function FollowListScreen(props: FollowListScreenProps) {
                 <Button
                   size="medium"
                   variant={isFollowing ? "weak" : "fill"}
-                  isLoading={remote && pending[item.id] === true}
+                  isLoading={pending[item.id] === true}
                   onClick={() =>
-                    remote
-                      ? void toggleRemote(item.id, isFollowing)
-                      : toggleMock(item.id, isFollowing)
+                    isFollowing
+                      ? setUnfollowTarget(item.id)
+                      : void toggle(item.id, false)
                   }
                 >
                   {isFollowing ? "팔로잉" : "팔로우"}
@@ -274,12 +251,21 @@ export function FollowListScreen(props: FollowListScreenProps) {
           })}
         </ul>
       ) : null}
+
+      <ConfirmDialog
+        isOpen={unfollowTarget !== null}
+        title="친구를 팔로우 취소할까요?"
+        primaryLabel="팔로우 취소"
+        secondaryLabel="아니요"
+        loadingButton={
+          unfollowTarget !== null && pending[unfollowTarget] === true
+            ? "primary"
+            : undefined
+        }
+        onPrimary={() => void confirmUnfollow()}
+        onSecondary={() => setUnfollowTarget(null)}
+        onDismiss={() => setUnfollowTarget(null)}
+      />
     </div>
   );
-}
-
-function isRemoteFollowList(
-  props: FollowListScreenProps,
-): props is RemoteFollowListScreenProps {
-  return "ownerStudentId" in props;
 }

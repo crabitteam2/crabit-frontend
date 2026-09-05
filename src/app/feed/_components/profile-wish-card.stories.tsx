@@ -33,3 +33,9 @@ export const 포기: Story = {
     wish: { ...wish, percent: 64, state: "ABANDONED" },
   },
 };
+
+export const 기간없음: Story = {
+  args: {
+    wish: { ...wish, startDate: null, targetDate: null },
+  },
+};
