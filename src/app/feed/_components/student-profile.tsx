@@ -18,9 +18,9 @@ import {
 import type { StudentProfileItem } from "./feed-item";
 import { ProfileScreen } from "./profile-screen";
 
-const BLOCKED_MESSAGE = "친구를 차단했어요.";
+const BLOCKED_MESSAGE = "차단이 완료되었어요.";
 
-const UNBLOCKED_MESSAGE = "차단을 해제했어요.";
+const UNBLOCKED_MESSAGE = "차단을 해제했어요. 다시 활동을 볼 수 있어요.";
 
 const UNFOLLOWED_MESSAGE = "팔로우 취소가 완료되었어요.";
 
@@ -119,18 +119,21 @@ export function StudentProfile({
         followingCount={profile.followingCount}
         followerCount={followerCount}
         followsHref={`/feed/${profile.id}/follows?academyId=${encodeURIComponent(academyId)}`}
+        showCounts={!isBlocked}
         followAction={
-          <Button
-            size="medium"
-            variant={isFollowing ? "weak" : "fill"}
-            isLoading={pending === "follow"}
-            disabled={pending !== null}
-            onClick={() =>
-              isFollowing ? setIsUnfollowAsked(true) : void follow()
-            }
-          >
-            {isFollowing ? "팔로잉" : "팔로우"}
-          </Button>
+          isBlocked ? undefined : (
+            <Button
+              size="medium"
+              variant={isFollowing ? "weak" : "fill"}
+              isLoading={pending === "follow"}
+              disabled={pending !== null}
+              onClick={() =>
+                isFollowing ? setIsUnfollowAsked(true) : void follow()
+              }
+            >
+              {isFollowing ? "팔로잉" : "팔로우"}
+            </Button>
+          )
         }
         actions={
           isMenuOpen ? (

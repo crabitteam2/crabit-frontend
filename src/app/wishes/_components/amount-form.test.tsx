@@ -23,9 +23,7 @@ it("enforces both deposit bounds and retains the selected source", async () => {
   const amount = screen.getByRole("textbox", { name: "금액" });
   await user.type(amount, "2000");
   await user.click(screen.getByRole("button", { name: "다음" }));
-  expect(
-    await screen.findByText("목표까지 남은 금액을 넘었어요."),
-  ).toBeVisible();
+  expect(await screen.findByText("사용 가능한 금액을 넘었어요.")).toBeVisible();
   expect(push).not.toHaveBeenCalled();
   await user.clear(amount);
   await user.type(amount, "1500{Enter}");

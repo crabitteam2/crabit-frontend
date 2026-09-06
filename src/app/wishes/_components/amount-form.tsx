@@ -104,7 +104,7 @@ export function AmountForm({
                   amountError(value, available) ??
                   ((max ?? remaining) !== undefined &&
                   (parseKrw(value) ?? 0) > (max ?? remaining)!
-                    ? (overMessage ?? "목표까지 남은 금액을 넘었어요.")
+                    ? (overMessage ?? "사용 가능한 금액을 넘었어요.")
                     : true),
                 onBlur: () =>
                   setValue("amount", formatKrw(getValues("amount"))),
