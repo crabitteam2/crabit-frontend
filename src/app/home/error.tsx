@@ -21,7 +21,7 @@ export default function HomeTabError({ reset }: { reset: () => void }) {
         </p>
       </div>
 
-      <div className="px-4 pb-[calc(55px+env(safe-area-inset-bottom))]">
+      <div className="px-4 pb-[calc(96px+env(safe-area-inset-bottom))]">
         <Button
           size="xlarge"
           className="w-full"
