@@ -27,10 +27,13 @@ export default async function WithdrawAmountPage({
 
   const destinationId =
     destination.kind === "card" ? CARD_COUNTERPART_ID : destination.wish.id;
-  const room =
+  const limit =
     destination.kind === "card"
-      ? view.wish.amount
-      : destination.wish.targetAmount - destination.wish.amount;
+      ? undefined
+      : {
+          max: destination.wish.targetAmount - destination.wish.amount,
+          overMessage: "보낼 위시의 목표 금액까지만 보낼 수 있어요.",
+        };
 
   return (
     <AmountForm
@@ -40,8 +43,7 @@ export default async function WithdrawAmountPage({
       nextParams={{ to: destinationId }}
       available={view.wish.amount}
       availableLabel="현재 사용 가능한 금액"
-      max={room}
-      overMessage="보낼 위시의 목표 금액까지만 보낼 수 있어요."
+      {...limit}
     />
   );
 }

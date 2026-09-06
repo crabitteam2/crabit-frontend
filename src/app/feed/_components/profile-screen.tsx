@@ -23,6 +23,8 @@ interface ProfileScreenProps {
   actions?: ReactNode;
   /** 별명 오른쪽에 놓을 팔로우 버튼이며, 내 프로필에서는 없습니다. */
   followAction?: ReactNode;
+  /** 팔로우와 위시 수를 보여줄지 여부이며, 차단한 학생의 프로필에서는 감춥니다. */
+  showCounts?: boolean;
 }
 
 export function ProfileScreen({
@@ -35,6 +37,7 @@ export function ProfileScreen({
   followsHref,
   actions,
   followAction,
+  showCounts = true,
 }: ProfileScreenProps) {
   return (
     <div className="flex flex-col">
@@ -72,25 +75,27 @@ export function ProfileScreen({
         {followAction}
       </div>
 
-      <div className="border-gray-3 flex items-center border-b px-4 py-5">
-        <div className="flex flex-1 items-center justify-between text-[17px] leading-6 tracking-[-0.3px]">
-          <ProfileCount
-            label="팔로잉"
-            value={String(followingCount)}
-            href={followsHref}
-          />
-          <ProfileCount
-            label="팔로워"
-            value={String(followerCount)}
-            href={withSearchParameter(followsHref, "tab", "followers")}
-          />
-          <ProfileCount
-            label="진행중"
-            value={toCountLabel(inProgress.length)}
-          />
-          <ProfileCount label="종료" value={toCountLabel(finished.length)} />
+      {showCounts ? (
+        <div className="border-gray-3 flex items-center border-b px-4 py-5">
+          <div className="flex flex-1 items-center justify-between text-[17px] leading-6 tracking-[-0.3px]">
+            <ProfileCount
+              label="팔로잉"
+              value={String(followingCount)}
+              href={followsHref}
+            />
+            <ProfileCount
+              label="팔로워"
+              value={String(followerCount)}
+              href={withSearchParameter(followsHref, "tab", "followers")}
+            />
+            <ProfileCount
+              label="진행중"
+              value={toCountLabel(inProgress.length)}
+            />
+            <ProfileCount label="종료" value={toCountLabel(finished.length)} />
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <ProfileWishSection title="진행중인 위시" wishes={inProgress} />
       <ProfileWishSection title="종료된 위시" wishes={finished} />

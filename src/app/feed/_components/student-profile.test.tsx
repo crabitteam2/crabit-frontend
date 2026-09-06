@@ -85,7 +85,7 @@ describe("StudentProfile", () => {
     expect(countOf("팔로워")).toBe("팔로워7");
   });
 
-  it("차단이 성공하면 위시를 감추고 팔로우를 끊는다", async () => {
+  it("차단이 성공하면 위시와 팔로우 요소를 감춘다", async () => {
     blockStudentAction.mockResolvedValue({ ok: true });
     render(
       <StudentProfile
@@ -98,16 +98,15 @@ describe("StudentProfile", () => {
     fireEvent.click(screen.getByRole("button", { name: "차단하기" }));
 
     await waitFor(() =>
-      expect(screen.getByText("친구를 차단했어요.")).toBeVisible(),
+      expect(screen.getByText("차단이 완료되었어요.")).toBeVisible(),
     );
     expect(blockStudentAction).toHaveBeenCalledWith(studentId);
-    expect(screen.getByText("진행중").parentElement).toHaveTextContent(
-      "진행중0",
-    );
+    expect(screen.queryByText("노트북")).toBeNull();
+    expect(screen.queryByText("진행중")).toBeNull();
+    expect(screen.queryByRole("link", { name: /팔로워/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "팔로잉" })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "더보기" }));
     expect(screen.getByRole("button", { name: "해제하기" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "팔로우" })).toBeVisible();
-    expect(countOf("팔로워")).toBe("팔로워6");
   });
 
   it("차단이 실패하면 차단 상태로 바꾸지 않는다", async () => {
@@ -137,6 +136,9 @@ describe("StudentProfile", () => {
         onUnblocked={onUnblocked}
       />,
     );
+
+    expect(screen.queryByRole("link", { name: /팔로잉/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "팔로우" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "더보기" }));
     fireEvent.click(screen.getByRole("button", { name: "해제하기" }));
