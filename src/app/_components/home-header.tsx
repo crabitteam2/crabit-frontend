@@ -16,7 +16,7 @@ export function HomeHeader({ nickname, wishPurpose }: HomeHeaderProps) {
         <p className="text-t3 text-static-white font-medium [text-shadow:0_4px_8px_rgba(0,0,0,0.15)]">
           {nickname}의 위시
         </p>
-        <Badge className="bg-pink-2 text-pink-6">대표</Badge>
+        <Badge className="bg-pink-2 text-pink-5">대표</Badge>
       </div>
       <p className="text-t1 text-static-white font-bold [text-shadow:0_4px_8px_rgba(0,0,0,0.15)]">
         {wishPurpose ?? "대표위시가 비어있어요."}
