@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { ScreenHeader } from "./screen-header";
@@ -9,7 +8,6 @@ interface WishInfoScreenProps {
   purpose: string;
   targetAmount: number;
   period: string | null;
-  photoUrl: string | null;
 }
 
 export function WishInfoScreen({
@@ -18,24 +16,10 @@ export function WishInfoScreen({
   purpose,
   targetAmount,
   period,
-  photoUrl,
 }: WishInfoScreenProps) {
   return (
     <div className="flex min-h-svh flex-col">
       <ScreenHeader title="기본 정보" backHref={backHref} spacing="loose" />
-
-      {photoUrl === null ? null : (
-        <div className="flex justify-center pb-5">
-          <Image
-            src={photoUrl}
-            alt="위시 사진"
-            width={112}
-            height={112}
-            unoptimized
-            className="size-28 rounded-full object-cover"
-          />
-        </div>
-      )}
 
       <div className="px-4 pt-5 pb-[76px]">
         <Input label="위시" readOnly value={purpose} />

@@ -8,7 +8,6 @@ const meta = {
   args: {
     backHref: "/wishes/w3",
     editHref: "/wishes/w3/info/edit",
-    photoUrl: null,
   },
 } satisfies Meta<typeof WishInfoScreen>;
 
@@ -32,14 +31,5 @@ export const 긴목표이름: Story = {
     purpose: "산리오 캐릭터즈 대형 인형 세트 한정판",
     targetAmount: 1_200_000,
     period: "2026.08.24-2027.03.31",
-  },
-};
-
-export const 사진있음: Story = {
-  args: {
-    purpose: "시나모롤 인형",
-    targetAmount: 30_000,
-    period: null,
-    photoUrl: "/images/wishes/deposit-hero.png",
   },
 };

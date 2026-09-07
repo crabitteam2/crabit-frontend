@@ -36,7 +36,7 @@ describe("종료 위시 목록 카드", () => {
     );
   });
 
-  it("renders an authorized signed variant when the Wish has a photo", () => {
+  it("사진이 있어도 목록 카드에는 그리지 않는다", () => {
     const { container } = render(
       <WishCard
         wish={{
@@ -47,14 +47,6 @@ describe("종료 위시 목록 카드", () => {
       />,
     );
 
-    expect(container.querySelector("img")).toHaveAttribute(
-      "src",
-      "https://storage.test/signed/medium",
-    );
-  });
-
-  it("does not invent a photo when the contract returns null", () => {
-    const { container } = render(<WishCard wish={abandonedWish} tone="pink" />);
     expect(container.querySelector("img")).toBeNull();
   });
 });

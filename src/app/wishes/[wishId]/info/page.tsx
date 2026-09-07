@@ -29,7 +29,6 @@ export default async function WishInfoPage({
         start: fromIsoDate(wish.startDate),
         end: fromIsoDate(wish.targetDate),
       })}
-      photoUrl={wish.photo?.variants.medium ?? null}
     />
   );
 }
