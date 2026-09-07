@@ -18,3 +18,10 @@ export function isPersona(value: unknown): value is Persona {
     PERSONAS.some((candidate) => candidate === value)
   );
 }
+
+/**
+ * 모든 요청이 사용하는 고정 persona입니다.
+ *
+ * 실제 인증 모델이 없어 쿠키 값과 무관하게 이 신원으로 백엔드를 호출합니다.
+ */
+export const FIXED_PERSONA: Persona = "owner";

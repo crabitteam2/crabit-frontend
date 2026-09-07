@@ -2,7 +2,7 @@ import "server-only";
 import { isJsonMediaType } from "../http/media-type";
 import { createHash, randomUUID } from "node:crypto";
 import type { BffEnvironment } from "../../config/env";
-import { readPersonaCookie } from "../persona/cookies";
+import { FIXED_PERSONA } from "../persona/persona";
 import { proxyBackendRequest, type ProxyDependencies } from "../bff/proxy";
 import { readBffEnvironment } from "../../config/env";
 
@@ -38,7 +38,7 @@ export function currentContext(
 ): string | null {
   const namespace = environment.profilePolicy.credentialNamespace;
   if (!namespace) return null;
-  const persona = readPersonaCookie(headers, namespace);
+  const persona = FIXED_PERSONA;
   const names = contextCookieNames(namespace);
   const rawEpoch = cookieValue(headers, names.persona);
   if (
@@ -89,8 +89,7 @@ export async function handleBehaviorContext(
     return contextError(500, "BFF_CONFIGURATION_ERROR");
   }
   const namespace = environment.profilePolicy.credentialNamespace;
-  if (!namespace || !readPersonaCookie(request.headers, namespace))
-    return contextError(401, "BEHAVIOR_AUTH_REQUIRED");
+  if (!namespace) return contextError(401, "BEHAVIOR_AUTH_REQUIRED");
   if (!isJsonMediaType(request.headers.get("content-type")))
     return contextError(400, "BEHAVIOR_CONTEXT_INVALID");
   let body: unknown;

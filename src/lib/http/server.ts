@@ -6,8 +6,7 @@ import {
   readPersonaTokenConfiguration,
   type PersonaTokenConfiguration,
 } from "../../config/persona-tokens";
-import { readPersonaCookie } from "../persona/cookies";
-import { isPersona, type Persona } from "../persona/persona";
+import { FIXED_PERSONA, isPersona, type Persona } from "../persona/persona";
 import type { paths } from "./generated/crabit-backend";
 
 /**
@@ -65,10 +64,9 @@ function resolvePersona(
   environment: BffEnvironment,
 ): Persona | null {
   if ("request" in context && context.request !== undefined) {
-    const namespace = environment.profilePolicy.credentialNamespace;
-    return namespace === null
+    return environment.profilePolicy.credentialNamespace === null
       ? null
-      : readPersonaCookie(context.request.headers, namespace);
+      : FIXED_PERSONA;
   }
   return isPersona(context.persona) ? context.persona : null;
 }
