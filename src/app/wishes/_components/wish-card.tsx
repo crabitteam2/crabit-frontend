@@ -40,7 +40,9 @@ export function WishCard({
           <span className="text-t3 text-fg-neutral truncate font-medium">
             {wish.purpose}
           </span>
-          {isRepresentative ? <Badge>대표</Badge> : null}
+          {isRepresentative ? (
+            <Badge className="bg-gray-10 text-white">대표</Badge>
+          ) : null}
         </span>
         <WishProgressBar percent={percent} theme={theme} />
       </Link>
