@@ -1,6 +1,6 @@
 import noticeBookIcon from "@/../public/images/home/notice-book.svg";
 import transitCardIcon from "@/../public/images/home/transit-card.svg";
-import { ACADEMY_NAME, CARD_OWNER_NAME } from "@/lib/mock/home";
+import { ACADEMY_NAME, MY_NAME } from "@/lib/mock/home";
 import { refreshCardBalanceAction } from "@/app/wishes/wish-actions";
 import { loadAccountContext } from "@/app/wishes/load-account";
 import { HomeToast } from "../_components/home-toast";
@@ -34,7 +34,7 @@ export default async function HomeTabPage({
           </h2>
           <div className="px-4 pb-5">
             <MyCard
-              ownerName={CARD_OWNER_NAME}
+              ownerName={MY_NAME}
               balance={account.actualCardBalance}
               wishAvailableBalance={account.displayAvailableBalance}
             />
