@@ -6,7 +6,7 @@ import {
   readPersonaTokenConfiguration,
   type PersonaTokenConfiguration,
 } from "../../config/persona-tokens";
-import { readPersonaCookie } from "../persona/cookies";
+import { FIXED_PERSONA } from "../persona/persona";
 
 const FORWARDED_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 const METHODS_WITH_BODY = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -304,14 +304,9 @@ function injectServerCredential(
     return;
   }
 
-  const persona = readPersonaCookie(browserHeaders, namespace);
-  if (persona === null) {
-    return;
-  }
-
   upstreamHeaders.set(
     "Authorization",
-    `Bearer ${tokenConfiguration.active[persona]}`,
+    `Bearer ${tokenConfiguration.active[FIXED_PERSONA]}`,
   );
 }
 

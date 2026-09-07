@@ -109,9 +109,9 @@ try {
   });
   assert.equal(
     upstreamRequests.at(-1)?.headers.authorization,
-    `Bearer ${e2eTokens.tokens.friend}`,
+    `Bearer ${e2eTokens.tokens.owner}`,
   );
-  assert.equal(forwarded.body.includes(Buffer.from(e2eTokens.tokens.friend)), false);
+  assert.equal(forwarded.body.includes(Buffer.from(e2eTokens.tokens.owner)), false);
 
   const binaryBody = Buffer.from([0, 255, 1, 254]);
   const binary = await fetch(`${appOrigin}/api/backend/v1/binary`, {
