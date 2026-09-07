@@ -28,7 +28,7 @@ describe("WishEditForm", () => {
     vi.clearAllMocks();
   });
 
-  it("loads actual initial values, requires erased fields, and recognizes reverted edits", async () => {
+  it("비운 칸은 그대로 두고 채운 칸만 수정 대상으로 본다", async () => {
     const user = userEvent.setup();
     render(
       <WishEditForm
@@ -46,22 +46,20 @@ describe("WishEditForm", () => {
     const purpose = screen.getByRole("textbox", { name: "위시" });
     const amount = screen.getByRole("textbox", { name: "위시 금액" });
     const next = screen.getByRole("button", { name: "다음" });
-    expect(purpose).toHaveValue("선물");
-    expect(amount).toHaveValue("10,000");
+    expect(purpose).toHaveValue("");
+    expect(purpose).toHaveAttribute("placeholder", "선물");
+    expect(amount).toHaveValue("");
+    expect(amount).toHaveAttribute("placeholder", "10,000원");
     expect(next).toBeDisabled();
-    await user.type(purpose, "들");
+    await user.type(purpose, "선물들");
     expect(next).toBeEnabled();
-    await user.keyboard("{Backspace}");
-    expect(next).toBeDisabled();
     await user.clear(purpose);
-    expect(next).toBeEnabled();
-    await user.click(next);
-    expect(purpose).toHaveFocus();
-    expect(await screen.findByText("위시를 입력해주세요.")).toBeVisible();
+    expect(next).toBeDisabled();
     await user.type(purpose, "선물");
-    await user.clear(amount);
+    expect(next).toBeDisabled();
     await user.type(amount, "4999");
     await user.tab();
+    await user.click(next);
     await waitFor(() =>
       expect(
         screen.getByText("현재 모인 금액보다 작게 설정할 수 없어요."),
@@ -84,7 +82,6 @@ describe("WishEditForm", () => {
         period={null}
       />,
     );
-    await user.clear(screen.getByRole("textbox", { name: "위시" }));
     await user.click(screen.getByRole("textbox", { name: "위시 기간" }));
     const close = screen.getByRole("button", { name: "넘어가기" });
     expect(close).toHaveAttribute("type", "button");
@@ -111,12 +108,10 @@ describe("WishEditForm", () => {
         version={3}
       />,
     );
-    await user.clear(screen.getByRole("textbox", { name: "위시" }));
     await user.type(
       screen.getByRole("textbox", { name: "위시" }),
       "  새 선물  ",
     );
-    await user.clear(screen.getByRole("textbox", { name: "위시 금액" }));
     await user.type(
       screen.getByRole("textbox", { name: "위시 금액" }),
       "20000",

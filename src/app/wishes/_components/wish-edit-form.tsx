@@ -58,11 +58,7 @@ export function WishEditForm({
     setFocus,
     formState: { errors },
   } = useWishForm({
-    defaultValues: {
-      purpose,
-      amount: formatKrw(String(targetAmount)),
-      range: initialRange,
-    },
+    defaultValues: { purpose: "", amount: "", range: initialRange },
   });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -73,12 +69,16 @@ export function WishEditForm({
   const range = values.range;
   const nextPeriod = toPeriodLabel(range);
   const isSkippingPeriod = isCalendarOpen && range.start === null;
+  const nextPurpose =
+    values.purpose.trim() === "" ? null : normalizePurpose(values.purpose);
+  const nextAmount =
+    values.amount.trim() === "" ? null : parseKrw(values.amount);
   const canSubmit =
-    !purposeError(values.purpose) &&
-    !amountError(values.amount, undefined, currentAmount) &&
+    !editedPurposeError(values.purpose) &&
+    !editedAmountError(values.amount, currentAmount) &&
     !periodError(range) &&
-    (normalizePurpose(values.purpose) !== normalizePurpose(purpose) ||
-      parseKrw(values.amount) !== targetAmount ||
+    ((nextPurpose !== null && nextPurpose !== normalizePurpose(purpose)) ||
+      (nextAmount !== null && nextAmount !== targetAmount) ||
       range.start !== initialRange.start ||
       range.end !== initialRange.end);
 
@@ -91,12 +91,12 @@ export function WishEditForm({
     try {
       const body: components["schemas"]["WishMergePatch"] = {
         expectedVersion: version,
-        ...(normalizePurpose(values.purpose) === normalizePurpose(purpose)
+        ...(nextPurpose === null || nextPurpose === normalizePurpose(purpose)
           ? {}
-          : { purpose: normalizePurpose(values.purpose) }),
-        ...(parseKrw(values.amount) === targetAmount
+          : { purpose: nextPurpose }),
+        ...(nextAmount === null || nextAmount === targetAmount
           ? {}
-          : { targetAmount: parseKrw(values.amount)! }),
+          : { targetAmount: nextAmount }),
         ...(values.range.start === initialRange.start
           ? {}
           : { startDate: values.range.start?.replaceAll(".", "-") ?? null }),
@@ -159,9 +159,10 @@ export function WishEditForm({
                 label="위시"
                 variant="filled"
                 {...register("purpose", {
-                  validate: (value) => purposeError(value) ?? true,
+                  validate: (value) => editedPurposeError(value) ?? true,
                 })}
                 type="text"
+                placeholder={purpose}
                 enterKeyHint="next"
                 onKeyDown={(event) =>
                   formEnter(event, () => setFocus("amount"))
@@ -176,11 +177,12 @@ export function WishEditForm({
                 variant="filled"
                 {...register("amount", {
                   validate: (value) =>
-                    amountError(value, undefined, currentAmount) ?? true,
+                    editedAmountError(value, currentAmount) ?? true,
                   onBlur: () =>
                     setValue("amount", formatKrw(getValues("amount"))),
                 })}
                 type="text"
+                placeholder={`${targetAmount.toLocaleString("ko-KR")}원`}
                 inputMode="numeric"
                 enterKeyHint="done"
                 error={errors.amount?.message}
@@ -246,8 +248,8 @@ export function WishEditForm({
           disabled={
             !isCalendarOpen &&
             !canSubmit &&
-            !purposeError(values.purpose) &&
-            !amountError(values.amount, undefined, currentAmount)
+            !editedPurposeError(values.purpose) &&
+            !editedAmountError(values.amount, currentAmount)
           }
           onPointerDown={(event) => event.preventDefault()}
         >
@@ -256,4 +258,16 @@ export function WishEditForm({
       </div>
     </form>
   );
+}
+
+/** 비운 칸은 그대로 두겠다는 뜻이라 검사하지 않습니다. */
+function editedPurposeError(value: string) {
+  return value.trim() === "" ? undefined : purposeError(value);
+}
+
+/** 비운 칸은 그대로 두겠다는 뜻이라 검사하지 않습니다. */
+function editedAmountError(value: string, currentAmount: number) {
+  return value.trim() === ""
+    ? undefined
+    : amountError(value, undefined, currentAmount);
 }
