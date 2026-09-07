@@ -92,19 +92,26 @@ const EMPTY_COUNTS: StudentFollowCounts = {
   followerCount: 0,
 };
 
+/** 공유 카드를 프로필의 진행중과 종료 목록으로 나눕니다. */
+export function toProfileWishes(cards: components["schemas"]["SharedCard"][]) {
+  const items = cards.map(toFeedCardItem);
+
+  return {
+    inProgress: items.filter(isInProgressProfileWish),
+    finished: items.filter((item) => !isInProgressProfileWish(item)),
+  };
+}
+
 /** 학생 조회와 공유 카드 목록을 프로필 화면 모델로 합칩니다. */
 export function toStudentProfileItem(
   student: components["schemas"]["StudentRelationship"],
   cards: components["schemas"]["SharedCard"][],
   counts: StudentFollowCounts = EMPTY_COUNTS,
 ): StudentProfileItem {
-  const items = cards.map(toFeedCardItem);
-
   return {
     id: student.studentId,
     nickname: student.nickname,
-    inProgress: items.filter(isInProgressProfileWish),
-    finished: items.filter((item) => !isInProgressProfileWish(item)),
+    ...toProfileWishes(cards),
     followingCount: counts.followingCount,
     followerCount: counts.followerCount,
     isFollowing: student.isFollowing,
