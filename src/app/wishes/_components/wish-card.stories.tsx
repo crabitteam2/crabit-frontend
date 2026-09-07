@@ -128,13 +128,3 @@ export const 대표위시: Story = {
     isRepresentative: true,
   },
 };
-
-export const 사진있음: Story = {
-  args: {
-    wish: {
-      ...wish,
-      imageUrl: "/images/wishes/deposit-hero.png",
-    },
-    tone: "pink",
-  },
-};

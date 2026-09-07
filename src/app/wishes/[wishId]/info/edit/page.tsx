@@ -33,7 +33,6 @@ export default async function WishEditPage({
       cardBalanceAccountId={cardBalanceAccountId}
       wishId={wish.id}
       version={wish.version}
-      photo={wish.photo}
     />
   );
 }

@@ -1,21 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-import {
-  centeredSquareCrop,
-  digestWishPhotoFile,
-  renderWishPhotoJpeg,
-} from "@/app/wishes/new/_components/photo-jpeg";
-import {
-  clearPendingWishPhoto,
-  clearWishPhotoUploadState,
-  readWishPhotoUploadState,
-  savePendingWishPhoto,
-  stableWishPhotoKey,
-} from "@/app/wishes/new/_components/photo-storage";
-
+import { useRef, useState } from "react";
 import { useWishForm } from "@/lib/forms/use-wish-form";
 import { formEnter } from "@/lib/forms/form-keyboard";
 import {
@@ -32,10 +18,6 @@ import { Input } from "@/components/ui/input";
 import { useKeyboardViewport } from "@/hooks/use-keyboard-viewport";
 import { createBrowserApiClient } from "@/lib/http/browser";
 import type { components } from "@/lib/http/generated/crabit-backend";
-import {
-  deletePendingWishPhoto,
-  uploadWishPhoto,
-} from "@/lib/http/wish-photos";
 import { patchWish } from "@/lib/http/wishes";
 import { ScreenHeader } from "./screen-header";
 import { fromPeriodLabel, toPeriodLabel } from "./wish-period-format";
@@ -50,7 +32,6 @@ interface WishEditFormProps {
   cardBalanceAccountId: string;
   wishId: string;
   version: number;
-  photo: components["schemas"]["WishPhoto"] | null;
 }
 
 export function WishEditForm({
@@ -63,12 +44,9 @@ export function WishEditForm({
   cardBalanceAccountId,
   wishId,
   version,
-  photo,
 }: WishEditFormProps) {
   const router = useRouter();
   const [client] = useState(() => createBrowserApiClient());
-  const scope = `edit:${wishId}`;
-  const photoInputRef = useRef<HTMLInputElement>(null);
   const busy = useRef(false);
   const initialRange = fromPeriodLabel(period);
   const {
@@ -87,12 +65,6 @@ export function WishEditForm({
     },
   });
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [pendingPhoto, setPendingPhoto] = useState<
-    components["schemas"]["WishPhoto"] | null
-  >(null);
-  const [removeCurrentPhoto, setRemoveCurrentPhoto] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const box = useKeyboardViewport();
@@ -100,12 +72,6 @@ export function WishEditForm({
   const values = watch();
   const range = values.range;
   const nextPeriod = toPeriodLabel(range);
-  const displayedPhotoUrl = removeCurrentPhoto
-    ? null
-    : (previewUrl ??
-      pendingPhoto?.variants.medium ??
-      photo?.variants.medium ??
-      null);
   const isSkippingPeriod = isCalendarOpen && range.start === null;
   const canSubmit =
     !purposeError(values.purpose) &&
@@ -114,18 +80,7 @@ export function WishEditForm({
     (normalizePurpose(values.purpose) !== normalizePurpose(purpose) ||
       parseKrw(values.amount) !== targetAmount ||
       range.start !== initialRange.start ||
-      range.end !== initialRange.end ||
-      selectedPhoto !== null ||
-      pendingPhoto !== null ||
-      removeCurrentPhoto);
-  useEffect(() => {
-    setPendingPhoto(readWishPhotoUploadState(scope).pendingPhoto);
-  }, [scope]);
-
-  useEffect(() => {
-    if (previewUrl === null) return;
-    return () => URL.revokeObjectURL(previewUrl);
-  }, [previewUrl]);
+      range.end !== initialRange.end);
 
   const submit = handleSubmit(async (values) => {
     if (!canSubmit || busy.current) return;
@@ -134,31 +89,6 @@ export function WishEditForm({
     setError(null);
 
     try {
-      let candidate = pendingPhoto;
-      if (selectedPhoto !== null) {
-        const bitmap = await createImageBitmap(selectedPhoto);
-        const jpeg = await renderWishPhotoJpeg(
-          bitmap,
-          centeredSquareCrop(bitmap.width, bitmap.height),
-        );
-        bitmap.close();
-        const upload = await uploadWishPhoto(client, {
-          idempotencyKey: stableWishPhotoKey(
-            scope,
-            "upload",
-            await digestWishPhotoFile(jpeg),
-          ),
-          photo: jpeg,
-        });
-        if (!upload.ok) {
-          setError("새 사진을 업로드하지 못했어요. 다시 시도해주세요.");
-          return;
-        }
-        candidate = upload.data;
-        savePendingWishPhoto(scope, upload.data);
-        setPendingPhoto(upload.data);
-      }
-
       const body: components["schemas"]["WishMergePatch"] = {
         expectedVersion: version,
         ...(normalizePurpose(values.purpose) === normalizePurpose(purpose)
@@ -173,11 +103,6 @@ export function WishEditForm({
         ...(values.range.end === initialRange.end
           ? {}
           : { targetDate: values.range.end?.replaceAll(".", "-") ?? null }),
-        ...(removeCurrentPhoto
-          ? { photoId: null }
-          : candidate === null
-            ? {}
-            : { photoId: candidate.id }),
       };
       const patched = await patchWish(client, {
         cardBalanceAccountId,
@@ -188,50 +113,17 @@ export function WishEditForm({
         setError(
           patched.error.code === "VERSION_CONFLICT"
             ? "다른 곳에서 위시가 변경됐어요. 화면을 새로고침해주세요."
-            : "위시를 수정하지 못했어요. 기존 사진은 그대로 유지돼요.",
+            : "위시를 수정하지 못했어요. 잠시 후 다시 시도해주세요.",
         );
         return;
       }
 
-      clearWishPhotoUploadState(scope);
       router.push(donePath);
-    } catch {
-      setError("사진을 처리하지 못했어요. 기존 사진은 그대로 유지돼요.");
     } finally {
       busy.current = false;
       setIsSubmitting(false);
     }
   });
-
-  const cancelPending = async () => {
-    if (pendingPhoto === null) return true;
-    const deleted = await deletePendingWishPhoto(client, {
-      photoId: pendingPhoto.id,
-    });
-    if (!deleted.ok && deleted.error.status !== 404) {
-      setError("이전에 업로드한 사진을 정리하지 못했어요.");
-      return false;
-    }
-    clearPendingWishPhoto(scope);
-    setPendingPhoto(null);
-    return true;
-  };
-
-  const pickPhoto = async (file: File | undefined) => {
-    if (file === undefined || busy.current) return;
-    setError(null);
-    if (!(await cancelPending())) return;
-    setSelectedPhoto(file);
-    setPreviewUrl(URL.createObjectURL(file));
-    setRemoveCurrentPhoto(false);
-  };
-
-  const removePhoto = async () => {
-    if (!(await cancelPending())) return;
-    setSelectedPhoto(null);
-    setPreviewUrl(null);
-    setRemoveCurrentPhoto(true);
-  };
 
   return (
     <form
@@ -262,55 +154,7 @@ export function WishEditForm({
       >
         {isCalendarOpen ? null : (
           <>
-            <div className="flex flex-col items-center gap-3 px-4 pb-5">
-              {displayedPhotoUrl === null ? (
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => photoInputRef.current?.click()}
-                  className="bg-brand-weak text-fg-brand flex size-24 items-center justify-center rounded-full font-semibold"
-                >
-                  사진 추가
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => photoInputRef.current?.click()}
-                  aria-label="위시 사진 변경"
-                >
-                  <Image
-                    src={displayedPhotoUrl}
-                    alt="위시 사진"
-                    width={96}
-                    height={96}
-                    unoptimized
-                    className="size-24 rounded-full object-cover"
-                  />
-                </button>
-              )}
-              {photo !== null ||
-              previewUrl !== null ||
-              pendingPhoto !== null ? (
-                <button
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => void removePhoto()}
-                  className="text-e1 text-error"
-                >
-                  사진 삭제
-                </button>
-              ) : null}
-              <input
-                ref={photoInputRef}
-                type="file"
-                disabled={isSubmitting}
-                accept="image/*"
-                className="hidden"
-                onChange={(event) => void pickPhoto(event.target.files?.[0])}
-              />
-            </div>
-            <div className="px-4 pt-5 pb-[76px]">
+            <div className="px-4 pb-[76px]">
               <Input
                 label="위시"
                 variant="filled"
