@@ -1,10 +1,11 @@
 import "server-only";
 
 import type { components } from "@/lib/http/generated/crabit-backend";
-import { getMonthlyRecap, getWeeklyRecap } from "@/lib/http/recaps";
+import { getWeeklyRecap } from "@/lib/http/recaps";
 import { unwrapResult } from "@/lib/http/result";
 import { getRepresentativeWish } from "@/lib/http/wishes";
 import { loadAccountContext } from "../wishes/load-account";
+import { findLatestMonthlyRecap } from "../recaps/load-recap";
 
 /** 위시리스트 탭이 진행률로 그리는 대표 위시입니다. */
 export interface RepresentativeWishView {
@@ -28,20 +29,18 @@ export interface WishlistTabView {
   readonly unresolvedShortage: number | null;
   /** 가장 최근 완료 주의 저장 리캡 상태입니다. */
   readonly weeklyRecap: components["schemas"]["WeeklyRecapResponse"];
-  /** 가장 최근 완료 월의 저장 리캡 상태입니다. */
+  /** 완성된 가장 최근 월의 저장 리캡 상태입니다. */
   readonly monthlyRecap: components["schemas"]["MonthlyRecapResponse"];
 }
 
 /** 인증된 학생의 첫 카드잔액계좌에서 대표 위시와 부족액을 조회합니다. */
 export async function loadWishlistTab(): Promise<WishlistTabView> {
   const { client, cardBalanceAccountId, account } = await loadAccountContext();
-  const [representativeResult, weeklyResult, monthlyResult] = await Promise.all(
-    [
-      getRepresentativeWish(client, { cardBalanceAccountId }),
-      getWeeklyRecap(client, { cardBalanceAccountId }),
-      getMonthlyRecap(client, { cardBalanceAccountId }),
-    ],
-  );
+  const [representativeResult, weeklyResult, monthlyRecap] = await Promise.all([
+    getRepresentativeWish(client, { cardBalanceAccountId }),
+    getWeeklyRecap(client, { cardBalanceAccountId }),
+    findLatestMonthlyRecap(client, cardBalanceAccountId),
+  ]);
   const representative = unwrapResult(representativeResult);
 
   return {
@@ -55,6 +54,6 @@ export async function loadWishlistTab(): Promise<WishlistTabView> {
           },
     unresolvedShortage: account.unresolvedShortage,
     weeklyRecap: unwrapResult(weeklyResult),
-    monthlyRecap: unwrapResult(monthlyResult),
+    monthlyRecap,
   };
 }

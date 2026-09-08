@@ -1,8 +1,15 @@
-import {
-  MonthlyRecapDetail,
-  RecapPageShell,
-} from "../_components/recap-detail";
+import { NICKNAME } from "@/lib/mock/home";
 import { loadMonthlyRecap } from "../load-recap";
+import { MonthlyRecapEmpty } from "../_components/monthly-recap-empty";
+import { MonthlyRecapScreen } from "../_components/monthly-recap-screen";
+import {
+  collectHighlights,
+  pickHighlights,
+  toMonthTabs,
+  toSubjectParticle,
+} from "./monthly-recap-view";
+
+const MONTH_PATTERN = /^\d{4}-\d{2}$/;
 
 export default async function MonthlyRecapPage({
   searchParams,
@@ -10,15 +17,53 @@ export default async function MonthlyRecapPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
-  const month = first(query.month);
-  const recap = await loadMonthlyRecap(month);
+  const selected = firstQueryValue(query.month);
+  const month =
+    selected !== undefined && MONTH_PATTERN.test(selected)
+      ? selected
+      : undefined;
+
+  const { recap, cardBalanceAccountId } = await loadMonthlyRecap(month);
+
+  const [year, monthNumber] = recap.period.startDate.split("-").map(Number) as [
+    number,
+    number,
+  ];
+  const months = toMonthTabs(year, monthNumber, toMonthHref);
+
+  if (recap.status !== "SUCCEEDED" || recap.result === null) {
+    return (
+      <MonthlyRecapEmpty
+        backHref="/"
+        year={year}
+        months={months}
+        message={`${monthNumber}월 리캡이 아직 완성되지 않았어요. ${monthNumber + 1}월 초에 다시 확인하세요.`}
+      />
+    );
+  }
+
+  const highlights = pickHighlights(
+    collectHighlights(recap.result),
+    `${cardBalanceAccountId}:${recap.period.startDate}`,
+  );
+
   return (
-    <RecapPageShell title="월간 리플레이">
-      <MonthlyRecapDetail recap={recap} />
-    </RecapPageShell>
+    <MonthlyRecapScreen
+      backHref="/"
+      year={year}
+      months={months}
+      intro={`${monthNumber}월의 ${NICKNAME}${toSubjectParticle(NICKNAME)}`}
+      typeTitle={recap.result.typeSection.typeTitle}
+      typeMessage={recap.result.typeSection.message}
+      highlights={highlights}
+    />
   );
 }
 
-function first(value: string | string[] | undefined) {
+function toMonthHref(year: number, month: number) {
+  return `/recaps/monthly?month=${year}-${String(month).padStart(2, "0")}`;
+}
+
+function firstQueryValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
