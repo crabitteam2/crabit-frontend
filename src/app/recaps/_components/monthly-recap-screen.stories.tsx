@@ -22,11 +22,6 @@ const meta = {
   args: {
     backHref: "/",
     year: 2026,
-    yearOptions: [
-      { year: 2026, href: "/recaps/monthly?month=2026-07" },
-      { year: 2025, href: "/recaps/monthly?month=2025-07" },
-      { year: 2024, href: "/recaps/monthly?month=2024-07" },
-    ],
     months,
     intro: "7월의 아라는",
     typeTitle: "불도저형 토끼",

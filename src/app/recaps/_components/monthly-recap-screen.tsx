@@ -2,7 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import chevronLeftIcon from "@/../public/images/wishes/arrow-left.svg";
 import { RecapPattern } from "./recap-pattern";
-import { RecapYearSelect, type RecapYearOption } from "./recap-year-select";
+import { RecapYearSelect } from "./recap-year-select";
 import { RecapShape, type RecapShapeKind } from "./recap-shape";
 import { getRecapTheme } from "./recap-theme";
 
@@ -23,8 +23,6 @@ interface MonthlyRecapScreenProps {
   backHref: string;
   /** 화면 오른쪽 위에 보여줄 연도입니다. */
   year: number;
-  /** 고를 수 있는 연도와 그 연도로 가는 경로입니다. */
-  yearOptions: readonly RecapYearOption[];
   /** 왼쪽부터 순서대로 그릴 달 목록입니다. */
   months: readonly RecapMonthTab[];
   /** `7월의 아라는` 자리에 넣을 문구입니다. */
@@ -41,7 +39,6 @@ interface MonthlyRecapScreenProps {
 export function MonthlyRecapScreen({
   backHref,
   year,
-  yearOptions,
   months,
   intro,
   typeTitle,
@@ -70,7 +67,7 @@ export function MonthlyRecapScreen({
         >
           <Image src={chevronLeftIcon} alt="" fill sizes="32px" />
         </Link>
-        <RecapYearSelect year={year} options={yearOptions} isOnDarkBackground />
+        <RecapYearSelect year={year} isOnDarkBackground />
       </header>
 
       <nav

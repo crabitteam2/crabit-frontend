@@ -3,12 +3,11 @@ import Link from "next/link";
 import chevronLeftIcon from "@/../public/images/wishes/arrow-left.svg";
 import emptyImage from "@/../public/images/recaps/empty.png";
 import type { RecapMonthTab } from "./monthly-recap-screen";
-import { RecapYearSelect, type RecapYearOption } from "./recap-year-select";
+import { RecapYearSelect } from "./recap-year-select";
 
 interface MonthlyRecapEmptyProps {
   backHref: string;
   year: number;
-  yearOptions: readonly RecapYearOption[];
   months: readonly RecapMonthTab[];
   /** 아직 리캡이 없다는 것을 알리는 문구이며, 줄바꿈 문자로 줄을 나눕니다. */
   message: string;
@@ -18,7 +17,6 @@ interface MonthlyRecapEmptyProps {
 export function MonthlyRecapEmpty({
   backHref,
   year,
-  yearOptions,
   months,
   message,
 }: MonthlyRecapEmptyProps) {
@@ -32,7 +30,7 @@ export function MonthlyRecapEmpty({
         >
           <Image src={chevronLeftIcon} alt="" fill sizes="32px" />
         </Link>
-        <RecapYearSelect year={year} options={yearOptions} />
+        <RecapYearSelect year={year} />
       </header>
 
       <nav

@@ -4,7 +4,6 @@ import {
   pickHighlights,
   toMonthTabs,
   toSubjectParticle,
-  toYearOptions,
 } from "./monthly-recap-view";
 
 const CANDIDATES = [
@@ -80,38 +79,6 @@ describe("toSubjectParticle", () => {
     ["박선형", "은"],
   ])("%s 뒤에 %s를 붙인다", (name, particle) => {
     expect(toSubjectParticle(name)).toBe(particle);
-  });
-});
-
-describe("toYearOptions", () => {
-  const months = ["2026-08", "2026-07", "2026-06", "2025-08"];
-
-  it("리캡이 있는 해를 오래된 순으로 준다", () => {
-    expect(toYearOptions(months, { year: 2026, month: 8 })).toEqual([
-      { year: 2025, month: 8 },
-      { year: 2026, month: 8 },
-    ]);
-  });
-
-  it("보고 있는 해는 보고 있는 달로 간다", () => {
-    expect(toYearOptions(months, { year: 2026, month: 6 }).at(-1)).toEqual({
-      year: 2026,
-      month: 6,
-    });
-  });
-
-  it("리캡이 없는 해를 보고 있어도 그 해가 목록에 남는다", () => {
-    expect(toYearOptions(months, { year: 2024, month: 3 })).toEqual([
-      { year: 2024, month: 3 },
-      { year: 2025, month: 8 },
-      { year: 2026, month: 8 },
-    ]);
-  });
-
-  it("리캡이 없으면 보고 있는 해만 준다", () => {
-    expect(toYearOptions([], { year: 2026, month: 8 })).toEqual([
-      { year: 2026, month: 8 },
-    ]);
   });
 });
 

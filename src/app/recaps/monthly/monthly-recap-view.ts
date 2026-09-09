@@ -63,28 +63,13 @@ export function toMonthTabs(
   });
 }
 
-/**
- * 드롭다운에 넣을 연도를 오래된 순으로 만듭니다.
- *
- * 리캡이 있는 달에서 해를 모으고, 해마다 가장 최근 달을 함께 돌려줍니다.
- * 보고 있는 해에 리캡이 없어도 그 해는 목록에 남습니다.
- */
-export function toYearOptions(
-  months: readonly string[],
-  viewing: { readonly year: number; readonly month: number },
-) {
-  const newest = new Map<number, number>([[viewing.year, viewing.month]]);
-
-  for (const value of months) {
-    const [year, month] = value.split("-").map(Number) as [number, number];
-    if (year === viewing.year) continue;
-    const current = newest.get(year);
-    if (current === undefined || month > current) newest.set(year, month);
-  }
-
-  return [...newest]
-    .sort(([left], [right]) => left - right)
-    .map(([year, month]) => ({ year, month }));
+/** 마지막으로 끝난 달을 서울 기준 `2026-08` 형식으로 구합니다. */
+export function latestCompletedMonth(now: Date = new Date()) {
+  const seoul = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const previous = new Date(
+    Date.UTC(seoul.getUTCFullYear(), seoul.getUTCMonth() - 1, 1),
+  );
+  return `${previous.getUTCFullYear()}-${String(previous.getUTCMonth() + 1).padStart(2, "0")}`;
 }
 
 /** 이름 뒤에 붙일 주격 조사를 고릅니다. */

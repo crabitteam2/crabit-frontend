@@ -7,10 +7,11 @@ import {
   pickHighlights,
   toMonthTabs,
   toSubjectParticle,
-  toYearOptions,
 } from "./monthly-recap-view";
 
 const MONTH_PATTERN = /^\d{4}-\d{2}$/;
+
+const YEAR_PATTERN = /^\d{4}$/;
 
 export default async function MonthlyRecapPage({
   searchParams,
@@ -18,34 +19,33 @@ export default async function MonthlyRecapPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
-  const selected = firstQueryValue(query.month);
+  const selectedMonth = firstQueryValue(query.month);
   const month =
-    selected !== undefined && MONTH_PATTERN.test(selected)
-      ? selected
+    selectedMonth !== undefined && MONTH_PATTERN.test(selectedMonth)
+      ? selectedMonth
+      : undefined;
+  const selectedYear = firstQueryValue(query.year);
+  const chosenYear =
+    selectedYear !== undefined && YEAR_PATTERN.test(selectedYear)
+      ? Number(selectedYear)
       : undefined;
 
-  const { recap, cardBalanceAccountId, availableMonths } =
-    await loadMonthlyRecap(month);
+  const { recap, cardBalanceAccountId } = await loadMonthlyRecap(
+    month,
+    chosenYear,
+  );
 
   const [year, monthNumber] = recap.period.startDate.split("-").map(Number) as [
     number,
     number,
   ];
   const months = toMonthTabs(year, monthNumber, toMonthHref);
-  const yearOptions = toYearOptions(availableMonths, {
-    year,
-    month: monthNumber,
-  }).map((option) => ({
-    year: option.year,
-    href: toMonthHref(option.year, option.month),
-  }));
 
   if (recap.status !== "SUCCEEDED" || recap.result === null) {
     return (
       <MonthlyRecapEmpty
         backHref="/"
         year={year}
-        yearOptions={yearOptions}
         months={months}
         message={`${monthNumber}월 리캡이 아직 완성되지 않았어요.\n${(monthNumber % 12) + 1}월 초에 다시 확인하세요.`}
       />
@@ -61,7 +61,6 @@ export default async function MonthlyRecapPage({
     <MonthlyRecapScreen
       backHref="/"
       year={year}
-      yearOptions={yearOptions}
       months={months}
       intro={`${monthNumber}월의 ${NICKNAME}${toSubjectParticle(NICKNAME)}`}
       typeTitle={recap.result.typeSection.typeTitle}
