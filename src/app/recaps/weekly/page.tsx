@@ -1,21 +1,13 @@
-import { RecapPageShell, WeeklyRecapDetail } from "../_components/recap-detail";
-import { loadWeeklyRecap } from "../load-recap";
+import { WEEKLY_RECAP_MOCK } from "@/lib/mock/weekly-recap";
+import { WeeklyRecapStory } from "../_components/weekly-recap-story";
 
-export default async function WeeklyRecapPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const query = await searchParams;
-  const weekStart = first(query.weekStart);
-  const recap = await loadWeeklyRecap(weekStart);
+/**
+ * 주간 리캡 화면입니다.
+ *
+ * 아직 API를 붙이지 않아 시연용 값으로 그립니다.
+ */
+export default function WeeklyRecapPage() {
   return (
-    <RecapPageShell title="주간 리플레이">
-      <WeeklyRecapDetail recap={recap} />
-    </RecapPageShell>
+    <WeeklyRecapStory closeHref="/" feedHref="/feed" {...WEEKLY_RECAP_MOCK} />
   );
-}
-
-function first(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] : value;
 }
