@@ -21,6 +21,8 @@ export interface RecapTheme {
   readonly pattern: { readonly kind: RecapPatternKind; readonly color: string };
   /** 유형을 나타내는 캐릭터입니다. */
   readonly character: StaticImageData;
+  /** 캐릭터 그림의 왼쪽과 아래 여백입니다. 그림마다 크기가 달라 유형마다 다릅니다. */
+  readonly characterBox: { readonly left: number; readonly bottom: number };
 }
 
 const THEMES: Record<string, RecapTheme> = {
@@ -29,24 +31,28 @@ const THEMES: Record<string, RecapTheme> = {
     shapes: { star: "#ffd1b6", circle: "#ffca7a", cross: "#ffdea1" },
     pattern: { kind: "fire", color: "rgba(255,255,255,0.35)" },
     character: bulldozerImage,
+    characterBox: { left: 30, bottom: 40 },
   },
   "꾸준형 토끼": {
     gradient: ["#57cefd", "#b5e4b4"],
     shapes: { star: "#bffaf6", circle: "#c8ffdd", cross: "#c3eb9f" },
     pattern: { kind: "square", color: "rgba(173,231,253,0.3)" },
     character: steadyImage,
+    characterBox: { left: 45, bottom: 0 },
   },
   "단기 집중형 토끼": {
     gradient: ["#50ae43", "#e0c13a"],
     shapes: { star: "#c9e777", circle: "#a2e594", cross: "#f6eb90" },
     pattern: { kind: "bolt", color: "rgba(194,255,166,0.2)" },
     character: sprintImage,
+    characterBox: { left: 45, bottom: 0 },
   },
   "탐색형 토끼": {
     gradient: ["#8f43ad", "#e06f3a"],
     shapes: { star: "#fd92d6", circle: "#fa9b94", cross: "#ffcab3" },
     pattern: { kind: "circle", color: "rgba(190,69,237,0.3)" },
     character: explorerImage,
+    characterBox: { left: 45, bottom: 0 },
   },
 };
 

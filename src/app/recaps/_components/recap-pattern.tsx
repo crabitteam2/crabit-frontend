@@ -12,30 +12,58 @@ interface RecapPatternProps {
   color: string;
 }
 
-const ROW_GAP: Record<RecapPatternKind, number> = {
-  fire: 124,
-  square: 114,
-  bolt: 114,
-  circle: 114,
+/**
+ * 무늬 한 줄의 크기와 자리입니다.
+ *
+ * 첫 줄은 캐릭터 그림이 시작하는 자리에 놓고 `rowGap`만큼 내려갑니다. `offsets`는 줄마다
+ * 화면 가운데에서 얼마나 밀렸는지입니다. 유형마다 시안이 다르게 배치해서 값을 그대로 옮겨 둡니다.
+ */
+const PATTERNS: Record<
+  RecapPatternKind,
+  {
+    readonly width: number;
+    readonly height: number;
+    readonly rowGap: number;
+    readonly offsets: readonly number[];
+  }
+> = {
+  fire: {
+    width: 60,
+    height: 60,
+    rowGap: 124,
+    offsets: [-3, 57, -3, -85, -3, -85, -3],
+  },
+  square: {
+    width: 50,
+    height: 50,
+    rowGap: 114,
+    offsets: [-34, 35, -34, 35, -34, 35, -34],
+  },
+  bolt: {
+    width: 42,
+    height: 50,
+    rowGap: 114,
+    offsets: [-33, 32, -33, 32, -33, 32, -33],
+  },
+  circle: {
+    width: 50,
+    height: 50,
+    rowGap: 114,
+    offsets: [-32, 32, -32, 32, -32, 32, -32],
+  },
 };
-
-const SIZE: Record<RecapPatternKind, number> = {
-  fire: 60,
-  square: 50,
-  bolt: 50,
-  circle: 50,
-};
-
-const ROW_COUNT = 7;
 
 const COLUMN_GAP = 82;
 
+const MARKS_PER_ROW = 3;
+
 function PatternMark({ kind, color }: RecapPatternProps) {
-  const size = SIZE[kind];
+  const { width, height } = PATTERNS[kind];
+
   if (kind === "square" || kind === "circle") {
     return (
       <span
-        style={{ width: size, height: size, backgroundColor: color }}
+        style={{ width, height, backgroundColor: color }}
         className={`block shrink-0 ${kind === "circle" ? "rounded-full" : ""}`}
       />
     );
@@ -44,7 +72,7 @@ function PatternMark({ kind, color }: RecapPatternProps) {
   return (
     <svg
       viewBox={kind === "fire" ? "0 0 60 60" : "0 0 42 50"}
-      style={{ width: size, height: size }}
+      style={{ width, height }}
       className="block shrink-0"
       aria-hidden="true"
     >
@@ -56,27 +84,29 @@ function PatternMark({ kind, color }: RecapPatternProps) {
 /**
  * 화면 뒤에 깔리는 무늬입니다.
  *
- * 세 개씩 한 줄로 두고 줄마다 좌우로 어긋나게 배치합니다.
+ * 캐릭터 그림이 시작하는 자리부터 일곱 줄을 놓고, 줄마다 좌우로 어긋나게 둡니다.
  */
 export function RecapPattern({ kind, color }: RecapPatternProps) {
+  const pattern = PATTERNS[kind];
+
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-x-0 top-[305px] overflow-hidden"
+      className="pointer-events-none absolute inset-x-0 top-[calc(env(safe-area-inset-top)+243px)] bottom-0 overflow-hidden"
     >
-      {Array.from({ length: ROW_COUNT }, (_, row) => (
+      {pattern.offsets.map((offset, row) => (
         <div
           key={row}
           style={{
-            marginTop: row === 0 ? 0 : ROW_GAP[kind] - SIZE[kind],
-            transform: `translateX(${row % 2 === 0 ? -36 : 24}px)`,
+            top: row * pattern.rowGap,
+            left: `calc(50% + ${offset}px)`,
             gap: COLUMN_GAP,
           }}
-          className="flex items-center justify-center"
+          className="absolute flex -translate-x-1/2 items-center"
         >
-          <PatternMark kind={kind} color={color} />
-          <PatternMark kind={kind} color={color} />
-          <PatternMark kind={kind} color={color} />
+          {Array.from({ length: MARKS_PER_ROW }, (_, column) => (
+            <PatternMark key={column} kind={kind} color={color} />
+          ))}
         </div>
       ))}
     </div>
