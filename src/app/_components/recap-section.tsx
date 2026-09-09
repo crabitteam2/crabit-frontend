@@ -64,12 +64,10 @@ function RecapCardLink({
   label,
   children,
 }: {
-  href: string | null;
+  href: string;
   label: string;
   children: ReactNode;
 }) {
-  if (href === null) return children;
-
   return (
     <Link href={href} aria-label={`${label} 보기`} className="shrink-0">
       {children}
@@ -78,15 +76,11 @@ function RecapCardLink({
 }
 
 function toWeeklyHref(recap: WeeklyRecap) {
-  return recap.status === "SUCCEEDED" && recap.result !== null
-    ? `/recaps/weekly?weekStart=${recap.period.startDate}`
-    : null;
+  return `/recaps/weekly?weekStart=${recap.period.startDate}`;
 }
 
 function toMonthlyHref(recap: MonthlyRecap) {
-  return recap.status === "SUCCEEDED" && recap.result !== null
-    ? `/recaps/monthly?month=${recap.period.startDate.slice(0, 7)}`
-    : null;
+  return `/recaps/monthly?month=${recap.period.startDate.slice(0, 7)}`;
 }
 
 function toMonthLabel(recap: MonthlyRecap) {

@@ -7,7 +7,7 @@ type Weekly = components["schemas"]["WeeklyRecapResponse"];
 type Monthly = components["schemas"]["MonthlyRecapResponse"];
 
 describe("RecapSection", () => {
-  it("리캡이 없거나 부적격이면 상세로 가는 링크를 걸지 않는다", () => {
+  it("리캡이 아직 없어도 상세로 가는 링크를 건다", () => {
     render(
       <RecapSection
         weekly={weeklyState("NOT_GENERATED")}
@@ -15,10 +15,15 @@ describe("RecapSection", () => {
       />,
     );
 
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "주간 리플레이 보기" }),
+    ).toHaveAttribute("href", "/recaps/weekly?weekStart=2026-08-24");
+    expect(
+      screen.getByRole("link", { name: "월간 리플레이 보기" }),
+    ).toHaveAttribute("href", "/recaps/monthly?month=2026-08");
   });
 
-  it("생성 중이거나 실패해도 링크를 걸지 않는다", () => {
+  it("생성 중이거나 실패해도 링크를 건다", () => {
     render(
       <RecapSection
         weekly={weeklyState("GENERATING")}
@@ -26,7 +31,7 @@ describe("RecapSection", () => {
       />,
     );
 
-    expect(screen.queryByRole("link")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("link")).toHaveLength(2);
   });
 
   it("성공한 리캡은 상세로 가는 링크를 건다", () => {
