@@ -29,3 +29,23 @@ export function listAcademySharedCards(
     }),
   );
 }
+
+/** 학원 공유 카드 한 장 조회에 필요한 학원과 카드 식별자입니다. */
+export interface GetAcademySharedCardOptions {
+  readonly academyId: components["parameters"]["AcademyId"];
+  readonly cardId: components["parameters"]["SharedCardId"];
+}
+
+/** 지금 권한으로 볼 수 있는 학원 공유 카드 한 장을 조회합니다. */
+export function getAcademySharedCard(
+  client: CrabitApiClient,
+  options: GetAcademySharedCardOptions,
+): Promise<ApiResult<components["schemas"]["SharedCard"]>> {
+  return apiResult<components["schemas"]["SharedCard"]>(() =>
+    client.GET("/v1/academies/{academyId}/shared-cards/{cardId}", {
+      params: {
+        path: { academyId: options.academyId, cardId: options.cardId },
+      },
+    }),
+  );
+}

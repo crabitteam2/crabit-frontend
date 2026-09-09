@@ -1,12 +1,41 @@
 import type { Meta, StoryObj } from "@storybook/nextjs-vite";
-import { WEEKLY_RECAP_MOCK } from "@/lib/mock/weekly-recap";
 import { WeeklyRecapStory } from "./weekly-recap-story";
 
 const meta = {
   title: "Recaps/WeeklyRecapStory",
   component: WeeklyRecapStory,
   parameters: { layout: "fullscreen" },
-  args: { closeHref: "/", feedHref: "/feed", ...WEEKLY_RECAP_MOCK },
+  args: {
+    closeHref: "/",
+    feedHref: "/feed",
+    savings: {
+      headline: `지난주에 총 5번 저축했어요.
+3주 연속 저축 유지 중! 🔥🔥🔥`,
+      netSavings: 32_000,
+      newWishCount: 0,
+    },
+    growth: {
+      headline: "내 위시리스트 조회수가 성장 가능성이 있어요.",
+      description:
+        "내 피드를 42명의 친구가 구경했어요! 효과적인 성장을 원한다면 매주 새로운 위시를 피드에 공유하는 것 부터 시작해보세요.",
+      nickname: "아라",
+      totalVisits: 56,
+      growthPct: 15,
+    },
+    stories: {
+      headline: `지난주 우리학원의 위시를 달성한
+친구들이 있어요.`,
+      description: "불도저형 토끼 지원이가 '포켓몬 카드' 위시를 완주했어요!",
+      cards: [
+        {
+          id: "00000000-0000-0000-0000-000000000901",
+          nickname: "지원",
+          purpose: "포켓몬 카드",
+          period: "26.08.24 ~ 26.08.25",
+        },
+      ],
+    },
+  },
 } satisfies Meta<typeof WeeklyRecapStory>;
 
 export default meta;
@@ -35,7 +64,12 @@ export const 완주한_친구_여럿: Story = {
 친구들이 있어요.`,
       description: "불도저형 토끼 지원이가 '포켓몬 카드' 위시를 완주했어요!",
       cards: [
-        ...WEEKLY_RECAP_MOCK.stories.cards,
+        {
+          id: "00000000-0000-0000-0000-000000000901",
+          nickname: "지원",
+          purpose: "포켓몬 카드",
+          period: "26.08.24 ~ 26.08.25",
+        },
         {
           id: "00000000-0000-0000-0000-000000000902",
           nickname: "선형",
