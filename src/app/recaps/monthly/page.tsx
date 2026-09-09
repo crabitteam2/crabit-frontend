@@ -7,6 +7,7 @@ import {
   pickHighlights,
   toMonthTabs,
   toSubjectParticle,
+  toYearOptions,
 } from "./monthly-recap-view";
 
 const MONTH_PATTERN = /^\d{4}-\d{2}$/;
@@ -23,21 +24,30 @@ export default async function MonthlyRecapPage({
       ? selected
       : undefined;
 
-  const { recap, cardBalanceAccountId } = await loadMonthlyRecap(month);
+  const { recap, cardBalanceAccountId, availableMonths } =
+    await loadMonthlyRecap(month);
 
   const [year, monthNumber] = recap.period.startDate.split("-").map(Number) as [
     number,
     number,
   ];
   const months = toMonthTabs(year, monthNumber, toMonthHref);
+  const yearOptions = toYearOptions(availableMonths, {
+    year,
+    month: monthNumber,
+  }).map((option) => ({
+    year: option.year,
+    href: toMonthHref(option.year, option.month),
+  }));
 
   if (recap.status !== "SUCCEEDED" || recap.result === null) {
     return (
       <MonthlyRecapEmpty
         backHref="/"
         year={year}
+        yearOptions={yearOptions}
         months={months}
-        message={`${monthNumber}월 리캡이 아직 완성되지 않았어요. ${monthNumber + 1}월 초에 다시 확인하세요.`}
+        message={`${monthNumber}월 리캡이 아직 완성되지 않았어요.\n${(monthNumber % 12) + 1}월 초에 다시 확인하세요.`}
       />
     );
   }
@@ -51,6 +61,7 @@ export default async function MonthlyRecapPage({
     <MonthlyRecapScreen
       backHref="/"
       year={year}
+      yearOptions={yearOptions}
       months={months}
       intro={`${monthNumber}월의 ${NICKNAME}${toSubjectParticle(NICKNAME)}`}
       typeTitle={recap.result.typeSection.typeTitle}

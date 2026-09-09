@@ -1,12 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import chevronLeftIcon from "@/../public/images/wishes/arrow-left.svg";
-import chevronRightIcon from "@/../public/images/common/chevron-right.svg";
 import { RecapPattern } from "./recap-pattern";
+import { RecapYearSelect, type RecapYearOption } from "./recap-year-select";
 import { RecapShape, type RecapShapeKind } from "./recap-shape";
 import { getRecapTheme } from "./recap-theme";
 
 const SHAPES: readonly RecapShapeKind[] = ["star", "circle", "cross"];
+
+const CHARACTER_WIDTH = 300;
 
 /** 월 선택 줄에 그릴 달 하나입니다. */
 export interface RecapMonthTab {
@@ -21,6 +23,8 @@ interface MonthlyRecapScreenProps {
   backHref: string;
   /** 화면 오른쪽 위에 보여줄 연도입니다. */
   year: number;
+  /** 고를 수 있는 연도와 그 연도로 가는 경로입니다. */
+  yearOptions: readonly RecapYearOption[];
   /** 왼쪽부터 순서대로 그릴 달 목록입니다. */
   months: readonly RecapMonthTab[];
   /** `7월의 아라는` 자리에 넣을 문구입니다. */
@@ -37,6 +41,7 @@ interface MonthlyRecapScreenProps {
 export function MonthlyRecapScreen({
   backHref,
   year,
+  yearOptions,
   months,
   intro,
   typeTitle,
@@ -44,6 +49,9 @@ export function MonthlyRecapScreen({
   highlights,
 }: MonthlyRecapScreenProps) {
   const theme = getRecapTheme(typeTitle);
+  const characterHeight = Math.round(
+    (CHARACTER_WIDTH * theme.character.height) / theme.character.width,
+  );
 
   return (
     <div
@@ -62,24 +70,19 @@ export function MonthlyRecapScreen({
         >
           <Image src={chevronLeftIcon} alt="" fill sizes="32px" />
         </Link>
-        <p className="text-static-white flex items-center gap-1 text-[15px] leading-5 font-medium tracking-[-0.3px]">
-          {year}
-          <span className="relative block size-4 brightness-0 invert">
-            <Image src={chevronRightIcon} alt="" fill sizes="16px" />
-          </span>
-        </p>
+        <RecapYearSelect year={year} options={yearOptions} isOnDarkBackground />
       </header>
 
       <nav
         aria-label="월 선택"
-        className="relative flex items-center justify-center gap-12 px-4 py-5"
+        className="relative flex items-center justify-between px-6 py-5"
       >
         {months.map((month) =>
           month.href === null ? (
             <span
               key={month.label}
               aria-current="page"
-              className="text-gray-9 text-[20px] leading-7 font-medium tracking-[-0.3px]"
+              className="text-gray-9 text-[20px] leading-7 font-medium tracking-[-0.3px] whitespace-nowrap"
             >
               {month.label}
             </span>
@@ -87,7 +90,7 @@ export function MonthlyRecapScreen({
             <Link
               key={month.label}
               href={month.href}
-              className="text-static-white text-[20px] leading-7 font-medium tracking-[-0.3px]"
+              className="text-static-white text-[20px] leading-7 font-medium tracking-[-0.3px] whitespace-nowrap"
             >
               {month.label}
             </Link>
@@ -104,13 +107,17 @@ export function MonthlyRecapScreen({
         </h1>
       </div>
 
-      <div className="relative flex justify-center px-10 pt-10">
+      <div
+        className="relative pt-10"
+        style={{ paddingBottom: theme.characterBox.bottom }}
+      >
         <Image
           src={theme.character}
           alt=""
-          width={300}
-          height={300}
-          className="size-[300px] object-contain"
+          width={CHARACTER_WIDTH}
+          height={characterHeight}
+          className="block"
+          style={{ marginLeft: theme.characterBox.left }}
           priority
         />
       </div>
@@ -133,13 +140,55 @@ export function MonthlyRecapScreen({
   );
 }
 
+/**
+ * 도형 하나가 차지하는 자리와 그 안에 그리는 도형의 크기입니다.
+ *
+ * `frame`은 도형을 돌린 뒤의 바깥 상자라 도형 자체보다 큽니다. 도형은 `art` 크기로 그린 뒤
+ * 상자 가운데에서 돌립니다. 별은 그림에 여백이 있어 `inset`으로 안쪽에 앉힙니다.
+ */
 const PLACEMENTS: Record<
   RecapShapeKind,
-  { box: number; left: number; top: number; rotate: number; textWidth: number }
+  {
+    frame: number;
+    left: number;
+    top: number;
+    art: number;
+    inset: string;
+    rotate: number;
+    textRotate: number;
+    textWidth: number;
+  }
 > = {
-  star: { box: 398, left: 50, top: 0, rotate: 24.76, textWidth: 150 },
-  circle: { box: 232, left: 16, top: 332, rotate: 0, textWidth: 150 },
-  cross: { box: 280, left: 107, top: 569, rotate: 14.03, textWidth: 170 },
+  star: {
+    frame: 398.057,
+    left: 50,
+    top: 0,
+    art: 300,
+    inset: "8.4% 10.1% 15.05%",
+    rotate: 24.76,
+    textRotate: 24.66,
+    textWidth: 118,
+  },
+  circle: {
+    frame: 232,
+    left: 16,
+    top: 332,
+    art: 232,
+    inset: "0",
+    rotate: 0,
+    textRotate: 0,
+    textWidth: 150,
+  },
+  cross: {
+    frame: 280.516,
+    left: 106.879,
+    top: 569,
+    art: 232,
+    inset: "0",
+    rotate: 13.76,
+    textRotate: 14.03,
+    textWidth: 150,
+  },
 };
 
 function RecapHighlight({
@@ -155,19 +204,35 @@ function RecapHighlight({
 
   return (
     <div
-      className="absolute flex items-center justify-center"
+      className="absolute"
       style={{
         left: placement.left,
         top: placement.top,
-        width: placement.box,
-        height: placement.box,
-        transform: `rotate(${placement.rotate}deg)`,
+        width: placement.frame,
+        height: placement.frame,
       }}
     >
-      <RecapShape kind={kind} fill={fill} className="absolute size-full" />
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div
+          className="relative shrink-0"
+          style={{
+            width: placement.art,
+            height: placement.art,
+            transform: `rotate(${placement.rotate}deg)`,
+          }}
+        >
+          <div className="absolute" style={{ inset: placement.inset }}>
+            <RecapShape kind={kind} fill={fill} className="size-full" />
+          </div>
+        </div>
+      </div>
+
       <p
-        className={`text-fg-neutral relative text-center tracking-[-0.3px] ${toTextSize(message)}`}
-        style={{ width: placement.textWidth }}
+        className={`text-fg-neutral absolute top-1/2 left-1/2 text-center tracking-[-0.3px] ${toTextSize(message)}`}
+        style={{
+          width: placement.textWidth,
+          transform: `translate(-50%, -50%) rotate(${placement.textRotate}deg)`,
+        }}
       >
         {message}
       </p>

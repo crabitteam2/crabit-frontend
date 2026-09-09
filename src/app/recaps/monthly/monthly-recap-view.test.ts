@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  isCompletedMonth,
   pickHighlights,
   toMonthTabs,
   toSubjectParticle,
+  toYearOptions,
 } from "./monthly-recap-view";
 
 const CANDIDATES = [
@@ -78,5 +80,59 @@ describe("toSubjectParticle", () => {
     ["박선형", "은"],
   ])("%s 뒤에 %s를 붙인다", (name, particle) => {
     expect(toSubjectParticle(name)).toBe(particle);
+  });
+});
+
+describe("toYearOptions", () => {
+  const months = ["2026-08", "2026-07", "2026-06", "2025-08"];
+
+  it("리캡이 있는 해를 오래된 순으로 준다", () => {
+    expect(toYearOptions(months, { year: 2026, month: 8 })).toEqual([
+      { year: 2025, month: 8 },
+      { year: 2026, month: 8 },
+    ]);
+  });
+
+  it("보고 있는 해는 보고 있는 달로 간다", () => {
+    expect(toYearOptions(months, { year: 2026, month: 6 }).at(-1)).toEqual({
+      year: 2026,
+      month: 6,
+    });
+  });
+
+  it("리캡이 없는 해를 보고 있어도 그 해가 목록에 남는다", () => {
+    expect(toYearOptions(months, { year: 2024, month: 3 })).toEqual([
+      { year: 2024, month: 3 },
+      { year: 2025, month: 8 },
+      { year: 2026, month: 8 },
+    ]);
+  });
+
+  it("리캡이 없으면 보고 있는 해만 준다", () => {
+    expect(toYearOptions([], { year: 2026, month: 8 })).toEqual([
+      { year: 2026, month: 8 },
+    ]);
+  });
+});
+
+describe("isCompletedMonth", () => {
+  const now = new Date("2026-09-09T00:00:00Z");
+
+  it("지난 달은 끝난 달이다", () => {
+    expect(isCompletedMonth("2026-08", now)).toBe(true);
+    expect(isCompletedMonth("2025-12", now)).toBe(true);
+  });
+
+  it("이번 달과 앞으로 올 달은 끝나지 않았다", () => {
+    expect(isCompletedMonth("2026-09", now)).toBe(false);
+    expect(isCompletedMonth("2026-10", now)).toBe(false);
+    expect(isCompletedMonth("2027-01", now)).toBe(false);
+  });
+
+  it("서울 기준으로 해가 바뀌는 순간을 센다", () => {
+    const newYearEve = new Date("2026-12-31T15:30:00Z");
+
+    expect(isCompletedMonth("2026-12", newYearEve)).toBe(true);
+    expect(isCompletedMonth("2027-01", newYearEve)).toBe(false);
   });
 });

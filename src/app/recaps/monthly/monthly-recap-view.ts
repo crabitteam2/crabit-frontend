@@ -63,12 +63,50 @@ export function toMonthTabs(
   });
 }
 
+/**
+ * 드롭다운에 넣을 연도를 오래된 순으로 만듭니다.
+ *
+ * 리캡이 있는 달에서 해를 모으고, 해마다 가장 최근 달을 함께 돌려줍니다.
+ * 보고 있는 해에 리캡이 없어도 그 해는 목록에 남습니다.
+ */
+export function toYearOptions(
+  months: readonly string[],
+  viewing: { readonly year: number; readonly month: number },
+) {
+  const newest = new Map<number, number>([[viewing.year, viewing.month]]);
+
+  for (const value of months) {
+    const [year, month] = value.split("-").map(Number) as [number, number];
+    if (year === viewing.year) continue;
+    const current = newest.get(year);
+    if (current === undefined || month > current) newest.set(year, month);
+  }
+
+  return [...newest]
+    .sort(([left], [right]) => left - right)
+    .map(([year, month]) => ({ year, month }));
+}
+
 /** 이름 뒤에 붙일 주격 조사를 고릅니다. */
 export function toSubjectParticle(name: string) {
   const last = name.trim().at(-1) ?? "";
   const code = last.charCodeAt(0);
   if (Number.isNaN(code) || code < 0xac00 || code > 0xd7a3) return "는";
   return (code - 0xac00) % 28 === 0 ? "는" : "은";
+}
+
+/**
+ * 이미 끝난 달인지 봅니다.
+ *
+ * 계약이 완료 월만 받아서, 이번 달과 앞으로 올 달은 조회하지 않고 빈 화면으로 갑니다.
+ */
+export function isCompletedMonth(month: string, now: Date = new Date()) {
+  const seoul = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const [year, monthNumber] = month.split("-").map(Number) as [number, number];
+  return (
+    year * 12 + monthNumber - 1 <
+    seoul.getUTCFullYear() * 12 + seoul.getUTCMonth()
+  );
 }
 
 /** 조회에 쓰는 `2026-08` 형식으로 달을 옮깁니다. */

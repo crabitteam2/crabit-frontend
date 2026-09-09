@@ -8,6 +8,11 @@ const meta = {
   args: {
     backHref: "/",
     year: 2026,
+    yearOptions: [
+      { year: 2026, href: "/recaps/monthly?month=2026-07" },
+      { year: 2025, href: "/recaps/monthly?month=2025-07" },
+      { year: 2024, href: "/recaps/monthly?month=2024-07" },
+    ],
     months: [
       { label: "4월", href: "/recaps/monthly?month=2026-04" },
       { label: "5월", href: "/recaps/monthly?month=2026-05" },
@@ -15,7 +20,7 @@ const meta = {
       { label: "7월", href: null },
       { label: "8월", href: "/recaps/monthly?month=2026-08" },
     ],
-    message: "7월 리캡이 아직 완성되지 않았어요. 8월 초에 다시 확인하세요.",
+    message: "7월 리캡이 아직 완성되지 않았어요.\n8월 초에 다시 확인하세요.",
   },
 } satisfies Meta<typeof MonthlyRecapEmpty>;
 
