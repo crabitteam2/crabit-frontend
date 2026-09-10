@@ -41,9 +41,13 @@ x-recap-retrieval-policy:
     - "저장된 view는 불변이며 대표 위시나 목표 변경으로 과거 결과를 재계산하지 않습니다."
   storyAuthorization:
     storedFields: [wishId, typeTitle]
-    publicFields: [wishId, typeTitle, ownerStudentId, sharedCardId]
-    rule: "각 조회에서 현재 공유 카드 공개 범위, 논리 삭제, 양방향 차단, viewer에서 owner로의 팔로우, 학원 소속을 다시 검증하고 실패한 story만 생략합니다. 저장된 Python 결과는 변경하지 않습니다."
-    forbiddenFields: [wishTitle, ownerNickname, privateContent, ledgerRows, peerIdentity]
+    publicFields: [wishId, typeTitle, ownerStudentId, sharedCardId, kind, ownerNickname, purpose, targetAmount, progressPercent, startDate, targetDate, createdAt, completedAt, actualDurationSeconds, photo, contentUpdatedAt]
+    rule: "각 조회에서 viewer의 계정 학원 활성 소속, owner의 현재 같은 학원 소속과 열린 계정, 비삭제 COMPLETED 위시, COMPLETION 공유 카드와 nonnull completedAt을 검증합니다. ACADEMY 또는 viewer에서 owner로 현재 팔로우한 FOLLOWERS 공개만 허용하며 PRIVATE, 역방향 팔로우만 있는 경우, 양방향 중 하나의 활성 차단, 본인 story는 제외합니다. 허용된 story만 현재 완료 카드 상세로 보강하며 사진 조회와 서명 전에 권한을 검증합니다."
+    ordering: "저장 후보 순서와 최대 다섯 건 제한을 유지하며 제외한 후보를 재정렬하거나 다른 후보로 채우지 않습니다."
+    omission: "접근 불가 또는 잘못된 UUID 후보만 생략하고 기존 생략 요약을 유지합니다. 저장 stories가 원래 비어 있으면 원래 요약을 보존합니다. viewer 학원 소속 부재도 같은 생략 경로이며 새 리캡 상태를 만들지 않습니다."
+    enrichment: "wishId와 nullable typeTitle은 저장값을 보존합니다. 현재 표시 정보 보강은 저장된 Python view·request JSON, 다른 페이지의 과거 계산, algorithmVersion, generationVersion, generatedAt, 후보 선택과 contentUpdatedAt을 변경하지 않습니다."
+    photo: "현재 ATTACHED 사진이 없을 때만 null입니다. 권한 확인 뒤 기존 WishPhoto의 id, small·medium·large variants와 expiresAt을 사용하며 매 조회마다 정수 초 기준 공통 만료 시각의 300초 서명 URL을 발급합니다. 사진 런타임 비활성 PHOTO_PROCESSING_UNAVAILABLE 또는 URL·variant·서명 실패 PHOTO_DELIVERY_UNAVAILABLE는 전체 조회를 retryable 503과 Cache-Control no-store로 실패시키며 null, story 생략, 부분 200으로 숨기지 않습니다."
+    forbiddenFields: [wishTitle, privateContent, ledgerRows, peerIdentity]
   compatibility:
     recommendationV3: "추천 schema v3, acknowledgement, endpoint, credential, feature flag, metrics와 package는 byte 및 의미상 변경하지 않습니다."
     frontend: "승인 뒤 frontend OpenAPI와 생성 타입은 이 backend OpenAPI의 정확한 bytes에서만 파생합니다."
@@ -312,7 +316,377 @@ x-behavior-collection-policy:
     - "Document maximum intended additional physical-deletion lag of 24 hours and report backlog/failure when this target is missed."
     - "Current authorization applies to submission, replay, and metrics; access restoration can restore retained-event contribution."
     - "Seed reset deterministically clears behavior state and collection metadata while preserving existing photo-cleanup guarantees."
+"x-historical-balance-policy":
+  "authentication":
+    "enabledProperty": "crabit.recommendation.handoff.enabled=true"
+    "credential": "기존 recommendation handoff trigger credential과 정확히 하나의 Authorization 헤더만 사용합니다. 학생·receiver·누락·잘못된·중복 자격증명은 401 AUTH_REQUIRED입니다."
+    "exactRoute": "이 정확한 GET만 matcher에 추가하며 기존 POST 및 GET을 보존합니다. encoded path, matrix parameter, repeated slash, 추가 경로, 잘못된 메서드의 우회를 거부합니다."
+    "controllerRecheck": "controller에서도 crabit.machine-behavior-authenticated=true를 요구합니다."
+    "eligibility": "일관된 조회 안에서 accountId·studentId·academyId 일치, 현재 열린 계정, 학생·학원 존재, left_at null인 현재 학원 소속을 확인합니다. 모든 실패는 동일한 404 CARD_BALANCE_ACCOUNT_NOT_FOUND입니다. viewer identity나 방문·차단 자격을 새로 도입하지 않습니다."
+    "replay": "재생도 현재 자격을 다시 확인합니다. 토큰은 권한이 아닙니다."
+    "headers": "활성화된 정확한 operation의 모든 선언 응답에 Cache-Control: no-store를 설정합니다. credential 검사 전 scoped filter에서 설정해 필터 및 MVC 오류를 포함합니다. 비활성 또는 다른 경로에는 이 JSON/header 계약을 약속하지 않습니다."
+  "request":
+    "queryNames":
+      - "fromDate"
+      - "toDateExclusive"
+      - "granularity"
+      - "asOfRevision"
+    "validation": "쿼리는 각각 한 번만 허용합니다. 필수 누락, 빈 값, literal null, 알 수 없는 이름, 중복, 형식 오류, 요청 본문은 400 MALFORMED_REQUEST입니다. 날짜는 엄격한 YYYY-MM-DD입니다."
+    "period": "fromDate < toDateExclusive이며 최대 366 달력 일입니다. WEEK 양쪽은 월요일, MONTH 양쪽은 매월 1일이어야 합니다. DAY는 임의 유효 날짜입니다."
+    "future": "각 버킷 시작은 evaluationHorizon 이하여야 합니다. 완전히 미래인 버킷이 있으면 400입니다. 현재 열린 일·주·달의 자연 종료일까지는 허용하며 PROVISIONAL입니다. 재생은 원래 고정 horizon으로 검사합니다."
+  "temporal":
+    "completed": "evaluatedAt은 제외 종료일의 서울 자정 instant이고 BEFORE를 사용해 적용 시각이 엄격히 이전인 체크포인트만 포함합니다."
+    "provisional": "evaluatedAt은 evaluationHorizon이고 THROUGH로 그 시각 이하인 체크포인트를 고정 revision 범위 안에서 포함합니다."
+    "order": "같은 appliedAt은 계정 revision으로 정렬합니다. 원장 효과는 체크포인트 watermark 내 application_order로 선택합니다. occurred_at과 observed_at은 원래 사업·관측 provenance입니다."
+    "opening": "계정 개설 및 수집 baseline에도 BEFORE/THROUGH를 적용합니다. 제외 종료와 정확히 같은 시각의 개설·baseline은 이전 버킷에 포함하지 않습니다."
+    "coverage": "FULL/PARTIAL/NONE은 경과한 부분의 수집 범위입니다. knownFrom은 해당 사실을 처음 뒷받침하는 시각이며 collectionStartedAt보다 과거로 소급하지 않습니다. 외부 성공 관측의 원래 observedAt은 더 이를 수 있습니다."
+    "legacy": "기존 계정은 수집 시점 baseline부터 시작합니다. 과거 application timestamp가 없는 legacy 원장으로 수집 전 wall-clock 잔액을 추정하지 않습니다."
+    "integrity": "예상 baseline·checkpoint 누락, 모순·교차 계정 provenance, 불가능한 대표 상태·금액, 산술 범위 초과는 500 HISTORICAL_BALANCE_INTEGRITY_ERROR입니다. PRE_COLLECTION_UNKNOWN으로 숨기지 않습니다."
+  "values":
+    "balance": "KNOWN이면 lastSuccessfulObservedCardBalance - activeWishAllocation = ledgerAvailableBalance, max(ledgerAvailableBalance,0) = displayAvailableBalance, max(-ledgerAvailableBalance,0) = unresolvedShortage입니다. checked arithmetic을 사용합니다."
+    "lookup": "SUCCEEDED는 최신 관측 identity와 시각이 마지막 성공 관측 및 두 provenance identity와 일치합니다. FAILED는 다른 최신 실패 관측을 보존하면서 이전 성공이 있으면 그 값을 유지합니다. 실패 또는 동일값 성공으로 가짜 원장 이벤트를 만들지 않습니다."
+    "representative": "KNOWN_SELECTED는 당시 활성 위시와 양수 목표를 사용합니다. numeratorAmount <= targetAmount이며 AMOUNT_REACHED는 numeratorAmount = targetAmount, progressPercent = 100입니다. IN_PROGRESS는 overflow 없는 min(99,floor(100*numeratorAmount/targetAmount))입니다."
+    "terminal": "완료·포기·삭제 전이는 대표 교체 또는 KNOWN_NONE과 원자적으로 기록합니다. 0원 종결도 같은 규칙을 따릅니다. AMOUNT_REACHED는 명시적 종결 전까지 활성입니다."
+    "provenance": "latestObservationId와 lastSuccessfulObservationId는 각각 실제 latestLookup.observationId 및 balance.lastSuccessfulObservationId와 일치해야 합니다."
+  "repeatability":
+    "read": "asOfRevision이 없으면 한 repeatable-read snapshot에서 최신 일관된 계정 체크포인트와 evaluationHorizon을 선택합니다. GET은 초기화, 토큰 저장, 외부 잔액 조회, 정정 쓰기를 하지 않습니다."
+    "token": "canonical h1 토큰은 정확한 계정 identity, baseline·선택 checkpoint identity 및 revision bounds, evaluationHorizon을 인코딩합니다. 현재 자격 확인 후 저장 행과 모든 경계를 비교합니다. 잘못된·존재하지 않는·미래·교차 계정 토큰은 동일한 400입니다."
+    "frozen": "재생은 evaluationHorizon, periodStatus, evaluationBoundary, 금액, knowledge, coverage, provenance, dataRevision을 유지합니다. readSnapshotAt과 전송 정보만 달라질 수 있습니다. 자정 경과와 후속 목표·선택·돈·정정 변경 후에도 같은 정규화 요청 및 토큰은 같은 inputDigest를 반환합니다."
+    "corrections": "정정은 새 적용 revision에 사실을 append합니다. 고정 과거 revision을 다시 쓰거나 현재 mutable Wish로 재해석하지 않습니다."
+    "canonicalFinancialInput":
+      "fields":
+        - "schemaVersion"
+        - "academyId"
+        - "studentId"
+        - "cardBalanceAccountId"
+        - "fromDate"
+        - "toDateExclusive"
+        - "granularity"
+        - "timezone"
+        - "evaluationHorizon"
+        - "accountOpenedAt"
+        - "collectionStartedAt"
+        - "revisionBounds"
+        - "baseline"
+        - "checkpoints"
+        - "ledgerEffects"
+        - "observations"
+      "baseline": "불변 baseline의 checkpointId, checkpointRevision, ledgerApplicationOrder, appliedAt, activeWishAllocation, representative 및 연결 관측 identity입니다."
+      "checkpoints": "사용한 불변 checkpoint들을 checkpointRevision 숫자 순서로 정렬합니다. 각 행은 checkpointId, checkpointRevision, ledgerApplicationOrder, appliedAt, activeWishAllocation, representative, latestObservationId, lastSuccessfulObservationId를 포함합니다."
+      "ledgerEffects": "사용한 불변 ledgerEffect들을 applicationOrder 숫자 순서로 정렬합니다. 각 행의 wishEffects는 wishId 사전 순서로 정렬합니다. ledgerEventId, applicationOrder, appliedAt, occurredAt, type, wishEffects를 보존합니다."
+      "observations": "사용한 불변 관측 사실의 observationId, lookupVersion, observedAt, lookupMethod, status, amount, failureCode를 보존하고 lookupVersion 숫자 순서(legacy null 우선), 동률 observationId 순서로 정렬합니다."
+      "encoding": "객체 키를 재귀적으로 사전 정렬하고 명시적 null과 배열 순서를 보존한 공백 없는 JSON UTF-8 바이트에 SHA-256을 적용합니다. database 순번은 HistoricalCounter 문자열입니다."
+      "excluded":
+        - "readSnapshotAt"
+        - "traceId"
+        - "transport timestamps"
+        - "changing current eligibility"
+    "fixtureProof": "완전한 응답 예제의 x-canonical-financial-input은 해당 예제 inputDigest의 실제 입력입니다. 불변 fixture는 원장과 관측 사실을 포함하며 x-schema-ref는 wire body만 검증합니다."
+  "errors":
+    "integrity": "500 HISTORICAL_BALANCE_INTEGRITY_ERROR는 retryable false입니다."
+    "unavailable": "503 HISTORICAL_BALANCE_QUERY_UNAVAILABLE만 신규 retryable true 오류입니다."
+    "privacy": "500/503은 정제된 메시지와 생성된 traceId, 빈 fieldErrors/details를 반환하며 SQL·raw provider 정보를 포함하지 않습니다."
+  "compatibility":
+    - "기존 public API 및 인증·금액 한계는 유지합니다."
+    - "current balanceAdjustmentInProgress, purpose, photos, profile, raw provider payload, event log는 노출하지 않습니다."
+    - "issue 56 리캡은 생성 시점 대표·목표와 기존 알고리즘을 유지합니다. api/recap-generation-v1.yaml은 바꾸지 않습니다."
+    - "프런트 계약·타입·화면, 알림, Core 통합, 배포 변경은 포함하지 않습니다."
+x-feed-ranking-v1:
+  version: "feed-ranking-v1"
+  interfaceImpact: true
+  canonicalArtifact:
+    repository: "crabit-backend"
+    path: "api/openapi.yaml"
+    projection:
+      repository: "crabit-data"
+      path: "api/feed-ranking-v1.yaml"
+      rule: "승인된 이 확장과 참조 schema에서 Python 전용 OpenAPI를 파생하고 canonical raw-byte SHA-256과 의미 동등성을 자동 검증합니다. api/recap-generation-v1.yaml과 Java public paths는 변경하지 않습니다."
+  publicApi:
+    operations:
+      - "GET /v1/academies/{academyId}/shared-cards"
+      - "POST /v1/academies/{academyId}/feed-results"
+    authentication: "기존 SyntheticBearer와 현재 학원 인가를 그대로 사용합니다."
+    requests:
+      sharedCards: "cursor, 1~100 limit(기본 20), ownerId를 보존합니다. ownerId가 있으면 기존 latest-only 경로이며 Python ranking을 요청하지 않습니다."
+      feedResults: "닫힌 cursor/limit 객체를 보존하며 actor, ranking source, candidate ID 또는 model 선택을 받지 않습니다."
+      strictness: "알 수 없는 필드, 중복 JSON 속성, 잘못된 타입, 금지된 명시적 null, 알 수 없거나 반복된 query는 400 MALFORMED_REQUEST입니다."
+    responseMetadata:
+      schema: "FeedResultResponse"
+      fields: [resultContextId, createdAt, expiresAt, sortSource, recommendationResultId, modelVersion, items, nextCursor]
+      recommendation: "실제 반환 배열에 ranked segment 카드가 하나라도 있으면 RECOMMENDATION, 원래 Python request UUID, feed-rules-v1을 반환합니다. ranked와 latest가 섞여도 RECOMMENDATION이며 모든 item이 ranked였다는 뜻은 아닙니다."
+      latest: "latest segment만 남은 페이지, owner filter, integration disabled, empty candidates 또는 service fallback은 LATEST와 null recommendation metadata를 반환합니다."
+      provenance: "후속 continuation을 위해 원래 ranking provenance는 feed context에 별도로 보존합니다."
+    behaviorContext: "성공한 POST마다 실제 최종 반환 ID와 0-based position의 새 result context를 저장합니다. expiresAt은 createdAt+24시간이며 5분 feed continuation context와 독립적입니다. 이 호출 자체는 visit, exposure, click을 만들지 않습니다."
+    errors:
+      malformed: "변조·무서명·미지원 cursor, viewer/academy/operation/filter mismatch, 이미 소비한 cursor의 다른 limit replay는 400 MALFORMED_REQUEST와 cursor field error입니다."
+      expired: "인증된 v2 cursor가 5분 expiry 이상이거나 필수 context를 잃으면 부분 페이지 없이 410 RECOMMENDATION_CURSOR_EXPIRED입니다. 클라이언트는 cursor를 제거해 명시적으로 새 feed를 요청할 수 있으며 자동 restart/rerank하지 않습니다."
+      contextUnavailable: "durable context 생성·전이를 안전하게 commit할 수 없거나 storage admission을 거부하면 부분 페이지와 cursor 소비 없이 503 RECOMMENDATION_CONTEXT_UNAVAILABLE입니다. latest fallback이 아닙니다."
+      preserved: "인가·source database·photo signing 실패는 기존 오류를 유지하며 service fallback으로 성공 처리하지 않습니다."
+      cacheControl: "성공과 오류 모두 Cache-Control: no-store입니다."
+    compatibility: "검사한 frontend는 limit 100 첫 페이지를 response 순서로 렌더링하고 metadata를 무시하며 refresh 때 cursor 없는 새 요청을 하므로 변경이 필요 없습니다. 이는 모든 외부 cursor consumer가 410을 자동 처리한다는 증거는 아닙니다."
+  pagination:
+    contextTtlSeconds: 300
+    candidateLimit: 100
+    rankedSegmentLimit: 20
+    newContext: "cursor 없는 unfiltered 요청은 현재 eligible 후보 최대 100개로 Python ranking을 한 번만 얻고 최대 20개 ordered ID를 고정한 뒤 전체 currently eligible latest query를 이어서 제공합니다."
+    cursorBinding:
+      version: 2
+      operation: "listAcademySharedCards"
+      fields: [viewerId, academyId, explicitUnfiltered, unpredictableContextId, immutableInputStateId, originalExpiresAt]
+      signature: "기존 server-managed cursor key HMAC"
+      sharedProtocol: "GET shared-cards와 POST feed-results는 같은 unfiltered continuation state를 사용합니다. owner-filter cursor와 unfiltered cursor는 서로 허용하지 않습니다."
+    storedState:
+      - "원래 request ID, model version, ranking outcome"
+      - "고정 ranked IDs와 다음 ranked offset"
+      - "contentUpdatedAt/sharedCardId latest scan boundary"
+      - "continuation chain에서 이미 반환한 모든 card ID"
+      - "materialized transition, 그 limit, successor state"
+      - "createdAt과 변경 불가능한 createdAt+5분 expiry"
+    composition: "남은 ranked ID를 먼저 사용하되 현재 접근 불가 항목은 제거합니다. 남은 용량은 contentUpdatedAt DESC/sharedCardId DESC 전체 현재 visible latest query에서 이미 반환했거나 이번 page에 선택한 ID를 제외하여 채웁니다. latest는 최초 100개에 제한되지 않고 page는 segment 경계를 넘을 수 있습니다."
+    scanning: "제외되거나 새로 접근 불가가 된 row도 검사한 latest boundary를 전진시킵니다. 반환 identity는 변하는 sort tuple과 별도로 보존합니다. boundary 위로 이동한 새·수정 row는 refresh가 필요할 수 있습니다."
+    guarantees: "successor chain은 contentUpdatedAt이 바뀌어도 ID를 반복하지 않습니다. 새 successor cursor에서는 limit을 바꿀 수 있지만 Python과 ranked composition은 다시 실행하지 않습니다."
+    replay: "한 input-state ID의 transition 생성은 직렬화합니다. 최초 성공이 limit, page IDs, successor를 고정합니다. 같은 cursor/limit 동시·후속 replay는 같은 transition을 읽고, 같은 cursor의 다른 limit은 400입니다. GET/POST가 transition을 공유해도 각 성공 POST는 별도 behavior result context를 만듭니다."
+    replayPrivacy: "replay마다 현재 권한을 재검증하고 새 photo URL을 발급합니다. 접근 불가 ID는 backfill이나 successor 변경 없이 제거하고 실제 배열 위치로 behavior position을 다시 계산합니다."
+    authorization: "두 segment 모두 최종 일관된 projection transaction에서 membership, account eligibility, visibility, directional follow, bilateral block, deletion, publication을 확인하고 privacy mutation과 같은 lock ordering을 사용합니다."
+    persistence: "ranking HTTP 중 DB transaction을 열지 않습니다. complete projection/photo 준비 뒤 final IDs와 POST result positions를 원자적으로 저장합니다. 실패한 page는 cursor를 소비하지 않고 live context를 capacity 확보 목적으로 퇴출하지 않습니다. expiry index와 bounded cleanup을 사용하며 정확한 expiry 순간부터 410입니다."
+    legacy: "기존 v1 cursor는 기존 latest-only traversal을 계속합니다. no-duplicate, expiry, replay/limit 강화 규칙은 새 v2 context에 적용합니다."
+  historicalVisitEvidence:
+    collection: "기존 PROFILE_VISIT 인증·현재 target 인가·self rejection·actor/eventId identity와 receivedAt-24시간~+5분 inclusive를 보존하고 occurredAt을 receivedAt으로 바꾸지 않습니다."
+    identity: "actor/eventId, target author, academy"
+    schema: "FeedVisitCategoryEvidence"
+    complete: "occurredAt의 전체 eligible category set이 증명되면 COMPLETE이며 eligible wish가 없음을 증명한 []도 유효합니다."
+    unknown: "history coverage, temporal eligibility 또는 category provenance를 증명할 수 없으면 UNKNOWN과 null categoryIds를 고정하고 LEGACY, BEFORE_BASELINE, FUTURE_OCCURRED_AT, HISTORY_GAP, CLASSIFIER_UNAVAILABLE 중 reason을 기록합니다. 부분 category set은 금지합니다."
+    temporalHistory:
+      baseline: "V20은 subsequent mutation과 같은 serialization 아래 durable collection baseline과 versioned local eligibility/category history를 만듭니다. baseline 이전 상태를 소급 발명하지 않습니다."
+      intervals: "creation, first sharing, unsharing, deletion, title category, publication, account eligibility, membership, follow, block을 database time과 monotonic version의 [validFrom,validTo)로 source current state와 원자적으로 기록합니다."
+      concurrency: "viewer/owner/academy dependency에 동일한 documented lock ordering을 적용합니다. exact boundary는 새 version을 사용하며 coverage가 불완전하면 UNKNOWN입니다."
+      completeRule: "occurredAt이 관련 baseline 이상, capturedAt 이하이고 capturedAt까지 history와 모든 historically eligible wish classifier provenance가 연속·완전해야 COMPLETE입니다. 현재 receipt-time 인가는 별도로 필요합니다."
+      futureEvents: "capturedAt보다 미래인 accepted occurredAt은 영구 UNKNOWN이며 미래 visibility를 예측하거나 replay에서 재캡처하지 않습니다. author signal은 recommendationAt이 occurredAt에 도달한 뒤만 기여합니다."
+    immutability: "최초 수락 evidence와 provenance를 고정합니다. exact replay는 최초 evidence를 유지하고 conflict는 EVENT_ID_CONFLICT입니다. 이후 title/share/delete 변화가 category set을 바꾸지 않으며 source wish 삭제가 evidence를 cascade-delete하지 않습니다."
+    retention: "signal은 occurredAt inclusive [recommendationAt-90일,recommendationAt]만 사용합니다. evidence는 receivedAt+90일과 occurredAt+90일 중 더 늦은 inclusive end까지 보존하고 cleanup은 now가 end보다 엄격히 클 때만 수행합니다."
+    privacy: "visit evidence에는 category IDs와 opaque version references만 저장하고 raw title은 저장하지 않습니다. 유효 과거 interest는 이후 unsharing 뒤 signal window 동안 남지만 현재 접근 권한을 주지 않습니다. UNKNOWN은 author interest만, COMPLETE []는 known empty로 기여합니다."
+  classifier:
+    algorithm: "Python CATEGORY_KEYWORDS 순서를 보존한 TF-IDF char_wb 2~3 gram cosine classifier"
+    minSimilarity: 0.05
+    fallbackCategory: "기타"
+    categories: [패션, 문구, 전자기기, 취미, 스포츠, 게임, 도서, 뷰티, 굿즈, 생활용품, 기타]
+    artifact: "pinned Python classifier에서 versioned portable vocabulary/weights artifact를 생성하고 backend local evaluator와 Python oracle parity를 검증합니다. threshold, normalization, tie, fallback을 바꾸지 않습니다."
+    mutationBoundary: "historical/private title을 ranking endpoint로 보내지 않고 public title mutation이 synchronous remote classifier에 의존하지 않습니다."
+  rankingTransport:
+    method: "POST"
+    path: "/internal/v1/feed-rankings"
+    host: "Python service only"
+    javaPublicOperation: false
+    authentication: "student·recap·handoff credential과 분리된 feed-service Bearer를 constant-time 비교합니다. 누락·오류는 401과 WWW-Authenticate: Bearer이며 token/entity/body를 log하지 않습니다."
+    limits:
+      mediaType: "application/json"
+      queryParameters: "none"
+      maxBodyBytes: 262144
+      maxCandidates: 100
+      maxResponseBytes: 65536
+      foregroundBudgetMilliseconds: 500
+      attempts: 1
+    schemas:
+      request: "#/components/schemas/FeedRankingRequest"
+      response: "#/components/schemas/FeedRankingResponse"
+      error: "#/components/schemas/FeedRankingError"
+    parser: "UTF-8 JSON object와 모든 level closed schema를 요구합니다. duplicate/unknown field, boolean-as-number, nonfinite number, malformed timestamp/UUID, unsupported version, invalid lifecycle combination을 거부하며 nullable field도 required입니다."
+    featureProvenance: "basic similarity는 representative category, original amount bucket, targetDate-createdAt과 no-deadline bucket에서 계산하고 title similarity는 pinned SequenceMatcher semantics를 사용합니다. representative가 없으면 두 값은 0입니다. visit booleans는 exact inclusive 90-day retained event와 immutable COMPLETE evidence에서만 계산합니다."
+    forbiddenRequestData: [rawTitles, individualFinancialTransactions, broadViewerWishCollections, demographics, academyWideUnrelatedRecords]
+    responseValidation: "200은 실제 scoring/composition 뒤만 허용합니다. backend가 exact UTF-8 request bytes digest, request/context binding, model, count, uniqueness, candidate membership을 독립 검증합니다. acknowledgement, empty body, unknown/duplicate ID 또는 malformed partial response는 성공이 아닙니다."
+    errors:
+      shape: "closed code, message, retryable, trace_id, field_errors object; message에 payload value를 넣지 않고 모든 response는 no-store입니다."
+      statuses:
+        "400": "MALFORMED_REQUEST"
+        "401": "AUTH_REQUIRED"
+        "413": "PAYLOAD_TOO_LARGE"
+        "415": "UNSUPPORTED_MEDIA_TYPE"
+        "422": "INVALID_FEED_INPUT"
+        "500": "RANKING_FAILED"
+        "503": "RANKING_UNAVAILABLE"
+      retryable: "RANKING_UNAVAILABLE만 true이며 foreground retry는 없습니다."
+    deadlineAndFallback: "foreground 시작의 한 monotonic 500ms budget에 preparation, connect, response read, validation을 포함하고 late result를 받지 않습니다. disabled, no candidates, exhausted budget, connection, non-200, oversized 또는 invalid response는 latest-only context를 선택합니다. redirect와 background result를 받지 않고 network call 중 DB transaction을 열지 않습니다."
+    runtime: "기본 disabled입니다. enable 시 service URL과 feed credential을 startup에 요구하고 기존 recap auth/parser/route를 변경하지 않은 채 feed route와 classifier/numerical dependency/derived contract를 image에 포함합니다."
+  metrics:
+    schema: "FeedMonthMetrics"
+    timezone: "Asia/Seoul"
+    metricsVersion: "core-metrics-v1"
+    complete: "COMPLETE는 deposit_count, total_savings, avg_amount, nullable regularity_std/pace_bias, abandon_count, transfer_count, visit_count의 실제 complete values를 요구합니다. zero activity도 actual zero/null values입니다."
+    unavailable: "PARTIAL과 UNOBSERVED는 values null이며 incomplete observation을 zero-history로 분류하지 않습니다."
+    unavailableScoring: "viewer 또는 author type이 unknown이면 기존 generic type relevance 0.4, complete pace가 없으면 pace similarity 0을 사용합니다. savings type이나 role model을 발명하지 않고 다른 weight를 renormalize하지 않습니다."
+    monthSelection: "recommendationAt과 completion instant를 Asia/Seoul로 해석합니다. viewer와 ordinary candidate는 recommendationAt의 이전 calendar month, completed candidate author는 그 card closedAt의 이전 calendar month를 사용하며 year rollover를 검증합니다."
+    aggregate: "account-wide raw-input classifier semantics를 사용하며 current-visible wish나 candidate-local transaction으로 축소하지 않습니다."
+  composition:
+    population: "최초 currently viewer-eligible 최대 100개가 전체 guarantee population입니다. ABANDONMENT는 ranking 후보에서 제외하되 기존 공개 규칙에 따라 이후 latest segment에는 나타날 수 있습니다."
+    algorithm: "기존 weights, MMR, classifier threshold를 유지합니다. 전체를 score하고 recent-completion/role-model 보호 후보를 포함해 score-ranked 40을 보존한 뒤 min(20,candidate count)를 구성합니다."
+    guarantees:
+      - "closedAt age가 0~48시간 inclusive인 eligible COMPLETED가 있으면 최종 segment에 최소 하나를 포함합니다."
+      - "category rearrangement 뒤 eligible completed BULLDOZER/STEADY 중 min(2,available)를 첫 min(10,segment length)에 포함합니다."
+      - "한 card가 두 guarantee를 만족할 수 있지만 한 번만 나오며 intermediate 40 cut과 final truncation에서 jointly 보호하고 category spacing은 필요할 때 양보합니다."
+      - "이미 segment에 있는 recent card는 고정 slot으로 옮기지 않고 missing recent 추가도 universal third slot을 만들지 않습니다."
+      - "후보를 발명하거나 최초 100 밖을 조회하거나 later page에 composition을 다시 적용하지 않습니다."
+    ties: "같은 score/MMR은 backend가 준 stable input order를 보존하며 hash iteration과 wall clock에 의존하지 않습니다."
+    accessChanges: "final authorization은 frozen guarantee card도 제거할 수 있으며 대체 candidate 조회나 rerank로 현재 access를 우회하지 않습니다."
+  requiredExamples:
+    firstLimit100: "첫 unfiltered limit-100에서 20 ranked 뒤 initial 100 밖 latest card까지 반환"
+    crossingLimit7: "limit-7 page가 ranked/latest 경계를 넘고 ID를 반복하지 않음"
+    emptyCandidates: "empty request와 valid empty Python response"
+    monthRollover: "3월 recommendation의 2월 metrics와 1월 completion의 전년도 12월 metrics"
+    evidenceKnownEmpty: "COMPLETE []와 UNKNOWN null category evidence"
+    delayedVisits: "first share 전 visit, title change, unsharing, block, future-skew UNKNOWN"
+    responseBinding: "latest와 다른 Python order, wrong input_digest, duplicate ID, unknown ID"
+    cursorCompatibility: "expired v2=410, tampered=400, preserved v1 latest continuation"
+    metadata: "mixed page=RECOMMENDATION, tail/fallback=LATEST와 구분된 metadata"
+    replay: "unsharing 뒤 same-cursor replay, concurrent continuation, photo failure에서 cursor 미소비"
+  decisions:
+    - "PARTIAL/UNOBSERVED scoring은 type relevance 0.4와 pace similarity 0을 명시적으로 사용합니다."
+    - "410은 기존 ADR과 호환되며 확인한 frontend 변경은 필요 없지만 모든 외부 consumer 호환성을 주장하지 않습니다."
+    - "v1은 latest-only를 유지하고 v2만 replay/limit/no-duplicate/expiry 강화를 제공합니다."
+    - "승인 뒤 OpenAPI byte 변경은 새 contract evidence를 요구하고 Python 계약은 parity-checked projection입니다."
 paths:
+  "/internal/v1/academies/{academyId}/students/{studentId}/card-balance-accounts/{accountId}/historical-balances":
+    "get":
+      "tags":
+        - "Card Balance Accounts"
+      "operationId": "getHistoricalBalances"
+      "summary": "기간별 잔액과 당시 대표 위시 달성률 조회"
+      "description": "머신 통합이 활성화된 정확한 GET에서 계정·학생·학원의 현재 자격을 확인하고 서울 달력 기간별 역사 잔액을 반환합니다. 수집 전 UNKNOWN과 기록된 대표 부재를 구분하고 당시 대표·목표·상태로 달성률을 계산합니다. 요청·시각 경계·재생·무결성의 전체 규칙은 x-historical-balance-policy를 따릅니다. 요청 본문과 중복·알 수 없는 쿼리를 받지 않습니다. 모든 선언 응답은 Cache-Control: no-store입니다."
+      "security":
+        - "MachineBehaviorBearer": []
+      "parameters":
+        - "$ref": "#/components/parameters/AcademyId"
+        - "name": "studentId"
+          "in": "path"
+          "required": true
+          "description": "계정 소유 학생의 정확한 UUID입니다."
+          "schema":
+            "$ref": "#/components/schemas/Uuid"
+        - "$ref": "#/components/parameters/HistoricalAccountId"
+        - "name": "fromDate"
+          "in": "query"
+          "required": true
+          "description": "서울 달력의 포함 시작일입니다. YYYY-MM-DD를 엄격히 파싱합니다. WEEK는 월요일, MONTH는 1일이어야 합니다."
+          "schema":
+            "$ref": "#/components/schemas/UtcDate"
+        - "name": "toDateExclusive"
+          "in": "query"
+          "required": true
+          "description": "서울 달력의 제외 종료일입니다. 시작보다 크며 최대 366일입니다. WEEK는 월요일, MONTH는 1일이어야 합니다."
+          "schema":
+            "$ref": "#/components/schemas/UtcDate"
+        - "name": "granularity"
+          "in": "query"
+          "required": true
+          "description": "대소문자를 구분하는 서울 달력 단위입니다."
+          "schema":
+            "type": "string"
+            "enum":
+              - "DAY"
+              - "WEEK"
+              - "MONTH"
+        - "name": "asOfRevision"
+          "in": "query"
+          "required": false
+          "description": "이 계정의 이전 응답 dataRevision을 그대로 재생합니다. 생략하면 최신 일관된 snapshot을 선택합니다."
+          "schema":
+            "$ref": "#/components/schemas/HistoricalDataRevision"
+      "responses":
+        "200":
+          "description": "UNKNOWN을 포함하여 요청한 모든 버킷을 일관되게 반환합니다."
+          "headers":
+            "Cache-Control":
+              "$ref": "#/components/headers/CacheControlNoStore"
+          "content":
+            "application/json":
+              "schema":
+                "$ref": "#/components/schemas/HistoricalBalancesResponse"
+              "examples":
+                "HistoricalRepresentativeReplacementAndTargetEdit":
+                  "$ref": "#/components/examples/HistoricalRepresentativeReplacementAndTargetEdit"
+                "HistoricalCoverageAndKnownAbsence":
+                  "$ref": "#/components/examples/HistoricalCoverageAndKnownAbsence"
+                "HistoricalTransferApplicationOrder":
+                  "$ref": "#/components/examples/HistoricalTransferApplicationOrder"
+                "HistoricalFixedRevisionAcrossMidnight":
+                  "$ref": "#/components/examples/HistoricalFixedRevisionAcrossMidnight"
+                "HistoricalReachedAndTerminalTransition":
+                  "$ref": "#/components/examples/HistoricalReachedAndTerminalTransition"
+        "400":
+          "description": "날짜·기간·본문·쿼리 또는 재생 revision이 잘못되었습니다."
+          "headers":
+            "Cache-Control":
+              "$ref": "#/components/headers/CacheControlNoStore"
+          "content":
+            "application/json":
+              "schema":
+                "$ref": "#/components/schemas/ErrorEnvelope"
+              "examples":
+                "HistoricalMalformedRequest":
+                  "$ref": "#/components/examples/HistoricalMalformedRequest"
+          "x-error-codes":
+            - "MALFORMED_REQUEST"
+        "401":
+          "description": "머신 Bearer 인증이 필요합니다."
+          "headers":
+            "Cache-Control":
+              "$ref": "#/components/headers/CacheControlNoStore"
+            "WWW-Authenticate":
+              "description": "Bearer 인증을 요구합니다."
+              "required": true
+              "schema":
+                "type": "string"
+                "const": "Bearer"
+          "content":
+            "application/json":
+              "schema":
+                "$ref": "#/components/schemas/ErrorEnvelope"
+              "examples":
+                "HistoricalAuthRequired":
+                  "$ref": "#/components/examples/HistoricalAuthRequired"
+          "x-error-codes":
+            - "AUTH_REQUIRED"
+        "404":
+          "description": "현재 조회 자격을 충족하는 정확한 계정이 없습니다."
+          "headers":
+            "Cache-Control":
+              "$ref": "#/components/headers/CacheControlNoStore"
+          "content":
+            "application/json":
+              "schema":
+                "$ref": "#/components/schemas/ErrorEnvelope"
+              "examples":
+                "HistoricalAccountNotFound":
+                  "$ref": "#/components/examples/HistoricalAccountNotFound"
+          "x-error-codes":
+            - "CARD_BALANCE_ACCOUNT_NOT_FOUND"
+        "500":
+          "description": "수집된 필수 이력의 무결성을 확인할 수 없습니다."
+          "headers":
+            "Cache-Control":
+              "$ref": "#/components/headers/CacheControlNoStore"
+          "content":
+            "application/json":
+              "schema":
+                "$ref": "#/components/schemas/ErrorEnvelope"
+              "examples":
+                "HistoricalIntegrityError":
+                  "$ref": "#/components/examples/HistoricalIntegrityError"
+          "x-error-codes":
+            - "HISTORICAL_BALANCE_INTEGRITY_ERROR"
+        "503":
+          "description": "현재 데이터베이스 이력 조회를 완료할 수 없습니다."
+          "headers":
+            "Cache-Control":
+              "$ref": "#/components/headers/CacheControlNoStore"
+          "content":
+            "application/json":
+              "schema":
+                "$ref": "#/components/schemas/ErrorEnvelope"
+              "examples":
+                "HistoricalQueryUnavailable":
+                  "$ref": "#/components/examples/HistoricalQueryUnavailable"
+          "x-error-codes":
+            - "HISTORICAL_BALANCE_QUERY_UNAVAILABLE"
   /v1/academies/{academyId}/profile-visits:
     post:
       operationId: "createProfileVisit"
@@ -456,7 +830,7 @@ paths:
       tags:
         - "Shared Cards"
       summary: "피드 결과 맥락 생성"
-      description: "기존 공유 카드의 현재 가시성, 사진 전달, contentUpdatedAt DESC, sharedCardId DESC 및 커서를 재사용합니다. 매 호출과 각 페이지마다 실제 전달 카드·페이지 내 위치·actor·학원·시각·LATEST를 저장한 24시간 맥락을 만듭니다. 빈 페이지도 새 맥락을 생성합니다. SharedCard와 기존 GET 계약은 바꾸지 않고 방문·노출·클릭도 생성하지 않습니다. 페이지 전달 실패를 부분 성공이나 수집 성공으로 바꾸지 않습니다. 필수값 누락, null, 알 수 없는 필드, 중복 JSON 속성, 잘못된 타입 및 알 수 없거나 반복된 쿼리는 400 MALFORMED_REQUEST입니다. 성공과 오류 모두 Cache-Control: no-store입니다."
+      description: "기존 SharedCard와 닫힌 cursor/limit 요청을 유지하면서 x-feed-ranking-v1의 동일한 unfiltered v2 continuation을 생성합니다. 첫 페이지는 현재 eligible 후보 최대 100개를 Python에 한 번만 전달하고 고정 ranked segment 최대 20개 뒤에 전체 latest traversal을 이어 붙입니다. 실제 반환 배열에 ranked 카드가 있으면 RECOMMENDATION과 원래 request UUID/feed-rules-v1을, tail-only·disabled·empty·fallback이면 LATEST와 null metadata를 반환합니다. 성공할 때마다 실제 카드와 0-based position의 24시간 behavior result context를 별도로 저장하며 방문·노출·클릭은 생성하지 않습니다. 5분 v2 context 만료·유실은 410, 안전한 context commit 불가는 503이고 cursor를 소비하거나 자동 rerank하지 않습니다. 모든 현재 인가와 사진 전달 오류는 유지하며 성공과 오류 모두 Cache-Control: no-store입니다."
       security:
         - SyntheticBearer: []
       parameters:
@@ -533,6 +907,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+        "410":
+          $ref: "#/components/responses/RecommendationCursorExpired"
         "415":
           description: "요청 실패: UNSUPPORTED_MEDIA_TYPE"
           headers:
@@ -545,16 +921,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
         "503":
-          description: "요청 실패: PHOTO_DELIVERY_UNAVAILABLE"
-          headers:
-            Cache-Control:
-              $ref: "#/components/headers/CacheControlNoStore"
-          x-error-codes:
-            - "PHOTO_DELIVERY_UNAVAILABLE"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
+          $ref: "#/components/responses/FeedPageUnavailable"
   /v1/academies/{academyId}/feed-events:
     post:
       operationId: "createFeedEvent"
@@ -1024,7 +1391,7 @@ paths:
       tags: [Recaps]
       operationId: getWeeklyRecap
       summary: "소유한 계정의 완료된 주간 리캡 조회"
-      description: "인증된 학생이 소유한 활성 카드 잔액 계정에서 Asia/Seoul 기준으로 완료된 주간 리캡 하나를 조회합니다. weekStart를 생략하면 가장 최근 완료된 월요일~다음 월요일 기간을 선택합니다. 제공한 값은 월요일이어야 하고 미래 또는 진행 중인 주, 반복되거나 알 수 없는 쿼리 매개 변수는 400 MALFORMED_REQUEST입니다. 생성 이력이 없거나 진행 중이거나 최종 실패한 경우도 200 상태 리소스로 반환하며, 활동이 0인 성공 결과는 SUCCEEDED입니다. 재생성이 진행 중이거나 실패했더라도 이전 current 성공이 있으면 그 불변 버전을 SUCCEEDED로 계속 반환합니다. 성공 story는 저장된 wishId와 typeTitle을 기반으로 매 조회마다 현재 공유 카드 공개 범위, 논리 삭제, 양방향 차단, viewer에서 owner로의 팔로우와 학원 소속을 다시 검증해 허용된 ownerStudentId와 sharedCardId만 보강합니다. 허용되지 않은 story만 생략하며 저장된 결과는 바꾸지 않습니다."
+      description: "인증된 학생이 소유한 활성 카드 잔액 계정에서 Asia/Seoul 기준으로 완료된 주간 리캡 하나를 조회합니다. weekStart를 생략하면 가장 최근 완료된 월요일~다음 월요일 기간을 선택합니다. 제공한 값은 월요일이어야 하고 미래 또는 진행 중인 주, 반복되거나 알 수 없는 쿼리 매개 변수는 400 MALFORMED_REQUEST입니다. 생성 이력이 없거나 진행 중이거나 최종 실패한 경우도 200 상태 리소스로 반환하며, 활동이 0인 성공 결과는 SUCCEEDED입니다. 재생성이 진행 중이거나 실패했더라도 이전 current 성공이 있으면 그 불변 버전을 SUCCEEDED로 계속 반환합니다. 성공 story는 저장된 wishId와 nullable typeTitle을 보존하고 x-recap-retrieval-policy.storyAuthorization에 따라 viewer·owner의 현재 학원 소속, 열린 owner 계정, 비삭제 COMPLETED 위시와 COMPLETION 카드, 명시적 completedAt, ACADEMY·FOLLOWERS 공개, viewer에서 owner로의 팔로우, 양방향 차단과 본인 제외를 검증한 뒤 현재 완료 카드의 16개 공개 필드를 반환합니다. 후보 순서와 최대 다섯 건을 유지하며 접근 불가·잘못된 UUID 후보만 생략하고 보충 후보를 찾지 않습니다. viewer 소속이 없어도 같은 생략 경로를 사용하며 원래 빈 stories의 요약은 보존합니다. 사진 조회·서명은 권한 확인 뒤 수행하고 ATTACHED 사진이 없을 때만 photo null입니다. 기존 300초 공통 만료 URL을 새로 발급하며 사진 런타임 또는 서명 실패는 PHOTO_PROCESSING_UNAVAILABLE 또는 PHOTO_DELIVERY_UNAVAILABLE인 전체 retryable 503으로 반환합니다. 저장 view·request, 과거 계산, 다른 페이지와 생성 메타데이터는 변경하지 않으며 모든 응답은 Cache-Control no-store입니다."
       security: [{SyntheticBearer: []}]
       parameters:
         - name: weekStart
@@ -1036,7 +1403,7 @@ paths:
             format: date
       responses:
         '200':
-          description: "선택한 완료 주의 현재 공개 리캡 상태와 불변 결과입니다."
+          description: "선택한 완료 주의 공개 상태와 저장된 결과이며 성공 story만 현재 공개 가능한 완료 카드 상세로 보강합니다."
           headers:
             Cache-Control: {$ref: '#/components/headers/CacheControlNoStore'}
           content:
@@ -1053,7 +1420,7 @@ paths:
         '401': {$ref: '#/components/responses/AuthRequired'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/CardBalanceAccountNotFound'}
-        '503': {$ref: '#/components/responses/RecapQueryUnavailable'}
+        '503': {$ref: '#/components/responses/WeeklyRecapQueryUnavailable'}
   /v1/card-balance-accounts/{cardBalanceAccountId}/recaps/monthly:
     parameters: [{$ref: '#/components/parameters/CardBalanceAccountId'}]
     get:
@@ -1656,7 +2023,11 @@ paths:
       tags: [Shared Cards]
       operationId: listAcademySharedCards
       summary: "학원에서 현재 볼 수 있는 공유 카드 목록 조회"
-      description: "조회할 때마다 학원 소속, 위시 visibility, 방향성 팔로우 관계, 양방향 차단을 다시 평가하고 ownerId를 생략하면 소유자 본인은 제외합니다. ownerId를 명시하면 해당 학생의 허용된 카드만 반환하며, 본인을 지정하면 현재 공개 중인 자기 카드도 조회합니다. PRIVATE 카드는 포함하지 않습니다. photoId, object key, 과거 signed URL은 이 권한 검사를 대신하지 않습니다. PRIVATE 위시는 카드를 생성하지 않으며 비공개 또는 과거 비공개 상태에서 포기한 위시는 소유자가 FOLLOWERS 또는 ACADEMY로 명시적으로 공개할 때까지 카드를 만들지 않습니다. 첨부 사진이 하나라도 있으면 모든 항목의 새 5분 비공개 URL을 발급한 뒤에만 전체 페이지를 반환하며 signing 실패는 부분 페이지나 거짓 null 없이 503입니다. 임시 정렬은 contentUpdatedAt DESC, sharedCardId DESC 순입니다. 현재는 정렬 매개변수를 지원하지 않습니다. 이 임시 정책에서는 콘텐츠 또는 게시 상태가 바뀔 때만 카드 순서가 달라집니다. 팔로우 우선순위와 임베딩 기반 추천 정렬은 향후 계약에서 정할 사항이며 이 버전에서는 사용하지 않습니다. FOLLOWERS는 선택 학원의 현재 viewer → owner 팔로우가 있어야 비소유자에게 공개됩니다. owner → viewer만으로는 공개되지 않으며 상호 팔로우는 필요하지 않습니다. 진행·완료·포기 공유 카드의 목록·상세에 동일하게 적용합니다. 기존 소유자 예외, PRIVATE·ACADEMY 의미, 현재 학원 소속, 공유 카드의 카드 계정 자격과 각 변형의 게시 규칙, 전역 양방향 차단 우선순위를 유지합니다. 현재 공개된 IN_PROGRESS 또는 AMOUNT_REACHED 위시를 포기하면 같은 sharedCardId의 PROGRESS 카드를 ABANDONMENT 카드 하나로 원자적으로 교체하고 contentUpdatedAt을 한 번만 갱신합니다. 그 포기 요청의 멱등 재생은 다른 카드나 추가 정렬 갱신을 만들지 않습니다. ABANDONMENT의 progressPercent는 포기 직전 고정된 적립액에서 한 번 계산한 공개 값이며 현재 0원 배정이나 정확한 과거 금액은 반환하지 않습니다. 포기 카드는 추천 후보나 대표 위시가 아닙니다. 언팔로우·차단 후 다음 조회부터 제한된 카드를 숨기며 직접 조회는 SHARED_CARD_NOT_FOUND 경계를 유지합니다. ownerId 조건은 SQL LIMIT와 keyset pagination 전에 적용합니다. 대상이 없거나 다른 학원·탈퇴·차단 상태이거나 현재 볼 수 있는 카드가 없으면 이유를 구별하지 않고 items: [], nextCursor: null인 빈 페이지를 반환합니다. 모든 페이지에서 현재 조회자와 소유자의 학원 소속, 열린 카드 계정 자격, 공개 상태, 삭제 여부와 양방향 차단을 다시 평가합니다. 새 불투명 커서는 기존 relationship_cursor_key의 HMAC으로 서명하고 형식 version, operation=listAcademySharedCards, viewerId, academyId, ownerId 또는 명시적 무필터 표식, 마지막 contentUpdatedAt/sharedCardId 튜플을 묶습니다. 형식 오류·변조·미지원 버전·구형 무서명 커서 또는 작업·조회자·학원·작성자·필터 유무가 다른 커서는 400 MALFORMED_REQUEST이며 cursor를 제거하고 첫 페이지부터 다시 조회해야 합니다. 같은 문맥의 유효한 cursor는 유효한 limit 변경을 허용합니다. 권한을 커서에 저장해 재사용하지 않습니다. 안정된 데이터는 중복·누락 없이 순회하지만 동시 콘텐츠 변경이나 완료·포기 카드 교체에 대한 스냅샷 보장은 없습니다. 학생 단건 조회와 목록 사이에도 원자적 스냅샷을 보장하지 않습니다."
+      x-feed-ranking-v1:
+        unfiltered: "cursor 없는 요청은 최대 100개 후보를 한 번 ranking하고 ranked 최대 20개 뒤에 전체 latest traversal을 잇는 v2 context를 생성합니다."
+        ownerFiltered: "ownerId가 있으면 기존 latest-only traversal이며 ranking을 요청하지 않습니다."
+        continuation: "GET과 POST feed-results가 같은 transition을 사용하고 replay·privacy·expiry는 최상위 x-feed-ranking-v1을 따릅니다."
+      description: "조회할 때마다 학원 소속, 위시 visibility, 방향성 팔로우 관계, 양방향 차단을 다시 평가하고 ownerId를 생략하면 소유자 본인은 제외합니다. ownerId를 명시하면 해당 학생의 허용된 카드만 반환하며, 본인을 지정하면 현재 공개 중인 자기 카드도 조회합니다. PRIVATE 카드는 포함하지 않습니다. photoId, object key, 과거 signed URL은 이 권한 검사를 대신하지 않습니다. PRIVATE 위시는 카드를 생성하지 않으며 비공개 또는 과거 비공개 상태에서 포기한 위시는 소유자가 FOLLOWERS 또는 ACADEMY로 명시적으로 공개할 때까지 카드를 만들지 않습니다. 첨부 사진이 하나라도 있으면 모든 항목의 새 5분 비공개 URL을 발급한 뒤에만 전체 페이지를 반환하며 signing 실패는 부분 페이지나 거짓 null 없이 503입니다. 임시 정렬은 contentUpdatedAt DESC, sharedCardId DESC 순입니다. 현재는 정렬 매개변수를 지원하지 않습니다. 이 임시 정책에서는 콘텐츠 또는 게시 상태가 바뀔 때만 카드 순서가 달라집니다. ownerId 없는 첫 페이지는 x-feed-ranking-v1에 따라 Python 추천을 한 번만 적용한 ranked segment 뒤에 전체 latest traversal을 이어 붙이며 ownerId가 있으면 기존 latest-only 정렬을 유지합니다. FOLLOWERS는 선택 학원의 현재 viewer → owner 팔로우가 있어야 비소유자에게 공개됩니다. owner → viewer만으로는 공개되지 않으며 상호 팔로우는 필요하지 않습니다. 진행·완료·포기 공유 카드의 목록·상세에 동일하게 적용합니다. 기존 소유자 예외, PRIVATE·ACADEMY 의미, 현재 학원 소속, 공유 카드의 카드 계정 자격과 각 변형의 게시 규칙, 전역 양방향 차단 우선순위를 유지합니다. 현재 공개된 IN_PROGRESS 또는 AMOUNT_REACHED 위시를 포기하면 같은 sharedCardId의 PROGRESS 카드를 ABANDONMENT 카드 하나로 원자적으로 교체하고 contentUpdatedAt을 한 번만 갱신합니다. 그 포기 요청의 멱등 재생은 다른 카드나 추가 정렬 갱신을 만들지 않습니다. ABANDONMENT의 progressPercent는 포기 직전 고정된 적립액에서 한 번 계산한 공개 값이며 현재 0원 배정이나 정확한 과거 금액은 반환하지 않습니다. 포기 카드는 추천 후보나 대표 위시가 아닙니다. 언팔로우·차단 후 다음 조회부터 제한된 카드를 숨기며 직접 조회는 SHARED_CARD_NOT_FOUND 경계를 유지합니다. ownerId 조건은 SQL LIMIT와 keyset pagination 전에 적용합니다. 대상이 없거나 다른 학원·탈퇴·차단 상태이거나 현재 볼 수 있는 카드가 없으면 이유를 구별하지 않고 items: [], nextCursor: null인 빈 페이지를 반환합니다. 모든 페이지에서 현재 조회자와 소유자의 학원 소속, 열린 카드 계정 자격, 공개 상태, 삭제 여부와 양방향 차단을 다시 평가합니다. 새 불투명 커서는 기존 relationship_cursor_key의 HMAC으로 서명하고 형식 version, operation=listAcademySharedCards, viewerId, academyId, ownerId 또는 명시적 무필터 표식, 마지막 contentUpdatedAt/sharedCardId 튜플을 묶습니다. 형식 오류·변조·미지원 버전·구형 무서명 커서 또는 작업·조회자·학원·작성자·필터 유무가 다른 커서는 400 MALFORMED_REQUEST이며 cursor를 제거하고 첫 페이지부터 다시 조회해야 합니다. 같은 문맥의 유효한 cursor는 유효한 limit 변경을 허용합니다. 권한을 커서에 저장해 재사용하지 않습니다. 안정된 데이터는 중복·누락 없이 순회하지만 동시 콘텐츠 변경이나 완료·포기 카드 교체에 대한 스냅샷 보장은 없습니다. 학생 단건 조회와 목록 사이에도 원자적 스냅샷을 보장하지 않습니다."
       security: [{SyntheticBearer: []}]
       parameters:
         - $ref: '#/components/parameters/Cursor'
@@ -1684,7 +2055,8 @@ paths:
         '401': {$ref: '#/components/responses/AuthRequired'}
         '403': {$ref: '#/components/responses/Forbidden'}
         '404': {$ref: '#/components/responses/AcademyNotFound'}
-        '503': {$ref: '#/components/responses/PhotoDeliveryUnavailable'}
+        '410': {$ref: '#/components/responses/RecommendationCursorExpired'}
+        '503': {$ref: '#/components/responses/FeedPageUnavailable'}
   /v1/academies/{academyId}/shared-cards/{cardId}:
     parameters:
       - $ref: '#/components/parameters/AcademyId'
@@ -2018,13 +2390,20 @@ components:
       type: "http"
       scheme: "bearer"
       bearerFormat: "opaque-machine-trigger-token"
-      description: "활성화된 내부 행동 지표의 머신 인증입니다. 기존 recommendation handoff trigger credential만 사용하며 학생 또는 receiver 자격증명은 거부합니다."
+      description: "활성화된 내부 행동 지표와 역사 잔액 조회의 머신 인증입니다. 기존 recommendation handoff trigger credential만 사용하며 학생 또는 receiver 자격증명은 거부합니다."
     SyntheticBearer:
       type: http
       scheme: bearer
       bearerFormat: opaque-synthetic-token
       description: "불투명한 합성 인증 주체 토큰입니다. 알려진 토큰은 학생 또는 인증된 비학생 교직원 인증 주체를 식별합니다. 토큰 발급·갱신, 페르소나 선택, 테스트 픽스처 제어는 이 계약의 범위 밖입니다."
   parameters:
+    "HistoricalAccountId":
+      "name": "accountId"
+      "in": "path"
+      "required": true
+      "description": "이력과 재생 토큰이 귀속되는 정확한 카드 잔액 계정 UUID입니다."
+      "schema":
+        "$ref": "#/components/schemas/Uuid"
     CardBalanceAccountId:
       name: cardBalanceAccountId
       in: path
@@ -2163,6 +2542,18 @@ components:
       content:
         application/json:
           schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+    WeeklyRecapQueryUnavailable:
+      description: "RECAP_QUERY_UNAVAILABLE는 저장 조회·트랜잭션 실패, PHOTO_DELIVERY_UNAVAILABLE는 현재 첨부 사진 URL·variant·서명 실패, PHOTO_PROCESSING_UNAVAILABLE는 첨부 사진 런타임 비활성입니다. 모두 retryable 503이며 전체 주간 조회가 실패합니다. 사진 오류를 photo null, story 생략 또는 부분 200으로 변환하지 않습니다."
+      x-error-codes: [RECAP_QUERY_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE, PHOTO_PROCESSING_UNAVAILABLE]
+      headers:
+        Cache-Control: {$ref: '#/components/headers/CacheControlNoStore'}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          examples:
+            unavailable: {$ref: '#/components/examples/RecapQueryUnavailable'}
+            photo-delivery-unavailable: {$ref: '#/components/examples/WeeklyRecapPhotoDeliveryUnavailable'}
+            photo-processing-unavailable: {$ref: '#/components/examples/WeeklyRecapPhotoProcessingUnavailable'}
     RecapQueryUnavailable:
       description: "RECAP_QUERY_UNAVAILABLE — 저장된 리캡 상태를 일시적으로 읽을 수 없습니다. 생성 부재나 진행·부적격·실패 상태를 이 오류로 대체하지 않습니다."
       x-error-codes: [RECAP_QUERY_UNAVAILABLE]
@@ -2520,7 +2911,935 @@ components:
           examples:
             self:
               $ref: "#/components/examples/SelfRelationshipConflict"
+    RecommendationCursorExpired:
+      description: "RECOMMENDATION_CURSOR_EXPIRED — 올바르게 인증된 v2 feed cursor가 원래 5분 expiry에 도달했거나 필수 durable context를 잃었습니다. 부분 페이지, 자동 restart 또는 rerank 없이 새 cursor 없는 요청이 필요합니다."
+      x-error-codes: [RECOMMENDATION_CURSOR_EXPIRED]
+      headers:
+        Cache-Control: {$ref: '#/components/headers/CacheControlNoStore'}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          examples:
+            expired-v2: {$ref: '#/components/examples/FeedRecommendationCursorExpired'}
+    FeedPageUnavailable:
+      description: "RECOMMENDATION_CONTEXT_UNAVAILABLE 또는 PHOTO_DELIVERY_UNAVAILABLE — durable feed context 생성·전이를 안전하게 commit할 수 없거나 현재 허용된 카드의 새 비공개 사진 URL 전체를 발급할 수 없습니다. 부분 페이지를 반환하거나 입력 cursor를 소비하지 않으며 latest fallback으로 바꾸지 않습니다."
+      x-error-codes: [RECOMMENDATION_CONTEXT_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE]
+      headers:
+        Cache-Control: {$ref: '#/components/headers/CacheControlNoStore'}
+      content:
+        application/json:
+          schema: {$ref: '#/components/schemas/ErrorEnvelope'}
+          examples:
+            context-unavailable: {$ref: '#/components/examples/FeedRecommendationContextUnavailable'}
+            photo-unavailable: {$ref: '#/components/examples/PhotoDeliveryUnavailableOnReplay'}
   schemas:
+    "HistoricalCounter":
+      "type": "string"
+      "pattern": "^(0|[1-9][0-9]{0,18})$"
+      "description": "부호와 선행 0이 없는 십진 정수 문자열입니다. 데이터베이스 순번과 버전은 클라이언트 정밀도 손실을 막기 위해 문자열로 반환합니다. 값은 9223372036854775807 이하여야 합니다."
+      "allOf":
+        - "pattern": "^(?:[0-9]{1,18}|[0-8][0-9]{18}|9[0-1][0-9]{17}|92[0-1][0-9]{16}|922[0-2][0-9]{15}|9223[0-2][0-9]{14}|92233[0-6][0-9]{13}|922337[0-1][0-9]{12}|92233720[0-2][0-9]{10}|922337203[0-5][0-9]{9}|9223372036[0-7][0-9]{8}|92233720368[0-4][0-9]{7}|922337203685[0-3][0-9]{6}|9223372036854[0-6][0-9]{5}|92233720368547[0-6][0-9]{4}|922337203685477[0-4][0-9]{3}|9223372036854775[0-7][0-9]{2}|922337203685477580[0-6][0-9]{0}|9223372036854775807)$"
+    "HistoricalDataRevision":
+      "type": "string"
+      "maxLength": 2048
+      "pattern": "^h1\\.[A-Za-z0-9_-]+$"
+      "description": "계정 identity, 불변 baseline·선택 체크포인트 identity와 revision 경계, evaluationHorizon을 결속한 버전 1 불투명 재생 토큰입니다. 클라이언트는 해석하거나 만들지 않고 그대로 보관합니다. 계정 자격을 대신하지 않으며 서버는 참조된 저장 경계와 일치하는 canonical 인코딩만 허용합니다."
+    "HistoricalRevisionBounds":
+      "type": "object"
+      "additionalProperties": false
+      "required":
+        - "baselineCheckpointId"
+        - "baselineRevision"
+        - "baselineLedgerApplicationOrder"
+        - "checkpointId"
+        - "checkpointRevision"
+        - "ledgerApplicationOrder"
+        - "observationLookupVersion"
+      "description": "재생에 고정되는 baseline 및 선택 체크포인트 경계입니다. 토큰의 경계는 참조한 불변 저장 행과 일치해야 합니다."
+      "properties":
+        "baselineCheckpointId":
+          "$ref": "#/components/schemas/Uuid"
+          "description": "수집 시작 시 생성한 불변 baseline 체크포인트입니다."
+        "baselineRevision":
+          "$ref": "#/components/schemas/HistoricalCounter"
+          "pattern": "^[1-9][0-9]{0,18}$"
+          "description": "1 이상 9223372036854775807 이하인 계정 체크포인트 revision입니다."
+        "baselineLedgerApplicationOrder":
+          "$ref": "#/components/schemas/HistoricalCounter"
+          "description": "baseline에서 확인된 최대 원장 적용 순번입니다. 0은 원장 행이 없음을 뜻합니다."
+        "checkpointId":
+          "$ref": "#/components/schemas/Uuid"
+          "description": "일관된 조회에서 선택한 최대 불변 계정 체크포인트입니다."
+        "checkpointRevision":
+          "$ref": "#/components/schemas/HistoricalCounter"
+          "pattern": "^[1-9][0-9]{0,18}$"
+          "description": "1 이상 9223372036854775807 이하인 계정 체크포인트 revision입니다."
+        "ledgerApplicationOrder":
+          "$ref": "#/components/schemas/HistoricalCounter"
+          "description": "선택 체크포인트가 허용하는 최대 원장 적용 순번입니다. 0은 원장 행이 없음을 뜻합니다."
+        "observationLookupVersion":
+          "oneOf":
+            - "$ref": "#/components/schemas/HistoricalCounter"
+            - "type": "null"
+          "description": "선택 체크포인트의 관측 lookup 버전입니다. 명시적으로 연결된 legacy 관측에 버전이 없으면 null입니다."
+    "HistoricalCoverage":
+      "type": "object"
+      "additionalProperties": false
+      "required":
+        - "status"
+        - "coveredFrom"
+        - "balanceKnownFrom"
+        - "allocationKnownFrom"
+        - "representativeKnownFrom"
+      "description": "수집 coverage는 외부 잔액 관측 성공 여부 및 기간 완료 여부와 독립적입니다."
+      "properties":
+        "status":
+          "type": "string"
+          "enum":
+            - "FULL"
+            - "PARTIAL"
+            - "NONE"
+          "description": "버킷의 경과한 부분 전체를 수집했으면 FULL, 비어 있지 않은 뒷부분만 수집했으면 PARTIAL, 수집 부분이 없으면 NONE입니다."
+        "coveredFrom":
+          "oneOf":
+            - "$ref": "#/components/schemas/UtcInstant"
+            - "type": "null"
+          "description": "버킷 안에서 실제 수집 범위가 시작한 시각입니다. NONE이면 null입니다."
+        "balanceKnownFrom":
+          "oneOf":
+            - "$ref": "#/components/schemas/UtcInstant"
+            - "type": "null"
+          "description": "버킷 평가 경계까지 잔액 지식이 처음 성립한 시각입니다. 수집 시작 전으로 소급하지 않으며 잔액 UNKNOWN이면 null입니다."
+        "allocationKnownFrom":
+          "oneOf":
+            - "$ref": "#/components/schemas/UtcInstant"
+            - "type": "null"
+          "description": "버킷 평가 경계까지 내부 활성 배정액 지식이 처음 성립한 시각입니다. 배정액 UNKNOWN이면 null입니다."
+        "representativeKnownFrom":
+          "oneOf":
+            - "$ref": "#/components/schemas/UtcInstant"
+            - "type": "null"
+          "description": "버킷 평가 경계까지 대표 선택 또는 알려진 부재를 처음 기록한 시각입니다. 대표 이력이 불명확하면 null입니다."
+      "allOf":
+        - "if":
+            "properties":
+              "status":
+                "const": "NONE"
+          "then":
+            "properties":
+              "coveredFrom":
+                "type": "null"
+              "balanceKnownFrom":
+                "type": "null"
+              "allocationKnownFrom":
+                "type": "null"
+              "representativeKnownFrom":
+                "type": "null"
+          "else":
+            "properties":
+              "coveredFrom":
+                "$ref": "#/components/schemas/UtcInstant"
+    "HistoricalBalance":
+      "type": "object"
+      "additionalProperties": false
+      "required":
+        - "knowledge"
+        - "unknownReason"
+        - "lastSuccessfulObservedCardBalance"
+        - "lastSuccessfulObservationId"
+        - "lastSuccessfulObservedAt"
+        - "ledgerAvailableBalance"
+        - "displayAvailableBalance"
+        - "unresolvedShortage"
+      "description": "UNKNOWN을 현재 잔액이나 숫자 0으로 대신하지 않습니다."
+      "properties":
+        "knowledge":
+          "type": "string"
+          "enum":
+            - "KNOWN"
+            - "UNKNOWN"
+          "description": "성공한 외부 관측과 수집된 내부 이력으로 계산 가능한지 구분합니다."
+        "unknownReason":
+          "oneOf":
+            - "type": "string"
+              "enum":
+                - "ACCOUNT_NOT_OPEN"
+                - "PRE_COLLECTION_UNKNOWN"
+                - "NO_SUCCESSFUL_OBSERVATION"
+            - "type": "null"
+          "description": "UNKNOWN의 이유이며 KNOWN이면 null입니다."
+        "lastSuccessfulObservedCardBalance":
+          "oneOf":
+            - "$ref": "#/components/schemas/KrwNonNegative"
+            - "type": "null"
+          "description": "마지막 성공 외부 관측값을 원래 시각과 함께 이월합니다. 사이 시점의 실시간 외부 잔액이나 최신성을 보장하지 않습니다."
+        "lastSuccessfulObservationId":
+          "oneOf":
+            - "$ref": "#/components/schemas/Uuid"
+            - "type": "null"
+          "description": "마지막 성공 관측 identity입니다."
+        "lastSuccessfulObservedAt":
+          "oneOf":
+            - "$ref": "#/components/schemas/UtcInstant"
+            - "type": "null"
+          "description": "마지막 성공 외부 관측의 원래 시각입니다."
+        "ledgerAvailableBalance":
+          "oneOf":
+            - "$ref": "#/components/schemas/KrwSigned"
+            - "type": "null"
+          "description": "마지막 성공 관측액에서 활성 위시 배정액을 뺀 장부 가용액입니다. 음수를 보존하고 checked arithmetic을 사용합니다."
+        "displayAvailableBalance":
+          "oneOf":
+            - "$ref": "#/components/schemas/KrwNonNegative"
+            - "type": "null"
+          "description": "max(ledgerAvailableBalance, 0)인 표시 가용액입니다."
+        "unresolvedShortage":
+          "oneOf":
+            - "$ref": "#/components/schemas/KrwNonNegative"
+            - "type": "null"
+          "description": "max(-ledgerAvailableBalance, 0)인 미해결 부족액입니다."
+      "allOf":
+        - "if":
+            "properties":
+              "knowledge":
+                "const": "KNOWN"
+          "then":
+            "properties":
+              "lastSuccessfulObservedCardBalance":
+                "$ref": "#/components/schemas/KrwNonNegative"
+              "lastSuccessfulObservationId":
+                "$ref": "#/components/schemas/Uuid"
+              "lastSuccessfulObservedAt":
+                "$ref": "#/components/schemas/UtcInstant"
+              "ledgerAvailableBalance":
+                "$ref": "#/components/schemas/KrwSigned"
+              "displayAvailableBalance":
+                "$ref": "#/components/schemas/KrwNonNegative"
+              "unresolvedShortage":
+                "$ref": "#/components/schemas/KrwNonNegative"
+              "unknownReason":
+                "type": "null"
+          "else":
+            "properties":
+              "lastSuccessfulObservedCardBalance":
+                "type": "null"
+              "lastSuccessfulObservationId":
+                "type": "null"
+              "lastSuccessfulObservedAt":
+                "type": "null"
+              "ledgerAvailableBalance":
+                "type": "null"
+              "displayAvailableBalance":
+                "type": "null"
+              "unresolvedShortage":
+                "type": "null"
+              "unknownReason":
+                "type": "string"
+                "enum":
+                  - "ACCOUNT_NOT_OPEN"
+                  - "PRE_COLLECTION_UNKNOWN"
+                  - "NO_SUCCESSFUL_OBSERVATION"
+    "HistoricalAllocation":
+      "type": "object"
+      "additionalProperties": false
+      "required":
+        - "knowledge"
+        - "unknownReason"
+        - "activeWishAllocation"
+      "description": "종결 위시를 제외한 내부 배정액입니다."
+      "properties":
+        "knowledge":
+          "type": "string"
+          "enum":
+            - "KNOWN"
+            - "UNKNOWN"
+          "description": "내부 활성 위시 배정액의 지식 상태입니다."
+        "unknownReason":
+          "oneOf":
+            - "type": "string"
+              "enum":
+                - "ACCOUNT_NOT_OPEN"
+                - "PRE_COLLECTION_UNKNOWN"
+            - "type": "null"
+          "description": "UNKNOWN의 이유이며 KNOWN이면 null입니다."
+        "activeWishAllocation":
+          "oneOf":
+            - "$ref": "#/components/schemas/KrwNonNegative"
+            - "type": "null"
+          "description": "그 시점의 활성 위시 배정액 합계입니다. 외부 성공 관측이 없어도 독립적으로 알려진 0 또는 양수를 유지합니다."
+      "allOf":
+        - "if":
+            "properties":
+              "knowledge":
+                "const": "KNOWN"
+          "then":
+            "properties":
+              "unknownReason":
+                "type": "null"
+              "activeWishAllocation":
+                "$ref": "#/components/schemas/KrwNonNegative"
+          "else":
+            "properties":
+              "unknownReason":
+                "type": "string"
+                "enum":
+                  - "ACCOUNT_NOT_OPEN"
+                  - "PRE_COLLECTION_UNKNOWN"
+              "activeWishAllocation":
+                "type": "null"
+    "HistoricalLookup":
+      "type": "object"
+      "additionalProperties": false
+      "required":
+        - "status"
+        - "observationId"
+        - "observedAt"
+        - "lookupMethod"
+        - "failureCode"
+      "description": "실패·동일값 성공도 원장 이벤트를 만들지 않고 체크포인트와 관측 provenance를 진전시킬 수 있습니다."
+      "properties":
+        "status":
+          "type": "string"
+          "enum":
+            - "UNKNOWN"
+            - "NOT_LOOKED_UP"
+            - "SUCCEEDED"
+            - "FAILED"
+          "description": "UNKNOWN은 과거 조회 지식 부재, NOT_LOOKED_UP은 조회가 없었다는 알려진 사실입니다. 성공과 실패는 실제 저장 관측을 뜻합니다."
+        "observationId":
+          "oneOf":
+            - "$ref": "#/components/schemas/Uuid"
+            - "type": "null"
+          "description": "최신 실제 조회 관측 identity입니다."
+        "observedAt":
+          "oneOf":
+            - "$ref": "#/components/schemas/UtcInstant"
+            - "type": "null"
+          "description": "최신 실제 조회 관측 시각입니다."
+        "lookupMethod":
+          "oneOf":
+            - "type": "string"
+              "enum":
+                - "USER_REQUESTED"
+                - "PRE_DEPOSIT"
+                - "AUTO_DAILY"
+            - "type": "null"
+          "description": "저장된 조회 방식입니다."
+        "failureCode":
+          "oneOf":
+            - "type": "string"
+              "minLength": 1
+              "maxLength": 80
+            - "type": "null"
+          "description": "FAILED에만 있는 기존 저장 실패 코드입니다. raw provider payload를 포함하지 않습니다."
+      "allOf":
+        - "if":
+            "properties":
+              "status":
+                "enum":
+                  - "UNKNOWN"
+                  - "NOT_LOOKED_UP"
+          "then":
+            "properties":
+              "observationId":
+                "type": "null"
+              "observedAt":
+                "type": "null"
+              "lookupMethod":
+                "type": "null"
+              "failureCode":
+                "type": "null"
+          "else":
+            "properties":
+              "observationId":
+                "$ref": "#/components/schemas/Uuid"
+              "observedAt":
+                "$ref": "#/components/schemas/UtcInstant"
+              "lookupMethod":
+                "type": "string"
+                "enum":
+                  - "USER_REQUESTED"
+                  - "PRE_DEPOSIT"
+                  - "AUTO_DAILY"
+        - "if":
+            "properties":
+              "status":
+                "const": "SUCCEEDED"
+          "then":
+            "properties":
+              "failureCode":
+                "type": "null"
+        - "if":
+            "properties":
+              "status":
+                "const": "FAILED"
+          "then":
+            "properties":
+              "failureCode":
+                "type": "string"
+                "minLength": 1
+                "maxLength": 80
+    "HistoricalRepresentative":
+      "type": "object"
+      "additionalProperties": false
+      "required":
+        - "status"
+        - "representativeWishId"
+        - "historicalState"
+        - "numeratorAmount"
+        - "targetAmount"
+        - "progressPercent"
+      "description": "AMOUNT_REACHED는 명시적 종결 전까지 활성입니다. 종결 이후 기록된 대체 대표나 KNOWN_NONE을 반환합니다."
+      "properties":
+        "status":
+          "type": "string"
+          "enum":
+            - "ACCOUNT_NOT_OPEN"
+            - "PRE_COLLECTION_UNKNOWN"
+            - "KNOWN_NONE"
+            - "KNOWN_SELECTED"
+          "description": "계정 개설 전, 수집 전 불명, 기록된 대표 부재, 기록된 대표 선택을 구분합니다."
+        "representativeWishId":
+          "oneOf":
+            - "$ref": "#/components/schemas/Uuid"
+            - "type": "null"
+          "description": "당시 선택된 활성 위시 identity입니다."
+        "historicalState":
+          "oneOf":
+            - "type": "string"
+              "enum":
+                - "IN_PROGRESS"
+                - "AMOUNT_REACHED"
+            - "type": "null"
+          "description": "당시 IN_PROGRESS 또는 AMOUNT_REACHED 상태입니다. 완료·포기·삭제 위시는 선택 대상에서 원자적으로 제거됩니다."
+        "numeratorAmount":
+          "oneOf":
+            - "$ref": "#/components/schemas/KrwNonNegative"
+            - "type": "null"
+          "description": "당시 대표 위시에 배정된 금액입니다. 당시 목표 금액을 넘을 수 없습니다."
+        "targetAmount":
+          "oneOf":
+            - "$ref": "#/components/schemas/KrwPositive"
+            - "type": "null"
+          "description": "당시의 양수 목표 금액입니다. 현재 목표나 대표 위시로 과거를 대체하지 않습니다."
+        "progressPercent":
+          "oneOf":
+            - "type": "integer"
+              "minimum": 0
+              "maximum": 100
+            - "type": "null"
+          "description": "IN_PROGRESS는 min(99, floor(100 * numeratorAmount / targetAmount)), AMOUNT_REACHED는 100입니다. 정수 계산은 overflow 없이 수행합니다."
+      "allOf":
+        - "if":
+            "properties":
+              "status":
+                "const": "KNOWN_SELECTED"
+          "then":
+            "properties":
+              "representativeWishId":
+                "$ref": "#/components/schemas/Uuid"
+              "historicalState":
+                "type": "string"
+                "enum":
+                  - "IN_PROGRESS"
+                  - "AMOUNT_REACHED"
+              "numeratorAmount":
+                "$ref": "#/components/schemas/KrwNonNegative"
+              "targetAmount":
+                "$ref": "#/components/schemas/KrwPositive"
+              "progressPercent":
+                "type": "integer"
+                "minimum": 0
+                "maximum": 100
+          "else":
+            "properties":
+              "representativeWishId":
+                "type": "null"
+              "historicalState":
+                "type": "null"
+              "numeratorAmount":
+                "type": "null"
+              "targetAmount":
+                "type": "null"
+              "progressPercent":
+                "type": "null"
+        - "if":
+            "properties":
+              "historicalState":
+                "const": "IN_PROGRESS"
+          "then":
+            "properties":
+              "progressPercent":
+                "type": "integer"
+                "minimum": 0
+                "maximum": 99
+        - "if":
+            "properties":
+              "historicalState":
+                "const": "AMOUNT_REACHED"
+          "then":
+            "properties":
+              "progressPercent":
+                "const": 100
+    "HistoricalBucketProvenance":
+      "type": "object"
+      "additionalProperties": false
+      "required":
+        - "checkpointId"
+        - "checkpointRevision"
+        - "ledgerApplicationOrder"
+        - "latestObservationId"
+        - "lastSuccessfulObservationId"
+      "description": "개설·수집 전에는 모든 필드가 null입니다. 수집된 버킷은 체크포인트와 원장 적용 순번을 반드시 보존합니다."
+      "properties":
+        "checkpointId":
+          "oneOf":
+            - "$ref": "#/components/schemas/Uuid"
+            - "type": "null"
+          "description": "버킷 경계에서 선택한 실제 불변 계정 체크포인트입니다."
+        "checkpointRevision":
+          "oneOf":
+            - "$ref": "#/components/schemas/HistoricalCounter"
+              "pattern": "^[1-9][0-9]{0,18}$"
+              "description": "1 이상 9223372036854775807 이하인 계정 체크포인트 revision입니다."
+            - "type": "null"
+          "description": "버킷의 실제 계정 revision입니다. 수집 전이면 null입니다."
+        "ledgerApplicationOrder":
+          "oneOf":
+            - "$ref": "#/components/schemas/HistoricalCounter"
+            - "type": "null"
+          "description": "그 체크포인트의 원장 적용 순번입니다. 알려진 빈 원장 cut은 문자열 0입니다."
+        "latestObservationId":
+          "oneOf":
+            - "$ref": "#/components/schemas/Uuid"
+            - "type": "null"
+          "description": "실제로 알려진 최신 조회 관측 identity입니다."
+        "lastSuccessfulObservationId":
+          "oneOf":
+            - "$ref": "#/components/schemas/Uuid"
+            - "type": "null"
+          "description": "실제로 알려진 마지막 성공 관측 identity입니다."
+    "HistoricalBalanceBucket":
+      "type": "object"
+      "additionalProperties": false
+      "required":
+        - "periodStart"
+        - "periodEndExclusive"
+        - "periodStatus"
+        - "evaluatedAt"
+        - "evaluationBoundary"
+        - "coverage"
+        - "balance"
+        - "allocation"
+        - "latestLookup"
+        - "representative"
+        - "provenance"
+      "description": "버킷마다 한 계정의 원자적이고 일관된 이력 투영을 반환합니다. 같은 적용 시각은 account revision, 원장 효과는 application_order로 결정합니다."
+      "properties":
+        "periodStart":
+          "$ref": "#/components/schemas/UtcDate"
+          "description": "Asia/Seoul 달력의 포함 시작일입니다."
+        "periodEndExclusive":
+          "$ref": "#/components/schemas/UtcDate"
+          "description": "일·월요일 시작 주·월초 시작 달의 자연스러운 제외 종료일입니다."
+        "periodStatus":
+          "type": "string"
+          "enum":
+            - "COMPLETED"
+            - "PROVISIONAL"
+          "description": "평가 horizon까지 끝난 기간은 COMPLETED, 현재 열린 기간은 PROVISIONAL입니다."
+        "evaluatedAt":
+          "$ref": "#/components/schemas/UtcInstant"
+          "description": "COMPLETED는 자연 종료 instant, PROVISIONAL은 고정 evaluationHorizon입니다. 가짜 마지막 나노초를 만들지 않습니다."
+        "evaluationBoundary":
+          "type": "string"
+          "enum":
+            - "BEFORE"
+            - "THROUGH"
+          "description": "BEFORE는 evaluatedAt 미만, THROUGH는 evaluatedAt 이하 체크포인트를 선택합니다."
+        "coverage":
+          "$ref": "#/components/schemas/HistoricalCoverage"
+          "description": "경과한 버킷 부분의 실제 수집 범위입니다."
+        "balance":
+          "$ref": "#/components/schemas/HistoricalBalance"
+          "description": "마지막 성공 외부 관측과 그 시점 장부 가용액입니다."
+        "allocation":
+          "$ref": "#/components/schemas/HistoricalAllocation"
+          "description": "그 시점 내부 활성 위시 배정액의 지식 상태입니다."
+        "latestLookup":
+          "$ref": "#/components/schemas/HistoricalLookup"
+          "description": "그 시점까지 알려진 최신 실제 조회 상태입니다."
+        "representative":
+          "$ref": "#/components/schemas/HistoricalRepresentative"
+          "description": "당시 대표 선택 및 역사 목표로 계산한 달성률입니다."
+        "provenance":
+          "$ref": "#/components/schemas/HistoricalBucketProvenance"
+          "description": "계산에 사용한 불변 체크포인트와 실제 관측 identity입니다."
+      "allOf":
+        - "if":
+            "properties":
+              "periodStatus":
+                "const": "COMPLETED"
+          "then":
+            "properties":
+              "evaluationBoundary":
+                "const": "BEFORE"
+          "else":
+            "properties":
+              "evaluationBoundary":
+                "const": "THROUGH"
+        - "if":
+            "properties":
+              "coverage":
+                "properties":
+                  "status":
+                    "const": "NONE"
+          "then":
+            "properties":
+              "provenance":
+                "properties":
+                  "checkpointId":
+                    "type": "null"
+                  "checkpointRevision":
+                    "type": "null"
+                  "ledgerApplicationOrder":
+                    "type": "null"
+                  "latestObservationId":
+                    "type": "null"
+                  "lastSuccessfulObservationId":
+                    "type": "null"
+              "latestLookup":
+                "properties":
+                  "status":
+                    "const": "UNKNOWN"
+              "balance":
+                "properties":
+                  "knowledge":
+                    "const": "UNKNOWN"
+              "allocation":
+                "properties":
+                  "knowledge":
+                    "const": "UNKNOWN"
+              "representative":
+                "properties":
+                  "status":
+                    "enum":
+                      - "ACCOUNT_NOT_OPEN"
+                      - "PRE_COLLECTION_UNKNOWN"
+          "else":
+            "properties":
+              "provenance":
+                "properties":
+                  "checkpointId":
+                    "$ref": "#/components/schemas/Uuid"
+                  "checkpointRevision":
+                    "$ref": "#/components/schemas/HistoricalCounter"
+                    "pattern": "^[1-9][0-9]{0,18}$"
+                    "description": "1 이상 9223372036854775807 이하인 계정 체크포인트 revision입니다."
+                  "ledgerApplicationOrder":
+                    "$ref": "#/components/schemas/HistoricalCounter"
+              "allocation":
+                "properties":
+                  "knowledge":
+                    "const": "KNOWN"
+              "representative":
+                "properties":
+                  "status":
+                    "enum":
+                      - "KNOWN_NONE"
+                      - "KNOWN_SELECTED"
+              "latestLookup":
+                "properties":
+                  "status":
+                    "enum":
+                      - "NOT_LOOKED_UP"
+                      - "SUCCEEDED"
+                      - "FAILED"
+        - "if":
+            "properties":
+              "representative":
+                "properties":
+                  "status":
+                    "const": "ACCOUNT_NOT_OPEN"
+          "then":
+            "properties":
+              "coverage":
+                "properties":
+                  "status":
+                    "const": "NONE"
+              "balance":
+                "properties":
+                  "knowledge":
+                    "const": "UNKNOWN"
+                  "unknownReason":
+                    "const": "ACCOUNT_NOT_OPEN"
+              "allocation":
+                "properties":
+                  "knowledge":
+                    "const": "UNKNOWN"
+                  "unknownReason":
+                    "const": "ACCOUNT_NOT_OPEN"
+              "provenance":
+                "properties":
+                  "checkpointId":
+                    "type": "null"
+                  "checkpointRevision":
+                    "type": "null"
+                  "ledgerApplicationOrder":
+                    "type": "null"
+                  "latestObservationId":
+                    "type": "null"
+                  "lastSuccessfulObservationId":
+                    "type": "null"
+              "latestLookup":
+                "properties":
+                  "status":
+                    "const": "UNKNOWN"
+        - "if":
+            "properties":
+              "representative":
+                "properties":
+                  "status":
+                    "const": "PRE_COLLECTION_UNKNOWN"
+          "then":
+            "properties":
+              "coverage":
+                "properties":
+                  "status":
+                    "const": "NONE"
+              "balance":
+                "properties":
+                  "knowledge":
+                    "const": "UNKNOWN"
+                  "unknownReason":
+                    "const": "PRE_COLLECTION_UNKNOWN"
+              "allocation":
+                "properties":
+                  "knowledge":
+                    "const": "UNKNOWN"
+                  "unknownReason":
+                    "const": "PRE_COLLECTION_UNKNOWN"
+              "provenance":
+                "properties":
+                  "checkpointId":
+                    "type": "null"
+                  "checkpointRevision":
+                    "type": "null"
+                  "ledgerApplicationOrder":
+                    "type": "null"
+                  "latestObservationId":
+                    "type": "null"
+                  "lastSuccessfulObservationId":
+                    "type": "null"
+              "latestLookup":
+                "properties":
+                  "status":
+                    "const": "UNKNOWN"
+        - "if":
+            "properties":
+              "balance":
+                "properties":
+                  "knowledge":
+                    "const": "KNOWN"
+          "then":
+            "properties":
+              "coverage":
+                "properties":
+                  "balanceKnownFrom":
+                    "$ref": "#/components/schemas/UtcInstant"
+              "provenance":
+                "properties":
+                  "lastSuccessfulObservationId":
+                    "$ref": "#/components/schemas/Uuid"
+              "allocation":
+                "properties":
+                  "knowledge":
+                    "const": "KNOWN"
+          "else":
+            "properties":
+              "coverage":
+                "properties":
+                  "balanceKnownFrom":
+                    "type": "null"
+              "provenance":
+                "properties":
+                  "lastSuccessfulObservationId":
+                    "type": "null"
+        - "if":
+            "properties":
+              "allocation":
+                "properties":
+                  "knowledge":
+                    "const": "KNOWN"
+          "then":
+            "properties":
+              "coverage":
+                "properties":
+                  "allocationKnownFrom":
+                    "$ref": "#/components/schemas/UtcInstant"
+          "else":
+            "properties":
+              "coverage":
+                "properties":
+                  "allocationKnownFrom":
+                    "type": "null"
+        - "if":
+            "properties":
+              "representative":
+                "properties":
+                  "status":
+                    "enum":
+                      - "KNOWN_NONE"
+                      - "KNOWN_SELECTED"
+          "then":
+            "properties":
+              "coverage":
+                "properties":
+                  "representativeKnownFrom":
+                    "$ref": "#/components/schemas/UtcInstant"
+          "else":
+            "properties":
+              "coverage":
+                "properties":
+                  "representativeKnownFrom":
+                    "type": "null"
+        - "if":
+            "properties":
+              "latestLookup":
+                "properties":
+                  "status":
+                    "const": "SUCCEEDED"
+          "then":
+            "properties":
+              "balance":
+                "properties":
+                  "knowledge":
+                    "const": "KNOWN"
+        - "if":
+            "properties":
+              "latestLookup":
+                "properties":
+                  "status":
+                    "enum":
+                      - "SUCCEEDED"
+                      - "FAILED"
+          "then":
+            "properties":
+              "provenance":
+                "properties":
+                  "latestObservationId":
+                    "$ref": "#/components/schemas/Uuid"
+          "else":
+            "properties":
+              "provenance":
+                "properties":
+                  "latestObservationId":
+                    "type": "null"
+        - "if":
+            "properties":
+              "balance":
+                "properties":
+                  "unknownReason":
+                    "const": "NO_SUCCESSFUL_OBSERVATION"
+          "then":
+            "properties":
+              "coverage":
+                "properties":
+                  "status":
+                    "enum":
+                      - "FULL"
+                      - "PARTIAL"
+              "allocation":
+                "properties":
+                  "knowledge":
+                    "const": "KNOWN"
+              "latestLookup":
+                "properties":
+                  "status":
+                    "enum":
+                      - "NOT_LOOKED_UP"
+                      - "FAILED"
+    "HistoricalBalancesResponse":
+      "type": "object"
+      "additionalProperties": false
+      "required":
+        - "schemaVersion"
+        - "academyId"
+        - "studentId"
+        - "cardBalanceAccountId"
+        - "fromDate"
+        - "toDateExclusive"
+        - "granularity"
+        - "timezone"
+        - "readSnapshotAt"
+        - "evaluationHorizon"
+        - "dataRevision"
+        - "inputDigest"
+        - "accountOpenedAt"
+        - "collectionStartedAt"
+        - "revisionBounds"
+        - "items"
+      "description": "현재 접근 자격을 다시 확인한 뒤 고정 금융 입력과 평가 horizon으로 재현하는 과거 잔액 및 당시 대표 달성률입니다."
+      "properties":
+        "schemaVersion":
+          "type": "integer"
+          "const": 1
+          "description": "불변 역사 잔액 wire schema 버전입니다."
+        "academyId":
+          "$ref": "#/components/schemas/Uuid"
+          "description": "현재 자격을 확인한 계정 학원 identity입니다."
+        "studentId":
+          "$ref": "#/components/schemas/Uuid"
+          "description": "현재 자격을 확인한 계정 소유 학생 identity입니다."
+        "cardBalanceAccountId":
+          "$ref": "#/components/schemas/Uuid"
+          "description": "이력과 재생 토큰이 귀속되는 정확한 계정 identity입니다."
+        "fromDate":
+          "$ref": "#/components/schemas/UtcDate"
+          "description": "정규화된 포함 시작일입니다."
+        "toDateExclusive":
+          "$ref": "#/components/schemas/UtcDate"
+          "description": "정규화된 제외 종료일입니다."
+        "granularity":
+          "type": "string"
+          "enum":
+            - "DAY"
+            - "WEEK"
+            - "MONTH"
+          "description": "요청한 달력 집계 단위입니다."
+        "timezone":
+          "type": "string"
+          "const": "Asia/Seoul"
+          "description": "기간 경계를 해석하는 고정 시간대입니다."
+        "readSnapshotAt":
+          "$ref": "#/components/schemas/UtcInstant"
+          "description": "이번 repeatable-read 데이터베이스 snapshot 시각입니다. 재생 때 달라질 수 있습니다."
+        "evaluationHorizon":
+          "$ref": "#/components/schemas/UtcInstant"
+          "description": "기간 및 현재 버킷을 평가하는 고정 시각입니다. asOfRevision 재생에서도 동일합니다."
+        "dataRevision":
+          "$ref": "#/components/schemas/HistoricalDataRevision"
+          "description": "고정 입력과 평가 horizon을 그대로 재생할 불투명 토큰입니다."
+        "inputDigest":
+          "type": "string"
+          "pattern": "^sha256:[a-f0-9]{64}$"
+          "description": "x-historical-balance-policy의 canonical 금융 입력 객체 UTF-8 바이트에 대한 SHA-256입니다. 읽기 시각과 현재 접근 자격은 제외합니다."
+        "accountOpenedAt":
+          "$ref": "#/components/schemas/UtcInstant"
+          "description": "불변인 실제 계정 개설 시각입니다."
+        "collectionStartedAt":
+          "$ref": "#/components/schemas/UtcInstant"
+          "description": "실제 baseline 수집 시작 시각입니다. 개설 시각으로 소급하지 않습니다."
+        "revisionBounds":
+          "$ref": "#/components/schemas/HistoricalRevisionBounds"
+          "description": "이 응답과 재생에 고정한 baseline 및 선택 revision 경계입니다."
+        "items":
+          "type": "array"
+          "minItems": 1
+          "maxItems": 366
+          "items":
+            "$ref": "#/components/schemas/HistoricalBalanceBucket"
+          "description": "요청한 모든 버킷을 periodStart 오름차순으로 반환합니다. 페이지 나눔이 없으며 최대 366개입니다."
     BehaviorProfileVisitRequest:
       type: "object"
       additionalProperties: false
@@ -2583,7 +3902,7 @@ components:
     FeedResultResponse:
       type: "object"
       additionalProperties: false
-      description: "actor, 학원, 실제 카드와 위치, 생성 시각을 저장한 페이지입니다. 맥락 생성 자체는 노출·클릭·방문을 기록하지 않습니다."
+      description: "actor, 학원, 실제 카드와 위치, 생성 시각을 저장한 24시간 behavior result page입니다. 별도의 5분 v2 feed context에서 ranked와 latest segment를 이어 제공하며 맥락 생성 자체는 노출·클릭·방문을 기록하지 않습니다."
       required:
         - "resultContextId"
         - "createdAt"
@@ -2605,14 +3924,15 @@ components:
           description: "createdAt에서 정확히 24시간 뒤입니다."
         sortSource:
           type: "string"
-          description: "서버가 결정한 최신순 정렬 출처입니다."
-          const: "LATEST"
+          description: "실제 반환 배열에 ranked-segment 카드가 하나라도 있으면 RECOMMENDATION, latest-only·owner-filter·disabled·empty·fallback이면 LATEST입니다. mixed page는 RECOMMENDATION입니다."
+          enum: [LATEST, RECOMMENDATION]
         recommendationResultId:
-          type: "null"
-          description: "최신순 페이지에는 추천 결과 식별자가 없습니다."
+          type: [string, "null"]
+          format: "uuid"
+          description: "RECOMMENDATION이면 원래 Python request UUID이고 LATEST이면 null입니다."
         modelVersion:
-          type: "null"
-          description: "최신순 페이지에는 추천 모델 버전이 없습니다."
+          type: [string, "null"]
+          description: "RECOMMENDATION이면 feed-rules-v1이고 LATEST이면 null입니다."
         items:
           type: "array"
           description: "실제로 전달한 순서의 기존 공유 카드입니다. 배열 인덱스가 position이며 빈 페이지도 맥락을 생성합니다."
@@ -2623,8 +3943,201 @@ components:
           type:
             - "string"
             - "null"
-          description: "기존 공유 카드 커서입니다. 마지막 페이지는 null입니다."
+          description: "마지막 페이지는 null입니다. 기존 v1은 latest-only를 유지하고 새 v2는 원래 5분 expiry와 durable transition에 결속됩니다."
           minLength: 1
+      allOf:
+        - if:
+            properties:
+              sortSource: {const: LATEST}
+          then:
+            properties:
+              recommendationResultId: {type: "null"}
+              modelVersion: {type: "null"}
+          else:
+            properties:
+              recommendationResultId: {type: string, format: uuid}
+              modelVersion: {type: string, const: feed-rules-v1}
+    FeedCoreMetrics:
+      type: object
+      additionalProperties: false
+      description: "기존 raw-input classifier가 사용하는 한 학생의 완전 관측 월간 CoreMetrics입니다."
+      required: [deposit_count, total_savings, avg_amount, regularity_std, pace_bias, abandon_count, transfer_count, visit_count]
+      properties:
+        deposit_count: {type: integer, minimum: 0, maximum: 9007199254740991, description: "CoreMetrics.save_count에 대응하는 안전한 정수 입금 횟수입니다."}
+        total_savings: {type: integer, minimum: -9007199254740991, maximum: 9007199254740991, description: "계정 전체의 부호 있는 안전한 정수 저축 합계입니다."}
+        avg_amount: {type: number, minimum: -9007199254740991, maximum: 9007199254740991, description: "계정 전체의 유한한 부호 있는 평균 금액입니다."}
+        regularity_std: {type: [number, "null"], minimum: 0, description: "계산 가능하면 음수가 아닌 유한한 규칙성 표준편차이고 아니면 null입니다."}
+        pace_bias: {type: [number, "null"], description: "계산 가능하면 유한한 부호 있는 pace bias이고 아니면 null입니다."}
+        abandon_count: {type: integer, minimum: 0, maximum: 9007199254740991, description: "안전한 정수 포기 횟수입니다."}
+        transfer_count: {type: integer, minimum: 0, maximum: 9007199254740991, description: "안전한 정수 이체 횟수입니다."}
+        visit_count: {type: integer, minimum: 0, maximum: 9007199254740991, description: "안전한 정수 방문 횟수입니다."}
+    FeedMonthMetrics:
+      type: object
+      additionalProperties: false
+      description: "Asia/Seoul 이전 calendar month의 관측 coverage와 CoreMetrics를 구분합니다."
+      required: [month, coverage, metrics_version, values]
+      properties:
+        month: {type: string, pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$', description: "검증된 YYYY-MM이며 year rollover를 포함합니다."}
+        coverage: {type: string, enum: [COMPLETE, PARTIAL, UNOBSERVED], description: "COMPLETE만 실제 complete values를 가집니다."}
+        metrics_version: {type: string, const: core-metrics-v1, description: "변경되지 않은 aggregate/classifier input semantics입니다."}
+        values:
+          description: "COMPLETE이면 실제 zero/null을 포함한 완전한 값이고 PARTIAL/UNOBSERVED이면 null입니다."
+          oneOf:
+            - {$ref: '#/components/schemas/FeedCoreMetrics'}
+            - {type: "null"}
+      allOf:
+        - if:
+            properties:
+              coverage: {const: COMPLETE}
+          then:
+            properties:
+              values: {$ref: '#/components/schemas/FeedCoreMetrics'}
+          else:
+            properties:
+              values: {type: "null"}
+    FeedRankingCandidate:
+      type: object
+      additionalProperties: false
+      description: "현재 viewer에게 eligible한 최초 최대 100개 population의 한 ranking 후보입니다."
+      required: [card_id, author_id, state, created_at, target_date, closed_at, content_updated_at, category_id, basic_similarity, title_similarity, visited_author_before, visited_category_before, author_previous_month]
+      properties:
+        card_id: {$ref: '#/components/schemas/Uuid', description: "후보 shared card UUID입니다."}
+        author_id: {$ref: '#/components/schemas/Uuid', description: "현재 eligible한 후보 작성자 UUID입니다."}
+        state: {type: string, enum: [IN_PROGRESS, AMOUNT_REACHED, COMPLETED], description: "ABANDONMENT를 제외한 ranking 후보 상태입니다."}
+        created_at: {$ref: '#/components/schemas/UtcInstant', description: "basic similarity의 실제 생성 시각입니다."}
+        target_date: {type: [string, "null"], format: date, description: "원래 목표일 또는 no-deadline null입니다."}
+        closed_at: {type: [string, "null"], format: date-time, description: "COMPLETED이면 UTC 종결 시각이고 그 밖에는 null입니다."}
+        content_updated_at: {$ref: '#/components/schemas/UtcInstant', description: "stable backend candidate order와 latest keyset의 콘텐츠 시각입니다."}
+        category_id:
+          type: string
+          enum: [패션, 문구, 전자기기, 취미, 스포츠, 게임, 도서, 뷰티, 굿즈, 생활용품, 기타]
+          description: "pinned TF-IDF classifier의 정확한 11-category 결과입니다."
+        basic_similarity:
+          type: number
+          enum: [0, 0.3333333333333333, 0.6666666666666666, 1]
+          description: "대표 category·amount bucket·deadline bucket에서 계산한 0, 1/3, 2/3 또는 1입니다."
+        title_similarity: {type: number, minimum: 0, maximum: 1, description: "pinned SequenceMatcher semantics의 유한한 [0,1] 값입니다."}
+        visited_author_before: {type: boolean, description: "inclusive 90-day retained author interest 여부입니다."}
+        visited_category_before: {type: boolean, description: "immutable COMPLETE category evidence에서만 계산한 interest 여부입니다."}
+        author_previous_month: {$ref: '#/components/schemas/FeedMonthMetrics', description: "ordinary 후보는 recommendation 이전 달, completed 후보는 closedAt 이전 달입니다."}
+      allOf:
+        - if:
+            properties:
+              state: {const: COMPLETED}
+          then:
+            properties:
+              closed_at: {type: string, format: date-time}
+          else:
+            properties:
+              closed_at: {type: "null"}
+    FeedRankingRequest:
+      type: object
+      additionalProperties: false
+      description: "backend가 Python feed service로 보내는 exact UTF-8 digest 대상의 닫힌 schema v1 요청입니다."
+      required: [schema_version, request_id, context_id, viewer_id, academy_id, recommendation_at, timezone, feature_version, classifier_version, viewer_previous_month, candidates]
+      properties:
+        schema_version: {type: integer, const: 1, description: "feed ranking wire schema version입니다."}
+        request_id: {$ref: '#/components/schemas/Uuid', description: "한 foreground attempt의 UUID입니다."}
+        context_id: {$ref: '#/components/schemas/Uuid', description: "durable v2 feed context UUID입니다."}
+        viewer_id: {$ref: '#/components/schemas/Uuid', description: "인증 주체에서 얻은 viewer UUID입니다."}
+        academy_id: {$ref: '#/components/schemas/Uuid', description: "현재 인가된 academy UUID입니다."}
+        recommendation_at: {$ref: '#/components/schemas/UtcInstant', description: "feature window와 month를 고정하는 UTC instant입니다."}
+        timezone: {type: string, const: Asia/Seoul, description: "calendar 경계를 해석하는 고정 시간대입니다."}
+        feature_version: {type: string, const: feed-features-v1, description: "backend feature semantics version입니다."}
+        classifier_version: {type: string, pattern: '^[a-z0-9][a-z0-9._-]*@sha256:[a-f0-9]{64}$', description: "pinned portable classifier version과 artifact digest입니다."}
+        viewer_previous_month: {$ref: '#/components/schemas/FeedMonthMetrics', description: "recommendationAt의 이전 Seoul calendar month viewer aggregate입니다."}
+        candidates:
+          type: array
+          maxItems: 100
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/FeedRankingCandidate'}
+          description: "stable input order의 서로 다른 eligible card 후보 0~100개입니다."
+    FeedRankingResponse:
+      type: object
+      additionalProperties: false
+      description: "Python이 실제 scoring/composition 뒤 반환하는 닫힌 deterministic response입니다."
+      required: [schema_version, request_id, context_id, input_digest, model_version, ordered_card_ids]
+      properties:
+        schema_version: {type: integer, const: 1, description: "feed ranking response schema version입니다."}
+        request_id: {$ref: '#/components/schemas/Uuid', description: "요청의 exact request UUID입니다."}
+        context_id: {$ref: '#/components/schemas/Uuid', description: "요청의 exact context UUID입니다."}
+        input_digest: {type: string, pattern: '^sha256:[a-f0-9]{64}$', description: "수신한 exact UTF-8 request body bytes의 SHA-256입니다."}
+        model_version: {type: string, const: feed-rules-v1, description: "허용된 ranking/composition model version입니다."}
+        ordered_card_ids:
+          type: array
+          maxItems: 20
+          uniqueItems: true
+          items: {$ref: '#/components/schemas/Uuid'}
+          description: "제출 후보에만 속하는 min(20,candidate count)개의 서로 다른 ordered ID입니다."
+    FeedRankingError:
+      type: object
+      additionalProperties: false
+      description: "Python feed service만 사용하는 bounded·sanitized 오류 body입니다."
+      required: [code, message, retryable, trace_id, field_errors]
+      properties:
+        code: {type: string, enum: [MALFORMED_REQUEST, AUTH_REQUIRED, PAYLOAD_TOO_LARGE, UNSUPPORTED_MEDIA_TYPE, INVALID_FEED_INPUT, RANKING_FAILED, RANKING_UNAVAILABLE], description: "HTTP status에 고정 매핑되는 machine code입니다."}
+        message: {type: string, minLength: 1, maxLength: 256, description: "payload value를 포함하지 않는 정제된 메시지입니다."}
+        retryable: {type: boolean, description: "RANKING_UNAVAILABLE에만 true입니다. foreground retry를 뜻하지 않습니다."}
+        trace_id: {type: string, minLength: 1, maxLength: 128, description: "opaque diagnostic correlation ID입니다."}
+        field_errors:
+          type: array
+          maxItems: 64
+          uniqueItems: true
+          items: {type: string, minLength: 1, maxLength: 128}
+          description: "payload value 없이 field path만 담는 bounded array입니다."
+      allOf:
+        - if:
+            properties:
+              code: {const: RANKING_UNAVAILABLE}
+          then:
+            properties:
+              retryable: {const: true}
+          else:
+            properties:
+              retryable: {const: false}
+    FeedVisitCategoryEvidence:
+      type: object
+      additionalProperties: false
+      description: "최초 PROFILE_VISIT 수락 때 고정하는 historical category evidence와 opaque provenance입니다."
+      required: [event_id, actor_id, target_author_id, academy_id, occurred_at, received_at, captured_at, evidence_status, category_ids, evidence_version, classifier_version, history_coverage_start, source_versions, unknown_reason]
+      properties:
+        event_id: {$ref: '#/components/schemas/Uuid', description: "actor scope의 기존 event UUID입니다."}
+        actor_id: {$ref: '#/components/schemas/Uuid', description: "인증된 방문 actor UUID입니다."}
+        target_author_id: {$ref: '#/components/schemas/Uuid', description: "현재 인가를 통과한 target author UUID입니다."}
+        academy_id: {$ref: '#/components/schemas/Uuid', description: "수락한 academy UUID입니다."}
+        occurred_at: {$ref: '#/components/schemas/UtcInstant', description: "변경하지 않는 원래 발생 시각입니다."}
+        received_at: {$ref: '#/components/schemas/UtcInstant', description: "변경하지 않는 원래 수신 시각입니다."}
+        captured_at: {$ref: '#/components/schemas/UtcInstant', description: "database가 생성한 evidence linearization instant입니다."}
+        evidence_status: {type: string, enum: [COMPLETE, UNKNOWN], description: "complete known set과 unprovable history를 구분합니다."}
+        category_ids:
+          description: "COMPLETE이면 empty를 포함한 전체 category set이고 UNKNOWN이면 null입니다."
+          oneOf:
+            - type: array
+              uniqueItems: true
+              items: {type: string, enum: [패션, 문구, 전자기기, 취미, 스포츠, 게임, 도서, 뷰티, 굿즈, 생활용품, 기타]}
+            - {type: "null"}
+        evidence_version: {type: string, const: feed-visit-evidence-v1, description: "immutable evidence encoding version입니다."}
+        classifier_version: {type: string, pattern: '^[a-z0-9][a-z0-9._-]*@sha256:[a-f0-9]{64}$', description: "title version을 해석한 pinned classifier artifact입니다."}
+        history_coverage_start: {$ref: '#/components/schemas/UtcInstant', description: "소급하지 않는 관련 collection baseline입니다."}
+        source_versions:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: {type: string, minLength: 1, maxLength: 256}
+          description: "category/eligibility/privacy interval을 증명하는 opaque version references입니다."
+        unknown_reason: {type: [string, "null"], enum: [LEGACY, BEFORE_BASELINE, FUTURE_OCCURRED_AT, HISTORY_GAP, CLASSIFIER_UNAVAILABLE, null], description: "UNKNOWN의 닫힌 reason이고 COMPLETE이면 null입니다."}
+      allOf:
+        - if:
+            properties:
+              evidence_status: {const: COMPLETE}
+          then:
+            properties:
+              category_ids: {type: array, uniqueItems: true}
+              unknown_reason: {type: "null"}
+          else:
+            properties:
+              category_ids: {type: "null"}
+              unknown_reason: {type: string, enum: [LEGACY, BEFORE_BASELINE, FUTURE_OCCURRED_AT, HISTORY_GAP, CLASSIFIER_UNAVAILABLE]}
     BehaviorFeedExposureRequest:
       type: "object"
       additionalProperties: false
@@ -3203,6 +4716,8 @@ components:
         - PROFILE_NOT_FOUND
         - FEED_CONTEXT_NOT_FOUND
         - FEED_CONTEXT_EXPIRED
+        - RECOMMENDATION_CURSOR_EXPIRED
+        - RECOMMENDATION_CONTEXT_UNAVAILABLE
         - EVENT_ID_CONFLICT
         - IMPRESSION_CONFLICT
         - IMPRESSION_ALREADY_EXPOSED
@@ -3230,6 +4745,8 @@ components:
         - INVALID_VERSION
         - BALANCE_SYNC_FAILED
         - RECAP_QUERY_UNAVAILABLE
+        - HISTORICAL_BALANCE_INTEGRITY_ERROR
+        - HISTORICAL_BALANCE_QUERY_UNAVAILABLE
         - STUDENT_NOT_FOUND
         - STUDENT_BLOCK_NOT_FOUND
         - SELF_RELATIONSHIP
@@ -3265,7 +4782,7 @@ components:
             - if:
                 properties:
                   code:
-                    enum: [BALANCE_SYNC_FAILED, RECAP_QUERY_UNAVAILABLE, PHOTO_UPLOAD_RATE_LIMITED, PHOTO_PROCESSING_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE]
+                    enum: [BALANCE_SYNC_FAILED, RECAP_QUERY_UNAVAILABLE, HISTORICAL_BALANCE_QUERY_UNAVAILABLE, RECOMMENDATION_CONTEXT_UNAVAILABLE, PHOTO_UPLOAD_RATE_LIMITED, PHOTO_PROCESSING_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE]
               then:
                 properties:
                   retryable: {const: true}
@@ -3277,7 +4794,7 @@ components:
             message: {type: string, minLength: 1, description: "이번 오류 발생을 사람이 읽을 수 있게 설명한 문장입니다. 안정적인 기계 판정 키가 아닙니다."}
             retryable:
               type: boolean
-              description: "BALANCE_SYNC_FAILED, RECAP_QUERY_UNAVAILABLE, PHOTO_UPLOAD_RATE_LIMITED, PHOTO_PROCESSING_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE일 때만 true입니다. 정의된 그 밖의 클라이언트, 인가, 리소스 없음, 유효성 검사, 상태 충돌 오류에는 false입니다."
+              description: "BALANCE_SYNC_FAILED, RECAP_QUERY_UNAVAILABLE, HISTORICAL_BALANCE_QUERY_UNAVAILABLE, RECOMMENDATION_CONTEXT_UNAVAILABLE, PHOTO_UPLOAD_RATE_LIMITED, PHOTO_PROCESSING_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE일 때만 true입니다. 정의된 그 밖의 클라이언트, 인가, 리소스 없음, 유효성 검사, 상태 충돌 오류에는 false입니다."
             traceId: {type: string, minLength: 1, description: "진단과 지원에 사용하는 불투명한 서버 상관관계 식별자입니다. 도메인 의미는 없습니다."}
             fieldErrors:
               description: "필드별 유효성 검사 실패 목록입니다. 오류 원인을 개별 요청 필드에 연결할 수 없으면 비어 있습니다."
@@ -3580,7 +5097,7 @@ components:
     WeeklyRecapStory:
       type: object
       additionalProperties: false
-      required: [wishId, typeTitle, ownerStudentId, sharedCardId]
+      required: [wishId, typeTitle, ownerStudentId, sharedCardId, kind, ownerNickname, purpose, targetAmount, progressPercent, startDate, targetDate, createdAt, completedAt, actualDurationSeconds, photo, contentUpdatedAt]
       properties:
         wishId: {$ref: '#/components/schemas/Uuid', description: "저장된 성공 story 후보가 가리키는 위시 UUID입니다."}
         typeTitle:
@@ -3589,6 +5106,22 @@ components:
           description: "작성자의 완료 달 이전 달 집계로 계산해 저장한 유형 제목이며 계산할 수 없으면 null입니다."
         ownerStudentId: {$ref: '#/components/schemas/Uuid', description: "현재 조회 시점에 허용된 공유 카드 소유 학생 UUID입니다."}
         sharedCardId: {$ref: '#/components/schemas/Uuid', description: "현재 조회 시점에 허용된 공유 카드 프로젝션 UUID입니다."}
+        kind: {type: string, const: COMPLETION, description: "현재 공개 가능한 명시적 완료 카드입니다."}
+        ownerNickname: {type: string, minLength: 1, description: "CompletionSharedCard.ownerNickname과 같은 현재 소유자 표시 닉네임입니다."}
+        purpose: {$ref: '#/components/schemas/Purpose', description: "현재 공개된 정규화 위시 목적입니다."}
+        targetAmount: {$ref: '#/components/schemas/KrwPositive', description: "공개된 양의 정수 원화 목표 금액입니다."}
+        progressPercent: {type: integer, const: 100, description: "완료 카드 달성률은 항상 100입니다."}
+        startDate: {type: [string, "null"], format: date, description: "저장된 LocalDate의 YYYY-MM-DD 또는 null을 추론이나 시간대 변환 없이 보존합니다."}
+        targetDate: {type: [string, "null"], format: date, description: "저장된 LocalDate의 YYYY-MM-DD 또는 null을 추론이나 시간대 변환 없이 보존합니다."}
+        createdAt: {$ref: '#/components/schemas/UtcInstant', description: "위시 생성 시각이며 RFC 3339 UTC Z 형식입니다."}
+        completedAt: {$ref: '#/components/schemas/UtcInstant', description: "명시적 위시 완료 시각이며 RFC 3339 UTC Z 형식입니다."}
+        actualDurationSeconds: {type: integer, format: int64, minimum: 0, description: "max(0, Duration.between(createdAt, completedAt).getSeconds())이며 달력 날짜와 독립적입니다."}
+        photo:
+          description: "권한 확인 뒤 현재 ATTACHED WishPhoto의 비공개 URL을 새로 발급합니다. ATTACHED 사진이 없을 때만 null이며 런타임·서명 실패는 전체 조회를 실패시킵니다."
+          oneOf:
+            - {$ref: '#/components/schemas/WishPhoto'}
+            - {type: "null"}
+        contentUpdatedAt: {$ref: '#/components/schemas/UtcInstant', description: "현재 완료 카드 내용·공개 변경 시각이며 조회 보강은 이 값이나 story 순서를 바꾸지 않습니다."}
     MonthlyRecapResult:
       type: object
       additionalProperties: false
@@ -4490,6 +6023,1451 @@ components:
           minimum: 0
           description: 검색·커서·페이지 크기와 무관한 목록 소유자의 선택 학원 모든 유효 incoming 관계 수입니다.
   examples:
+    "HistoricalRepresentativeReplacementAndTargetEdit":
+      "summary": "당시 대표 교체와 목표 수정으로 달라지는 달성률"
+      "x-schema-ref": "#/components/schemas/HistoricalBalancesResponse"
+      "x-canonical-financial-input":
+        "schemaVersion": 1
+        "academyId": "00000000-0000-4000-8000-000000000001"
+        "studentId": "00000000-0000-4000-8000-000000000002"
+        "cardBalanceAccountId": "00000000-0000-4000-8000-000000000003"
+        "fromDate": "2026-09-01"
+        "toDateExclusive": "2026-09-04"
+        "granularity": "DAY"
+        "timezone": "Asia/Seoul"
+        "evaluationHorizon": "2026-09-04T00:00:00Z"
+        "accountOpenedAt": "2026-08-30T15:00:00Z"
+        "collectionStartedAt": "2026-08-31T15:00:00Z"
+        "revisionBounds":
+          "baselineCheckpointId": "00000000-0000-4000-8000-000000000101"
+          "baselineRevision": "1"
+          "baselineLedgerApplicationOrder": "0"
+          "checkpointId": "00000000-0000-4000-8000-000000000104"
+          "checkpointRevision": "4"
+          "ledgerApplicationOrder": "0"
+          "observationLookupVersion": "1"
+        "baseline":
+          "checkpointId": "00000000-0000-4000-8000-000000000101"
+          "checkpointRevision": "1"
+          "ledgerApplicationOrder": "0"
+          "appliedAt": "2026-08-31T15:00:00Z"
+          "activeWishAllocation": 700
+          "representative":
+            "status": "KNOWN_SELECTED"
+            "representativeWishId": "00000000-0000-4000-8000-000000000301"
+            "historicalState": "IN_PROGRESS"
+            "numeratorAmount": 300
+            "targetAmount": 1000
+            "progressPercent": 30
+          "latestObservationId": "00000000-0000-4000-8000-000000000201"
+          "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+        "checkpoints":
+          - "checkpointId": "00000000-0000-4000-8000-000000000102"
+            "checkpointRevision": "2"
+            "ledgerApplicationOrder": "0"
+            "appliedAt": "2026-08-31T15:00:01Z"
+            "activeWishAllocation": 700
+            "representative":
+              "status": "KNOWN_SELECTED"
+              "representativeWishId": "00000000-0000-4000-8000-000000000301"
+              "historicalState": "IN_PROGRESS"
+              "numeratorAmount": 300
+              "targetAmount": 1000
+              "progressPercent": 30
+            "latestObservationId": "00000000-0000-4000-8000-000000000201"
+            "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+          - "checkpointId": "00000000-0000-4000-8000-000000000103"
+            "checkpointRevision": "3"
+            "ledgerApplicationOrder": "0"
+            "appliedAt": "2026-09-01T16:00:00Z"
+            "activeWishAllocation": 700
+            "representative":
+              "status": "KNOWN_SELECTED"
+              "representativeWishId": "00000000-0000-4000-8000-000000000302"
+              "historicalState": "IN_PROGRESS"
+              "numeratorAmount": 400
+              "targetAmount": 800
+              "progressPercent": 50
+            "latestObservationId": "00000000-0000-4000-8000-000000000201"
+            "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+          - "checkpointId": "00000000-0000-4000-8000-000000000104"
+            "checkpointRevision": "4"
+            "ledgerApplicationOrder": "0"
+            "appliedAt": "2026-09-02T16:00:00Z"
+            "activeWishAllocation": 700
+            "representative":
+              "status": "KNOWN_SELECTED"
+              "representativeWishId": "00000000-0000-4000-8000-000000000302"
+              "historicalState": "IN_PROGRESS"
+              "numeratorAmount": 400
+              "targetAmount": 1000
+              "progressPercent": 40
+            "latestObservationId": "00000000-0000-4000-8000-000000000201"
+            "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+        "ledgerEffects": []
+        "observations":
+          - "observationId": "00000000-0000-4000-8000-000000000201"
+            "lookupVersion": "1"
+            "observedAt": "2026-08-31T15:00:00Z"
+            "lookupMethod": "USER_REQUESTED"
+            "status": "SUCCEEDED"
+            "amount": 1000
+            "failureCode": null
+      "x-acceptance": "C01"
+      "value":
+        "schemaVersion": 1
+        "academyId": "00000000-0000-4000-8000-000000000001"
+        "studentId": "00000000-0000-4000-8000-000000000002"
+        "cardBalanceAccountId": "00000000-0000-4000-8000-000000000003"
+        "fromDate": "2026-09-01"
+        "toDateExclusive": "2026-09-04"
+        "granularity": "DAY"
+        "timezone": "Asia/Seoul"
+        "readSnapshotAt": "2026-09-04T00:00:00Z"
+        "evaluationHorizon": "2026-09-04T00:00:00Z"
+        "dataRevision": "h1.eyJhY2FkZW15SWQiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJjYXJkQmFsYW5jZUFjY291bnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMyIsImV2YWx1YXRpb25Ib3Jpem9uIjoiMjAyNi0wOS0wNFQwMDowMDowMFoiLCJyZXZpc2lvbkJvdW5kcyI6eyJiYXNlbGluZUNoZWNrcG9pbnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMSIsImJhc2VsaW5lTGVkZ2VyQXBwbGljYXRpb25PcmRlciI6IjAiLCJiYXNlbGluZVJldmlzaW9uIjoiMSIsImNoZWNrcG9pbnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwNCIsImNoZWNrcG9pbnRSZXZpc2lvbiI6IjQiLCJsZWRnZXJBcHBsaWNhdGlvbk9yZGVyIjoiMCIsIm9ic2VydmF0aW9uTG9va3VwVmVyc2lvbiI6IjEifSwic2NoZW1hVmVyc2lvbiI6MSwic3R1ZGVudElkIjoiMDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAyIn0"
+        "inputDigest": "sha256:4c2bad668237077bfe4e5de54525bc914f41b2e5cae5678e1895d404863a1b6d"
+        "accountOpenedAt": "2026-08-30T15:00:00Z"
+        "collectionStartedAt": "2026-08-31T15:00:00Z"
+        "revisionBounds":
+          "baselineCheckpointId": "00000000-0000-4000-8000-000000000101"
+          "baselineRevision": "1"
+          "baselineLedgerApplicationOrder": "0"
+          "checkpointId": "00000000-0000-4000-8000-000000000104"
+          "checkpointRevision": "4"
+          "ledgerApplicationOrder": "0"
+          "observationLookupVersion": "1"
+        "items":
+          - "periodStart": "2026-09-01"
+            "periodEndExclusive": "2026-09-02"
+            "periodStatus": "COMPLETED"
+            "evaluatedAt": "2026-09-01T15:00:00Z"
+            "evaluationBoundary": "BEFORE"
+            "coverage":
+              "status": "FULL"
+              "coveredFrom": "2026-08-31T15:00:00Z"
+              "balanceKnownFrom": "2026-08-31T15:00:00Z"
+              "allocationKnownFrom": "2026-08-31T15:00:00Z"
+              "representativeKnownFrom": "2026-08-31T15:00:00Z"
+            "balance":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "lastSuccessfulObservedCardBalance": 1000
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservedAt": "2026-08-31T15:00:00Z"
+              "ledgerAvailableBalance": 300
+              "displayAvailableBalance": 300
+              "unresolvedShortage": 0
+            "allocation":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "activeWishAllocation": 700
+            "latestLookup":
+              "status": "SUCCEEDED"
+              "observationId": "00000000-0000-4000-8000-000000000201"
+              "observedAt": "2026-08-31T15:00:00Z"
+              "lookupMethod": "USER_REQUESTED"
+              "failureCode": null
+            "representative":
+              "status": "KNOWN_SELECTED"
+              "representativeWishId": "00000000-0000-4000-8000-000000000301"
+              "historicalState": "IN_PROGRESS"
+              "numeratorAmount": 300
+              "targetAmount": 1000
+              "progressPercent": 30
+            "provenance":
+              "checkpointId": "00000000-0000-4000-8000-000000000102"
+              "checkpointRevision": "2"
+              "ledgerApplicationOrder": "0"
+              "latestObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+          - "periodStart": "2026-09-02"
+            "periodEndExclusive": "2026-09-03"
+            "periodStatus": "COMPLETED"
+            "evaluatedAt": "2026-09-02T15:00:00Z"
+            "evaluationBoundary": "BEFORE"
+            "coverage":
+              "status": "FULL"
+              "coveredFrom": "2026-09-01T15:00:00Z"
+              "balanceKnownFrom": "2026-08-31T15:00:00Z"
+              "allocationKnownFrom": "2026-08-31T15:00:00Z"
+              "representativeKnownFrom": "2026-08-31T15:00:00Z"
+            "balance":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "lastSuccessfulObservedCardBalance": 1000
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservedAt": "2026-08-31T15:00:00Z"
+              "ledgerAvailableBalance": 300
+              "displayAvailableBalance": 300
+              "unresolvedShortage": 0
+            "allocation":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "activeWishAllocation": 700
+            "latestLookup":
+              "status": "SUCCEEDED"
+              "observationId": "00000000-0000-4000-8000-000000000201"
+              "observedAt": "2026-08-31T15:00:00Z"
+              "lookupMethod": "USER_REQUESTED"
+              "failureCode": null
+            "representative":
+              "status": "KNOWN_SELECTED"
+              "representativeWishId": "00000000-0000-4000-8000-000000000302"
+              "historicalState": "IN_PROGRESS"
+              "numeratorAmount": 400
+              "targetAmount": 800
+              "progressPercent": 50
+            "provenance":
+              "checkpointId": "00000000-0000-4000-8000-000000000103"
+              "checkpointRevision": "3"
+              "ledgerApplicationOrder": "0"
+              "latestObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+          - "periodStart": "2026-09-03"
+            "periodEndExclusive": "2026-09-04"
+            "periodStatus": "COMPLETED"
+            "evaluatedAt": "2026-09-03T15:00:00Z"
+            "evaluationBoundary": "BEFORE"
+            "coverage":
+              "status": "FULL"
+              "coveredFrom": "2026-09-02T15:00:00Z"
+              "balanceKnownFrom": "2026-08-31T15:00:00Z"
+              "allocationKnownFrom": "2026-08-31T15:00:00Z"
+              "representativeKnownFrom": "2026-08-31T15:00:00Z"
+            "balance":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "lastSuccessfulObservedCardBalance": 1000
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservedAt": "2026-08-31T15:00:00Z"
+              "ledgerAvailableBalance": 300
+              "displayAvailableBalance": 300
+              "unresolvedShortage": 0
+            "allocation":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "activeWishAllocation": 700
+            "latestLookup":
+              "status": "SUCCEEDED"
+              "observationId": "00000000-0000-4000-8000-000000000201"
+              "observedAt": "2026-08-31T15:00:00Z"
+              "lookupMethod": "USER_REQUESTED"
+              "failureCode": null
+            "representative":
+              "status": "KNOWN_SELECTED"
+              "representativeWishId": "00000000-0000-4000-8000-000000000302"
+              "historicalState": "IN_PROGRESS"
+              "numeratorAmount": 400
+              "targetAmount": 1000
+              "progressPercent": 40
+            "provenance":
+              "checkpointId": "00000000-0000-4000-8000-000000000104"
+              "checkpointRevision": "4"
+              "ledgerApplicationOrder": "0"
+              "latestObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+    "HistoricalCoverageAndKnownAbsence":
+      "summary": "개설 전·수집 전 공백과 수집 중 대표 부재"
+      "x-schema-ref": "#/components/schemas/HistoricalBalancesResponse"
+      "x-canonical-financial-input":
+        "schemaVersion": 1
+        "academyId": "00000000-0000-4000-8000-000000000001"
+        "studentId": "00000000-0000-4000-8000-000000000002"
+        "cardBalanceAccountId": "00000000-0000-4000-8000-000000000003"
+        "fromDate": "2026-09-01"
+        "toDateExclusive": "2026-09-05"
+        "granularity": "DAY"
+        "timezone": "Asia/Seoul"
+        "evaluationHorizon": "2026-09-05T00:00:00Z"
+        "accountOpenedAt": "2026-09-01T15:00:00Z"
+        "collectionStartedAt": "2026-09-03T03:00:00Z"
+        "revisionBounds":
+          "baselineCheckpointId": "00000000-0000-4000-8000-000000000101"
+          "baselineRevision": "1"
+          "baselineLedgerApplicationOrder": "0"
+          "checkpointId": "00000000-0000-4000-8000-000000000103"
+          "checkpointRevision": "3"
+          "ledgerApplicationOrder": "0"
+          "observationLookupVersion": "1"
+        "baseline":
+          "checkpointId": "00000000-0000-4000-8000-000000000101"
+          "checkpointRevision": "1"
+          "ledgerApplicationOrder": "0"
+          "appliedAt": "2026-09-03T03:00:00Z"
+          "activeWishAllocation": 700
+          "representative":
+            "status": "KNOWN_NONE"
+            "representativeWishId": null
+            "historicalState": null
+            "numeratorAmount": null
+            "targetAmount": null
+            "progressPercent": null
+          "latestObservationId": "00000000-0000-4000-8000-000000000201"
+          "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+        "checkpoints":
+          - "checkpointId": "00000000-0000-4000-8000-000000000102"
+            "checkpointRevision": "2"
+            "ledgerApplicationOrder": "0"
+            "appliedAt": "2026-09-03T03:00:01Z"
+            "activeWishAllocation": 700
+            "representative":
+              "status": "KNOWN_NONE"
+              "representativeWishId": null
+              "historicalState": null
+              "numeratorAmount": null
+              "targetAmount": null
+              "progressPercent": null
+            "latestObservationId": "00000000-0000-4000-8000-000000000201"
+            "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+          - "checkpointId": "00000000-0000-4000-8000-000000000103"
+            "checkpointRevision": "3"
+            "ledgerApplicationOrder": "0"
+            "appliedAt": "2026-09-03T16:00:00Z"
+            "activeWishAllocation": 700
+            "representative":
+              "status": "KNOWN_NONE"
+              "representativeWishId": null
+              "historicalState": null
+              "numeratorAmount": null
+              "targetAmount": null
+              "progressPercent": null
+            "latestObservationId": "00000000-0000-4000-8000-000000000201"
+            "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+        "ledgerEffects": []
+        "observations":
+          - "observationId": "00000000-0000-4000-8000-000000000201"
+            "lookupVersion": "1"
+            "observedAt": "2026-09-03T03:00:00Z"
+            "lookupMethod": "USER_REQUESTED"
+            "status": "SUCCEEDED"
+            "amount": 1000
+            "failureCode": null
+      "x-acceptance": "C02"
+      "value":
+        "schemaVersion": 1
+        "academyId": "00000000-0000-4000-8000-000000000001"
+        "studentId": "00000000-0000-4000-8000-000000000002"
+        "cardBalanceAccountId": "00000000-0000-4000-8000-000000000003"
+        "fromDate": "2026-09-01"
+        "toDateExclusive": "2026-09-05"
+        "granularity": "DAY"
+        "timezone": "Asia/Seoul"
+        "readSnapshotAt": "2026-09-05T00:00:00Z"
+        "evaluationHorizon": "2026-09-05T00:00:00Z"
+        "dataRevision": "h1.eyJhY2FkZW15SWQiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJjYXJkQmFsYW5jZUFjY291bnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMyIsImV2YWx1YXRpb25Ib3Jpem9uIjoiMjAyNi0wOS0wNVQwMDowMDowMFoiLCJyZXZpc2lvbkJvdW5kcyI6eyJiYXNlbGluZUNoZWNrcG9pbnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMSIsImJhc2VsaW5lTGVkZ2VyQXBwbGljYXRpb25PcmRlciI6IjAiLCJiYXNlbGluZVJldmlzaW9uIjoiMSIsImNoZWNrcG9pbnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMyIsImNoZWNrcG9pbnRSZXZpc2lvbiI6IjMiLCJsZWRnZXJBcHBsaWNhdGlvbk9yZGVyIjoiMCIsIm9ic2VydmF0aW9uTG9va3VwVmVyc2lvbiI6IjEifSwic2NoZW1hVmVyc2lvbiI6MSwic3R1ZGVudElkIjoiMDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAyIn0"
+        "inputDigest": "sha256:9eb8610a4b2c001ca4388f8dd5d96b64b3e0e5acc9f411ddb60c9250afc46e0a"
+        "accountOpenedAt": "2026-09-01T15:00:00Z"
+        "collectionStartedAt": "2026-09-03T03:00:00Z"
+        "revisionBounds":
+          "baselineCheckpointId": "00000000-0000-4000-8000-000000000101"
+          "baselineRevision": "1"
+          "baselineLedgerApplicationOrder": "0"
+          "checkpointId": "00000000-0000-4000-8000-000000000103"
+          "checkpointRevision": "3"
+          "ledgerApplicationOrder": "0"
+          "observationLookupVersion": "1"
+        "items":
+          - "periodStart": "2026-09-01"
+            "periodEndExclusive": "2026-09-02"
+            "periodStatus": "COMPLETED"
+            "evaluatedAt": "2026-09-01T15:00:00Z"
+            "evaluationBoundary": "BEFORE"
+            "coverage":
+              "status": "NONE"
+              "coveredFrom": null
+              "balanceKnownFrom": null
+              "allocationKnownFrom": null
+              "representativeKnownFrom": null
+            "balance":
+              "knowledge": "UNKNOWN"
+              "unknownReason": "ACCOUNT_NOT_OPEN"
+              "lastSuccessfulObservedCardBalance": null
+              "lastSuccessfulObservationId": null
+              "lastSuccessfulObservedAt": null
+              "ledgerAvailableBalance": null
+              "displayAvailableBalance": null
+              "unresolvedShortage": null
+            "allocation":
+              "knowledge": "UNKNOWN"
+              "unknownReason": "ACCOUNT_NOT_OPEN"
+              "activeWishAllocation": null
+            "latestLookup":
+              "status": "UNKNOWN"
+              "observationId": null
+              "observedAt": null
+              "lookupMethod": null
+              "failureCode": null
+            "representative":
+              "status": "ACCOUNT_NOT_OPEN"
+              "representativeWishId": null
+              "historicalState": null
+              "numeratorAmount": null
+              "targetAmount": null
+              "progressPercent": null
+            "provenance":
+              "checkpointId": null
+              "checkpointRevision": null
+              "ledgerApplicationOrder": null
+              "latestObservationId": null
+              "lastSuccessfulObservationId": null
+          - "periodStart": "2026-09-02"
+            "periodEndExclusive": "2026-09-03"
+            "periodStatus": "COMPLETED"
+            "evaluatedAt": "2026-09-02T15:00:00Z"
+            "evaluationBoundary": "BEFORE"
+            "coverage":
+              "status": "NONE"
+              "coveredFrom": null
+              "balanceKnownFrom": null
+              "allocationKnownFrom": null
+              "representativeKnownFrom": null
+            "balance":
+              "knowledge": "UNKNOWN"
+              "unknownReason": "PRE_COLLECTION_UNKNOWN"
+              "lastSuccessfulObservedCardBalance": null
+              "lastSuccessfulObservationId": null
+              "lastSuccessfulObservedAt": null
+              "ledgerAvailableBalance": null
+              "displayAvailableBalance": null
+              "unresolvedShortage": null
+            "allocation":
+              "knowledge": "UNKNOWN"
+              "unknownReason": "PRE_COLLECTION_UNKNOWN"
+              "activeWishAllocation": null
+            "latestLookup":
+              "status": "UNKNOWN"
+              "observationId": null
+              "observedAt": null
+              "lookupMethod": null
+              "failureCode": null
+            "representative":
+              "status": "PRE_COLLECTION_UNKNOWN"
+              "representativeWishId": null
+              "historicalState": null
+              "numeratorAmount": null
+              "targetAmount": null
+              "progressPercent": null
+            "provenance":
+              "checkpointId": null
+              "checkpointRevision": null
+              "ledgerApplicationOrder": null
+              "latestObservationId": null
+              "lastSuccessfulObservationId": null
+          - "periodStart": "2026-09-03"
+            "periodEndExclusive": "2026-09-04"
+            "periodStatus": "COMPLETED"
+            "evaluatedAt": "2026-09-03T15:00:00Z"
+            "evaluationBoundary": "BEFORE"
+            "coverage":
+              "status": "PARTIAL"
+              "coveredFrom": "2026-09-03T03:00:00Z"
+              "balanceKnownFrom": "2026-09-03T03:00:00Z"
+              "allocationKnownFrom": "2026-09-03T03:00:00Z"
+              "representativeKnownFrom": "2026-09-03T03:00:00Z"
+            "balance":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "lastSuccessfulObservedCardBalance": 1000
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservedAt": "2026-09-03T03:00:00Z"
+              "ledgerAvailableBalance": 300
+              "displayAvailableBalance": 300
+              "unresolvedShortage": 0
+            "allocation":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "activeWishAllocation": 700
+            "latestLookup":
+              "status": "SUCCEEDED"
+              "observationId": "00000000-0000-4000-8000-000000000201"
+              "observedAt": "2026-09-03T03:00:00Z"
+              "lookupMethod": "USER_REQUESTED"
+              "failureCode": null
+            "representative":
+              "status": "KNOWN_NONE"
+              "representativeWishId": null
+              "historicalState": null
+              "numeratorAmount": null
+              "targetAmount": null
+              "progressPercent": null
+            "provenance":
+              "checkpointId": "00000000-0000-4000-8000-000000000102"
+              "checkpointRevision": "2"
+              "ledgerApplicationOrder": "0"
+              "latestObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+          - "periodStart": "2026-09-04"
+            "periodEndExclusive": "2026-09-05"
+            "periodStatus": "COMPLETED"
+            "evaluatedAt": "2026-09-04T15:00:00Z"
+            "evaluationBoundary": "BEFORE"
+            "coverage":
+              "status": "FULL"
+              "coveredFrom": "2026-09-03T15:00:00Z"
+              "balanceKnownFrom": "2026-09-03T03:00:00Z"
+              "allocationKnownFrom": "2026-09-03T03:00:00Z"
+              "representativeKnownFrom": "2026-09-03T03:00:00Z"
+            "balance":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "lastSuccessfulObservedCardBalance": 1000
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservedAt": "2026-09-03T03:00:00Z"
+              "ledgerAvailableBalance": 300
+              "displayAvailableBalance": 300
+              "unresolvedShortage": 0
+            "allocation":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "activeWishAllocation": 700
+            "latestLookup":
+              "status": "SUCCEEDED"
+              "observationId": "00000000-0000-4000-8000-000000000201"
+              "observedAt": "2026-09-03T03:00:00Z"
+              "lookupMethod": "USER_REQUESTED"
+              "failureCode": null
+            "representative":
+              "status": "KNOWN_NONE"
+              "representativeWishId": null
+              "historicalState": null
+              "numeratorAmount": null
+              "targetAmount": null
+              "progressPercent": null
+            "provenance":
+              "checkpointId": "00000000-0000-4000-8000-000000000103"
+              "checkpointRevision": "3"
+              "ledgerApplicationOrder": "0"
+              "latestObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+    "HistoricalTransferApplicationOrder":
+      "summary": "같은 발생 시각의 이체 적용 순서와 제외 종료 경계"
+      "x-schema-ref": "#/components/schemas/HistoricalBalancesResponse"
+      "x-canonical-financial-input":
+        "schemaVersion": 1
+        "academyId": "00000000-0000-4000-8000-000000000001"
+        "studentId": "00000000-0000-4000-8000-000000000002"
+        "cardBalanceAccountId": "00000000-0000-4000-8000-000000000003"
+        "fromDate": "2026-09-01"
+        "toDateExclusive": "2026-09-03"
+        "granularity": "DAY"
+        "timezone": "Asia/Seoul"
+        "evaluationHorizon": "2026-09-03T00:00:00Z"
+        "accountOpenedAt": "2026-08-30T15:00:00Z"
+        "collectionStartedAt": "2026-08-31T15:00:00Z"
+        "revisionBounds":
+          "baselineCheckpointId": "00000000-0000-4000-8000-000000000101"
+          "baselineRevision": "1"
+          "baselineLedgerApplicationOrder": "0"
+          "checkpointId": "00000000-0000-4000-8000-000000000105"
+          "checkpointRevision": "5"
+          "ledgerApplicationOrder": "3"
+          "observationLookupVersion": "1"
+        "baseline":
+          "checkpointId": "00000000-0000-4000-8000-000000000101"
+          "checkpointRevision": "1"
+          "ledgerApplicationOrder": "0"
+          "appliedAt": "2026-08-31T15:00:00Z"
+          "activeWishAllocation": 700
+          "representative":
+            "status": "KNOWN_SELECTED"
+            "representativeWishId": "00000000-0000-4000-8000-000000000302"
+            "historicalState": "IN_PROGRESS"
+            "numeratorAmount": 400
+            "targetAmount": 1000
+            "progressPercent": 40
+          "latestObservationId": "00000000-0000-4000-8000-000000000201"
+          "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+        "checkpoints":
+          - "checkpointId": "00000000-0000-4000-8000-000000000102"
+            "checkpointRevision": "2"
+            "ledgerApplicationOrder": "0"
+            "appliedAt": "2026-08-31T15:00:01Z"
+            "activeWishAllocation": 700
+            "representative":
+              "status": "KNOWN_SELECTED"
+              "representativeWishId": "00000000-0000-4000-8000-000000000302"
+              "historicalState": "IN_PROGRESS"
+              "numeratorAmount": 400
+              "targetAmount": 1000
+              "progressPercent": 40
+            "latestObservationId": "00000000-0000-4000-8000-000000000201"
+            "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+          - "checkpointId": "00000000-0000-4000-8000-000000000105"
+            "checkpointRevision": "5"
+            "ledgerApplicationOrder": "3"
+            "appliedAt": "2026-09-01T16:00:00Z"
+            "activeWishAllocation": 700
+            "representative":
+              "status": "KNOWN_SELECTED"
+              "representativeWishId": "00000000-0000-4000-8000-000000000302"
+              "historicalState": "IN_PROGRESS"
+              "numeratorAmount": 500
+              "targetAmount": 1000
+              "progressPercent": 50
+            "latestObservationId": "00000000-0000-4000-8000-000000000201"
+            "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+        "ledgerEffects":
+          - "ledgerEventId": "00000000-0000-4000-8000-000000000401"
+            "applicationOrder": "1"
+            "appliedAt": "2026-09-01T15:00:00Z"
+            "occurredAt": "2026-09-01T01:00:00Z"
+            "type": "WISH_TRANSFER"
+            "wishEffects":
+              - "wishId": "00000000-0000-4000-8000-000000000301"
+                "deltaAmount": -100
+              - "wishId": "00000000-0000-4000-8000-000000000302"
+                "deltaAmount": 100
+          - "ledgerEventId": "00000000-0000-4000-8000-000000000402"
+            "applicationOrder": "2"
+            "appliedAt": "2026-09-01T15:00:00Z"
+            "occurredAt": "2026-09-01T01:00:00Z"
+            "type": "WISH_TRANSFER"
+            "wishEffects":
+              - "wishId": "00000000-0000-4000-8000-000000000301"
+                "deltaAmount": 50
+              - "wishId": "00000000-0000-4000-8000-000000000302"
+                "deltaAmount": -50
+          - "ledgerEventId": "00000000-0000-4000-8000-000000000403"
+            "applicationOrder": "3"
+            "appliedAt": "2026-09-01T15:00:00.001Z"
+            "occurredAt": "2026-09-01T01:00:00Z"
+            "type": "WISH_TRANSFER"
+            "wishEffects":
+              - "wishId": "00000000-0000-4000-8000-000000000301"
+                "deltaAmount": -50
+              - "wishId": "00000000-0000-4000-8000-000000000302"
+                "deltaAmount": 50
+        "observations":
+          - "observationId": "00000000-0000-4000-8000-000000000201"
+            "lookupVersion": "1"
+            "observedAt": "2026-08-31T15:00:00Z"
+            "lookupMethod": "USER_REQUESTED"
+            "status": "SUCCEEDED"
+            "amount": 1000
+            "failureCode": null
+      "x-acceptance": "C03"
+      "x-scenario": "첫 이체는 첫 버킷 제외 종료에 정확히 적용되어 첫 버킷에서 제외됩니다. 같은 occurredAt의 세 순차 이체는 적용 순번을 따르며 둘째 버킷은 A=200, B=500, 총 배정 700, 가용액 300입니다. 중간 반쪽 이체는 공개하지 않습니다."
+      "value":
+        "schemaVersion": 1
+        "academyId": "00000000-0000-4000-8000-000000000001"
+        "studentId": "00000000-0000-4000-8000-000000000002"
+        "cardBalanceAccountId": "00000000-0000-4000-8000-000000000003"
+        "fromDate": "2026-09-01"
+        "toDateExclusive": "2026-09-03"
+        "granularity": "DAY"
+        "timezone": "Asia/Seoul"
+        "readSnapshotAt": "2026-09-03T00:00:00Z"
+        "evaluationHorizon": "2026-09-03T00:00:00Z"
+        "dataRevision": "h1.eyJhY2FkZW15SWQiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJjYXJkQmFsYW5jZUFjY291bnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMyIsImV2YWx1YXRpb25Ib3Jpem9uIjoiMjAyNi0wOS0wM1QwMDowMDowMFoiLCJyZXZpc2lvbkJvdW5kcyI6eyJiYXNlbGluZUNoZWNrcG9pbnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMSIsImJhc2VsaW5lTGVkZ2VyQXBwbGljYXRpb25PcmRlciI6IjAiLCJiYXNlbGluZVJldmlzaW9uIjoiMSIsImNoZWNrcG9pbnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwNSIsImNoZWNrcG9pbnRSZXZpc2lvbiI6IjUiLCJsZWRnZXJBcHBsaWNhdGlvbk9yZGVyIjoiMyIsIm9ic2VydmF0aW9uTG9va3VwVmVyc2lvbiI6IjEifSwic2NoZW1hVmVyc2lvbiI6MSwic3R1ZGVudElkIjoiMDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAyIn0"
+        "inputDigest": "sha256:c675dafdc810c61b6625cfa2274ed695204b7a0f673299d11a678ccc9f00592a"
+        "accountOpenedAt": "2026-08-30T15:00:00Z"
+        "collectionStartedAt": "2026-08-31T15:00:00Z"
+        "revisionBounds":
+          "baselineCheckpointId": "00000000-0000-4000-8000-000000000101"
+          "baselineRevision": "1"
+          "baselineLedgerApplicationOrder": "0"
+          "checkpointId": "00000000-0000-4000-8000-000000000105"
+          "checkpointRevision": "5"
+          "ledgerApplicationOrder": "3"
+          "observationLookupVersion": "1"
+        "items":
+          - "periodStart": "2026-09-01"
+            "periodEndExclusive": "2026-09-02"
+            "periodStatus": "COMPLETED"
+            "evaluatedAt": "2026-09-01T15:00:00Z"
+            "evaluationBoundary": "BEFORE"
+            "coverage":
+              "status": "FULL"
+              "coveredFrom": "2026-08-31T15:00:00Z"
+              "balanceKnownFrom": "2026-08-31T15:00:00Z"
+              "allocationKnownFrom": "2026-08-31T15:00:00Z"
+              "representativeKnownFrom": "2026-08-31T15:00:00Z"
+            "balance":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "lastSuccessfulObservedCardBalance": 1000
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservedAt": "2026-08-31T15:00:00Z"
+              "ledgerAvailableBalance": 300
+              "displayAvailableBalance": 300
+              "unresolvedShortage": 0
+            "allocation":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "activeWishAllocation": 700
+            "latestLookup":
+              "status": "SUCCEEDED"
+              "observationId": "00000000-0000-4000-8000-000000000201"
+              "observedAt": "2026-08-31T15:00:00Z"
+              "lookupMethod": "USER_REQUESTED"
+              "failureCode": null
+            "representative":
+              "status": "KNOWN_SELECTED"
+              "representativeWishId": "00000000-0000-4000-8000-000000000302"
+              "historicalState": "IN_PROGRESS"
+              "numeratorAmount": 400
+              "targetAmount": 1000
+              "progressPercent": 40
+            "provenance":
+              "checkpointId": "00000000-0000-4000-8000-000000000102"
+              "checkpointRevision": "2"
+              "ledgerApplicationOrder": "0"
+              "latestObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+          - "periodStart": "2026-09-02"
+            "periodEndExclusive": "2026-09-03"
+            "periodStatus": "COMPLETED"
+            "evaluatedAt": "2026-09-02T15:00:00Z"
+            "evaluationBoundary": "BEFORE"
+            "coverage":
+              "status": "FULL"
+              "coveredFrom": "2026-09-01T15:00:00Z"
+              "balanceKnownFrom": "2026-08-31T15:00:00Z"
+              "allocationKnownFrom": "2026-08-31T15:00:00Z"
+              "representativeKnownFrom": "2026-08-31T15:00:00Z"
+            "balance":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "lastSuccessfulObservedCardBalance": 1000
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservedAt": "2026-08-31T15:00:00Z"
+              "ledgerAvailableBalance": 300
+              "displayAvailableBalance": 300
+              "unresolvedShortage": 0
+            "allocation":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "activeWishAllocation": 700
+            "latestLookup":
+              "status": "SUCCEEDED"
+              "observationId": "00000000-0000-4000-8000-000000000201"
+              "observedAt": "2026-08-31T15:00:00Z"
+              "lookupMethod": "USER_REQUESTED"
+              "failureCode": null
+            "representative":
+              "status": "KNOWN_SELECTED"
+              "representativeWishId": "00000000-0000-4000-8000-000000000302"
+              "historicalState": "IN_PROGRESS"
+              "numeratorAmount": 500
+              "targetAmount": 1000
+              "progressPercent": 50
+            "provenance":
+              "checkpointId": "00000000-0000-4000-8000-000000000105"
+              "checkpointRevision": "5"
+              "ledgerApplicationOrder": "3"
+              "latestObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+    "HistoricalNoSuccessfulObservation":
+      "summary": "성공 관측이 없어도 알려진 내부 배정액 0 보존"
+      "x-schema-ref": "#/components/schemas/HistoricalBalanceBucket"
+      "x-acceptance": "C04"
+      "value":
+        "periodStart": "2026-09-01"
+        "periodEndExclusive": "2026-09-02"
+        "periodStatus": "COMPLETED"
+        "evaluatedAt": "2026-09-01T15:00:00Z"
+        "evaluationBoundary": "BEFORE"
+        "coverage":
+          "status": "FULL"
+          "coveredFrom": "2026-08-31T15:00:00Z"
+          "balanceKnownFrom": null
+          "allocationKnownFrom": "2026-08-31T15:00:00Z"
+          "representativeKnownFrom": "2026-08-31T15:00:00Z"
+        "balance":
+          "knowledge": "UNKNOWN"
+          "unknownReason": "NO_SUCCESSFUL_OBSERVATION"
+          "lastSuccessfulObservedCardBalance": null
+          "lastSuccessfulObservationId": null
+          "lastSuccessfulObservedAt": null
+          "ledgerAvailableBalance": null
+          "displayAvailableBalance": null
+          "unresolvedShortage": null
+        "allocation":
+          "knowledge": "KNOWN"
+          "unknownReason": null
+          "activeWishAllocation": 0
+        "latestLookup":
+          "status": "NOT_LOOKED_UP"
+          "observationId": null
+          "observedAt": null
+          "lookupMethod": null
+          "failureCode": null
+        "representative":
+          "status": "KNOWN_NONE"
+          "representativeWishId": null
+          "historicalState": null
+          "numeratorAmount": null
+          "targetAmount": null
+          "progressPercent": null
+        "provenance":
+          "checkpointId": "00000000-0000-4000-8000-000000000102"
+          "checkpointRevision": "2"
+          "ledgerApplicationOrder": "0"
+          "latestObservationId": null
+          "lastSuccessfulObservationId": null
+    "HistoricalFirstSuccessfulZero":
+      "summary": "첫 성공 관측값 0과 실제 관측 provenance"
+      "x-schema-ref": "#/components/schemas/HistoricalBalanceBucket"
+      "x-acceptance": "C04"
+      "value":
+        "periodStart": "2026-09-01"
+        "periodEndExclusive": "2026-09-02"
+        "periodStatus": "COMPLETED"
+        "evaluatedAt": "2026-09-01T15:00:00Z"
+        "evaluationBoundary": "BEFORE"
+        "coverage":
+          "status": "FULL"
+          "coveredFrom": "2026-08-31T15:00:00Z"
+          "balanceKnownFrom": "2026-09-01T00:00:00Z"
+          "allocationKnownFrom": "2026-08-31T15:00:00Z"
+          "representativeKnownFrom": "2026-08-31T15:00:00Z"
+        "balance":
+          "knowledge": "KNOWN"
+          "unknownReason": null
+          "lastSuccessfulObservedCardBalance": 0
+          "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+          "lastSuccessfulObservedAt": "2026-09-01T00:00:00Z"
+          "ledgerAvailableBalance": 0
+          "displayAvailableBalance": 0
+          "unresolvedShortage": 0
+        "allocation":
+          "knowledge": "KNOWN"
+          "unknownReason": null
+          "activeWishAllocation": 0
+        "latestLookup":
+          "status": "SUCCEEDED"
+          "observationId": "00000000-0000-4000-8000-000000000201"
+          "observedAt": "2026-09-01T00:00:00Z"
+          "lookupMethod": "USER_REQUESTED"
+          "failureCode": null
+        "representative":
+          "status": "KNOWN_NONE"
+          "representativeWishId": null
+          "historicalState": null
+          "numeratorAmount": null
+          "targetAmount": null
+          "progressPercent": null
+        "provenance":
+          "checkpointId": "00000000-0000-4000-8000-000000000102"
+          "checkpointRevision": "2"
+          "ledgerApplicationOrder": "0"
+          "latestObservationId": "00000000-0000-4000-8000-000000000201"
+          "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+    "HistoricalFailedLookupWithShortage":
+      "summary": "후속 조회 실패에도 유지하는 성공 관측과 부족액"
+      "x-schema-ref": "#/components/schemas/HistoricalBalanceBucket"
+      "x-acceptance": "C04"
+      "value":
+        "periodStart": "2026-09-01"
+        "periodEndExclusive": "2026-09-02"
+        "periodStatus": "COMPLETED"
+        "evaluatedAt": "2026-09-01T15:00:00Z"
+        "evaluationBoundary": "BEFORE"
+        "coverage":
+          "status": "FULL"
+          "coveredFrom": "2026-08-31T15:00:00Z"
+          "balanceKnownFrom": "2026-08-31T15:00:00Z"
+          "allocationKnownFrom": "2026-08-31T15:00:00Z"
+          "representativeKnownFrom": "2026-08-31T15:00:00Z"
+        "balance":
+          "knowledge": "KNOWN"
+          "unknownReason": null
+          "lastSuccessfulObservedCardBalance": 1000
+          "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+          "lastSuccessfulObservedAt": "2026-08-31T15:00:00Z"
+          "ledgerAvailableBalance": -200
+          "displayAvailableBalance": 0
+          "unresolvedShortage": 200
+        "allocation":
+          "knowledge": "KNOWN"
+          "unknownReason": null
+          "activeWishAllocation": 1200
+        "latestLookup":
+          "status": "FAILED"
+          "observationId": "00000000-0000-4000-8000-000000000202"
+          "observedAt": "2026-09-01T03:00:00Z"
+          "lookupMethod": "AUTO_DAILY"
+          "failureCode": "PROVIDER_UNAVAILABLE"
+        "representative":
+          "status": "KNOWN_NONE"
+          "representativeWishId": null
+          "historicalState": null
+          "numeratorAmount": null
+          "targetAmount": null
+          "progressPercent": null
+        "provenance":
+          "checkpointId": "00000000-0000-4000-8000-000000000102"
+          "checkpointRevision": "2"
+          "ledgerApplicationOrder": "0"
+          "latestObservationId": "00000000-0000-4000-8000-000000000202"
+          "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+    "HistoricalFixedRevisionAcrossMidnight":
+      "summary": "자정 전 고정 revision의 잠정 버킷"
+      "x-schema-ref": "#/components/schemas/HistoricalBalancesResponse"
+      "x-canonical-financial-input":
+        "schemaVersion": 1
+        "academyId": "00000000-0000-4000-8000-000000000001"
+        "studentId": "00000000-0000-4000-8000-000000000002"
+        "cardBalanceAccountId": "00000000-0000-4000-8000-000000000003"
+        "fromDate": "2026-09-01"
+        "toDateExclusive": "2026-09-02"
+        "granularity": "DAY"
+        "timezone": "Asia/Seoul"
+        "evaluationHorizon": "2026-09-01T14:59:00Z"
+        "accountOpenedAt": "2026-08-30T15:00:00Z"
+        "collectionStartedAt": "2026-08-31T15:00:00Z"
+        "revisionBounds":
+          "baselineCheckpointId": "00000000-0000-4000-8000-000000000101"
+          "baselineRevision": "1"
+          "baselineLedgerApplicationOrder": "0"
+          "checkpointId": "00000000-0000-4000-8000-000000000102"
+          "checkpointRevision": "2"
+          "ledgerApplicationOrder": "0"
+          "observationLookupVersion": "1"
+        "baseline":
+          "checkpointId": "00000000-0000-4000-8000-000000000101"
+          "checkpointRevision": "1"
+          "ledgerApplicationOrder": "0"
+          "appliedAt": "2026-08-31T15:00:00Z"
+          "activeWishAllocation": 700
+          "representative":
+            "status": "KNOWN_SELECTED"
+            "representativeWishId": "00000000-0000-4000-8000-000000000301"
+            "historicalState": "IN_PROGRESS"
+            "numeratorAmount": 300
+            "targetAmount": 1000
+            "progressPercent": 30
+          "latestObservationId": "00000000-0000-4000-8000-000000000201"
+          "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+        "checkpoints":
+          - "checkpointId": "00000000-0000-4000-8000-000000000102"
+            "checkpointRevision": "2"
+            "ledgerApplicationOrder": "0"
+            "appliedAt": "2026-08-31T15:00:01Z"
+            "activeWishAllocation": 700
+            "representative":
+              "status": "KNOWN_SELECTED"
+              "representativeWishId": "00000000-0000-4000-8000-000000000301"
+              "historicalState": "IN_PROGRESS"
+              "numeratorAmount": 300
+              "targetAmount": 1000
+              "progressPercent": 30
+            "latestObservationId": "00000000-0000-4000-8000-000000000201"
+            "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+        "ledgerEffects": []
+        "observations":
+          - "observationId": "00000000-0000-4000-8000-000000000201"
+            "lookupVersion": "1"
+            "observedAt": "2026-08-31T15:00:00Z"
+            "lookupMethod": "USER_REQUESTED"
+            "status": "SUCCEEDED"
+            "amount": 1000
+            "failureCode": null
+      "value":
+        "schemaVersion": 1
+        "academyId": "00000000-0000-4000-8000-000000000001"
+        "studentId": "00000000-0000-4000-8000-000000000002"
+        "cardBalanceAccountId": "00000000-0000-4000-8000-000000000003"
+        "fromDate": "2026-09-01"
+        "toDateExclusive": "2026-09-02"
+        "granularity": "DAY"
+        "timezone": "Asia/Seoul"
+        "readSnapshotAt": "2026-09-01T14:59:00Z"
+        "evaluationHorizon": "2026-09-01T14:59:00Z"
+        "dataRevision": "h1.eyJhY2FkZW15SWQiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJjYXJkQmFsYW5jZUFjY291bnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMyIsImV2YWx1YXRpb25Ib3Jpem9uIjoiMjAyNi0wOS0wMVQxNDo1OTowMFoiLCJyZXZpc2lvbkJvdW5kcyI6eyJiYXNlbGluZUNoZWNrcG9pbnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMSIsImJhc2VsaW5lTGVkZ2VyQXBwbGljYXRpb25PcmRlciI6IjAiLCJiYXNlbGluZVJldmlzaW9uIjoiMSIsImNoZWNrcG9pbnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMiIsImNoZWNrcG9pbnRSZXZpc2lvbiI6IjIiLCJsZWRnZXJBcHBsaWNhdGlvbk9yZGVyIjoiMCIsIm9ic2VydmF0aW9uTG9va3VwVmVyc2lvbiI6IjEifSwic2NoZW1hVmVyc2lvbiI6MSwic3R1ZGVudElkIjoiMDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAyIn0"
+        "inputDigest": "sha256:eb5930cd6f851c27461ce6712952647456830e6194a0102417b7814ab9bffcfe"
+        "accountOpenedAt": "2026-08-30T15:00:00Z"
+        "collectionStartedAt": "2026-08-31T15:00:00Z"
+        "revisionBounds":
+          "baselineCheckpointId": "00000000-0000-4000-8000-000000000101"
+          "baselineRevision": "1"
+          "baselineLedgerApplicationOrder": "0"
+          "checkpointId": "00000000-0000-4000-8000-000000000102"
+          "checkpointRevision": "2"
+          "ledgerApplicationOrder": "0"
+          "observationLookupVersion": "1"
+        "items":
+          - "periodStart": "2026-09-01"
+            "periodEndExclusive": "2026-09-02"
+            "periodStatus": "PROVISIONAL"
+            "evaluatedAt": "2026-09-01T14:59:00Z"
+            "evaluationBoundary": "THROUGH"
+            "coverage":
+              "status": "FULL"
+              "coveredFrom": "2026-08-31T15:00:00Z"
+              "balanceKnownFrom": "2026-08-31T15:00:00Z"
+              "allocationKnownFrom": "2026-08-31T15:00:00Z"
+              "representativeKnownFrom": "2026-08-31T15:00:00Z"
+            "balance":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "lastSuccessfulObservedCardBalance": 1000
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservedAt": "2026-08-31T15:00:00Z"
+              "ledgerAvailableBalance": 300
+              "displayAvailableBalance": 300
+              "unresolvedShortage": 0
+            "allocation":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "activeWishAllocation": 700
+            "latestLookup":
+              "status": "SUCCEEDED"
+              "observationId": "00000000-0000-4000-8000-000000000201"
+              "observedAt": "2026-08-31T15:00:00Z"
+              "lookupMethod": "USER_REQUESTED"
+              "failureCode": null
+            "representative":
+              "status": "KNOWN_SELECTED"
+              "representativeWishId": "00000000-0000-4000-8000-000000000301"
+              "historicalState": "IN_PROGRESS"
+              "numeratorAmount": 300
+              "targetAmount": 1000
+              "progressPercent": 30
+            "provenance":
+              "checkpointId": "00000000-0000-4000-8000-000000000102"
+              "checkpointRevision": "2"
+              "ledgerApplicationOrder": "0"
+              "latestObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+    "HistoricalFixedRevisionAcrossMidnightReplay":
+      "summary": "자정과 후속 거래 이후에도 같은 금융 입력을 재생"
+      "x-schema-ref": "#/components/schemas/HistoricalBalancesResponse"
+      "x-canonical-financial-input":
+        "schemaVersion": 1
+        "academyId": "00000000-0000-4000-8000-000000000001"
+        "studentId": "00000000-0000-4000-8000-000000000002"
+        "cardBalanceAccountId": "00000000-0000-4000-8000-000000000003"
+        "fromDate": "2026-09-01"
+        "toDateExclusive": "2026-09-02"
+        "granularity": "DAY"
+        "timezone": "Asia/Seoul"
+        "evaluationHorizon": "2026-09-01T14:59:00Z"
+        "accountOpenedAt": "2026-08-30T15:00:00Z"
+        "collectionStartedAt": "2026-08-31T15:00:00Z"
+        "revisionBounds":
+          "baselineCheckpointId": "00000000-0000-4000-8000-000000000101"
+          "baselineRevision": "1"
+          "baselineLedgerApplicationOrder": "0"
+          "checkpointId": "00000000-0000-4000-8000-000000000102"
+          "checkpointRevision": "2"
+          "ledgerApplicationOrder": "0"
+          "observationLookupVersion": "1"
+        "baseline":
+          "checkpointId": "00000000-0000-4000-8000-000000000101"
+          "checkpointRevision": "1"
+          "ledgerApplicationOrder": "0"
+          "appliedAt": "2026-08-31T15:00:00Z"
+          "activeWishAllocation": 700
+          "representative":
+            "status": "KNOWN_SELECTED"
+            "representativeWishId": "00000000-0000-4000-8000-000000000301"
+            "historicalState": "IN_PROGRESS"
+            "numeratorAmount": 300
+            "targetAmount": 1000
+            "progressPercent": 30
+          "latestObservationId": "00000000-0000-4000-8000-000000000201"
+          "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+        "checkpoints":
+          - "checkpointId": "00000000-0000-4000-8000-000000000102"
+            "checkpointRevision": "2"
+            "ledgerApplicationOrder": "0"
+            "appliedAt": "2026-08-31T15:00:01Z"
+            "activeWishAllocation": 700
+            "representative":
+              "status": "KNOWN_SELECTED"
+              "representativeWishId": "00000000-0000-4000-8000-000000000301"
+              "historicalState": "IN_PROGRESS"
+              "numeratorAmount": 300
+              "targetAmount": 1000
+              "progressPercent": 30
+            "latestObservationId": "00000000-0000-4000-8000-000000000201"
+            "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+        "ledgerEffects": []
+        "observations":
+          - "observationId": "00000000-0000-4000-8000-000000000201"
+            "lookupVersion": "1"
+            "observedAt": "2026-08-31T15:00:00Z"
+            "lookupMethod": "USER_REQUESTED"
+            "status": "SUCCEEDED"
+            "amount": 1000
+            "failureCode": null
+      "x-scenario": "현재 목표·대표·금액·정정 변경은 고정 revision 밖입니다. 원래 evaluationHorizon과 PROVISIONAL 상태, 값, provenance, inputDigest를 유지하고 readSnapshotAt만 진전됩니다."
+      "value":
+        "schemaVersion": 1
+        "academyId": "00000000-0000-4000-8000-000000000001"
+        "studentId": "00000000-0000-4000-8000-000000000002"
+        "cardBalanceAccountId": "00000000-0000-4000-8000-000000000003"
+        "fromDate": "2026-09-01"
+        "toDateExclusive": "2026-09-02"
+        "granularity": "DAY"
+        "timezone": "Asia/Seoul"
+        "readSnapshotAt": "2026-09-02T01:00:00Z"
+        "evaluationHorizon": "2026-09-01T14:59:00Z"
+        "dataRevision": "h1.eyJhY2FkZW15SWQiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJjYXJkQmFsYW5jZUFjY291bnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMyIsImV2YWx1YXRpb25Ib3Jpem9uIjoiMjAyNi0wOS0wMVQxNDo1OTowMFoiLCJyZXZpc2lvbkJvdW5kcyI6eyJiYXNlbGluZUNoZWNrcG9pbnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMSIsImJhc2VsaW5lTGVkZ2VyQXBwbGljYXRpb25PcmRlciI6IjAiLCJiYXNlbGluZVJldmlzaW9uIjoiMSIsImNoZWNrcG9pbnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMiIsImNoZWNrcG9pbnRSZXZpc2lvbiI6IjIiLCJsZWRnZXJBcHBsaWNhdGlvbk9yZGVyIjoiMCIsIm9ic2VydmF0aW9uTG9va3VwVmVyc2lvbiI6IjEifSwic2NoZW1hVmVyc2lvbiI6MSwic3R1ZGVudElkIjoiMDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAyIn0"
+        "inputDigest": "sha256:eb5930cd6f851c27461ce6712952647456830e6194a0102417b7814ab9bffcfe"
+        "accountOpenedAt": "2026-08-30T15:00:00Z"
+        "collectionStartedAt": "2026-08-31T15:00:00Z"
+        "revisionBounds":
+          "baselineCheckpointId": "00000000-0000-4000-8000-000000000101"
+          "baselineRevision": "1"
+          "baselineLedgerApplicationOrder": "0"
+          "checkpointId": "00000000-0000-4000-8000-000000000102"
+          "checkpointRevision": "2"
+          "ledgerApplicationOrder": "0"
+          "observationLookupVersion": "1"
+        "items":
+          - "periodStart": "2026-09-01"
+            "periodEndExclusive": "2026-09-02"
+            "periodStatus": "PROVISIONAL"
+            "evaluatedAt": "2026-09-01T14:59:00Z"
+            "evaluationBoundary": "THROUGH"
+            "coverage":
+              "status": "FULL"
+              "coveredFrom": "2026-08-31T15:00:00Z"
+              "balanceKnownFrom": "2026-08-31T15:00:00Z"
+              "allocationKnownFrom": "2026-08-31T15:00:00Z"
+              "representativeKnownFrom": "2026-08-31T15:00:00Z"
+            "balance":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "lastSuccessfulObservedCardBalance": 1000
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservedAt": "2026-08-31T15:00:00Z"
+              "ledgerAvailableBalance": 300
+              "displayAvailableBalance": 300
+              "unresolvedShortage": 0
+            "allocation":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "activeWishAllocation": 700
+            "latestLookup":
+              "status": "SUCCEEDED"
+              "observationId": "00000000-0000-4000-8000-000000000201"
+              "observedAt": "2026-08-31T15:00:00Z"
+              "lookupMethod": "USER_REQUESTED"
+              "failureCode": null
+            "representative":
+              "status": "KNOWN_SELECTED"
+              "representativeWishId": "00000000-0000-4000-8000-000000000301"
+              "historicalState": "IN_PROGRESS"
+              "numeratorAmount": 300
+              "targetAmount": 1000
+              "progressPercent": 30
+            "provenance":
+              "checkpointId": "00000000-0000-4000-8000-000000000102"
+              "checkpointRevision": "2"
+              "ledgerApplicationOrder": "0"
+              "latestObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+    "HistoricalReachedAndTerminalTransition":
+      "summary": "목표 도달 100과 종결 이후 기록된 대표 부재"
+      "x-schema-ref": "#/components/schemas/HistoricalBalancesResponse"
+      "x-canonical-financial-input":
+        "schemaVersion": 1
+        "academyId": "00000000-0000-4000-8000-000000000001"
+        "studentId": "00000000-0000-4000-8000-000000000002"
+        "cardBalanceAccountId": "00000000-0000-4000-8000-000000000003"
+        "fromDate": "2026-09-01"
+        "toDateExclusive": "2026-09-04"
+        "granularity": "DAY"
+        "timezone": "Asia/Seoul"
+        "evaluationHorizon": "2026-09-04T00:00:00Z"
+        "accountOpenedAt": "2026-08-30T15:00:00Z"
+        "collectionStartedAt": "2026-08-31T15:00:00Z"
+        "revisionBounds":
+          "baselineCheckpointId": "00000000-0000-4000-8000-000000000101"
+          "baselineRevision": "1"
+          "baselineLedgerApplicationOrder": "0"
+          "checkpointId": "00000000-0000-4000-8000-000000000104"
+          "checkpointRevision": "4"
+          "ledgerApplicationOrder": "1"
+          "observationLookupVersion": "1"
+        "baseline":
+          "checkpointId": "00000000-0000-4000-8000-000000000101"
+          "checkpointRevision": "1"
+          "ledgerApplicationOrder": "0"
+          "appliedAt": "2026-08-31T15:00:00Z"
+          "activeWishAllocation": 1000
+          "representative":
+            "status": "KNOWN_SELECTED"
+            "representativeWishId": "00000000-0000-4000-8000-000000000301"
+            "historicalState": "AMOUNT_REACHED"
+            "numeratorAmount": 1000
+            "targetAmount": 1000
+            "progressPercent": 100
+          "latestObservationId": "00000000-0000-4000-8000-000000000201"
+          "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+        "checkpoints":
+          - "checkpointId": "00000000-0000-4000-8000-000000000102"
+            "checkpointRevision": "2"
+            "ledgerApplicationOrder": "0"
+            "appliedAt": "2026-08-31T15:00:01Z"
+            "activeWishAllocation": 1000
+            "representative":
+              "status": "KNOWN_SELECTED"
+              "representativeWishId": "00000000-0000-4000-8000-000000000301"
+              "historicalState": "AMOUNT_REACHED"
+              "numeratorAmount": 1000
+              "targetAmount": 1000
+              "progressPercent": 100
+            "latestObservationId": "00000000-0000-4000-8000-000000000201"
+            "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+          - "checkpointId": "00000000-0000-4000-8000-000000000103"
+            "checkpointRevision": "3"
+            "ledgerApplicationOrder": "1"
+            "appliedAt": "2026-09-01T16:00:00Z"
+            "activeWishAllocation": 0
+            "representative":
+              "status": "KNOWN_NONE"
+              "representativeWishId": null
+              "historicalState": null
+              "numeratorAmount": null
+              "targetAmount": null
+              "progressPercent": null
+            "latestObservationId": "00000000-0000-4000-8000-000000000201"
+            "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+          - "checkpointId": "00000000-0000-4000-8000-000000000104"
+            "checkpointRevision": "4"
+            "ledgerApplicationOrder": "1"
+            "appliedAt": "2026-09-02T16:00:00Z"
+            "activeWishAllocation": 0
+            "representative":
+              "status": "KNOWN_NONE"
+              "representativeWishId": null
+              "historicalState": null
+              "numeratorAmount": null
+              "targetAmount": null
+              "progressPercent": null
+            "latestObservationId": "00000000-0000-4000-8000-000000000201"
+            "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+        "ledgerEffects":
+          - "ledgerEventId": "00000000-0000-4000-8000-000000000404"
+            "applicationOrder": "1"
+            "appliedAt": "2026-09-01T15:30:00Z"
+            "occurredAt": "2026-09-01T15:30:00Z"
+            "type": "WISH_COMPLETION_RETURN"
+            "wishEffects":
+              - "wishId": "00000000-0000-4000-8000-000000000301"
+                "deltaAmount": -1000
+        "observations":
+          - "observationId": "00000000-0000-4000-8000-000000000201"
+            "lookupVersion": "1"
+            "observedAt": "2026-08-31T15:00:00Z"
+            "lookupMethod": "USER_REQUESTED"
+            "status": "SUCCEEDED"
+            "amount": 1000
+            "failureCode": null
+      "x-scenario": "목표 도달 위시는 종결 전 활성으로 100입니다. 9월 2일 종결 반환 후 KNOWN_NONE이 되며, 9월 3일 별도 0원 위시의 종결은 원장 순번을 만들지 않고 체크포인트만 진전합니다."
+      "value":
+        "schemaVersion": 1
+        "academyId": "00000000-0000-4000-8000-000000000001"
+        "studentId": "00000000-0000-4000-8000-000000000002"
+        "cardBalanceAccountId": "00000000-0000-4000-8000-000000000003"
+        "fromDate": "2026-09-01"
+        "toDateExclusive": "2026-09-04"
+        "granularity": "DAY"
+        "timezone": "Asia/Seoul"
+        "readSnapshotAt": "2026-09-04T00:00:00Z"
+        "evaluationHorizon": "2026-09-04T00:00:00Z"
+        "dataRevision": "h1.eyJhY2FkZW15SWQiOiIwMDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJjYXJkQmFsYW5jZUFjY291bnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMyIsImV2YWx1YXRpb25Ib3Jpem9uIjoiMjAyNi0wOS0wNFQwMDowMDowMFoiLCJyZXZpc2lvbkJvdW5kcyI6eyJiYXNlbGluZUNoZWNrcG9pbnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwMSIsImJhc2VsaW5lTGVkZ2VyQXBwbGljYXRpb25PcmRlciI6IjAiLCJiYXNlbGluZVJldmlzaW9uIjoiMSIsImNoZWNrcG9pbnRJZCI6IjAwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDEwNCIsImNoZWNrcG9pbnRSZXZpc2lvbiI6IjQiLCJsZWRnZXJBcHBsaWNhdGlvbk9yZGVyIjoiMSIsIm9ic2VydmF0aW9uTG9va3VwVmVyc2lvbiI6IjEifSwic2NoZW1hVmVyc2lvbiI6MSwic3R1ZGVudElkIjoiMDAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAyIn0"
+        "inputDigest": "sha256:e5845641c058d9d272c2ab6ce7f383811d325064428d64d5aa5dc650e135c8aa"
+        "accountOpenedAt": "2026-08-30T15:00:00Z"
+        "collectionStartedAt": "2026-08-31T15:00:00Z"
+        "revisionBounds":
+          "baselineCheckpointId": "00000000-0000-4000-8000-000000000101"
+          "baselineRevision": "1"
+          "baselineLedgerApplicationOrder": "0"
+          "checkpointId": "00000000-0000-4000-8000-000000000104"
+          "checkpointRevision": "4"
+          "ledgerApplicationOrder": "1"
+          "observationLookupVersion": "1"
+        "items":
+          - "periodStart": "2026-09-01"
+            "periodEndExclusive": "2026-09-02"
+            "periodStatus": "COMPLETED"
+            "evaluatedAt": "2026-09-01T15:00:00Z"
+            "evaluationBoundary": "BEFORE"
+            "coverage":
+              "status": "FULL"
+              "coveredFrom": "2026-08-31T15:00:00Z"
+              "balanceKnownFrom": "2026-08-31T15:00:00Z"
+              "allocationKnownFrom": "2026-08-31T15:00:00Z"
+              "representativeKnownFrom": "2026-08-31T15:00:00Z"
+            "balance":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "lastSuccessfulObservedCardBalance": 1000
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservedAt": "2026-08-31T15:00:00Z"
+              "ledgerAvailableBalance": 0
+              "displayAvailableBalance": 0
+              "unresolvedShortage": 0
+            "allocation":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "activeWishAllocation": 1000
+            "latestLookup":
+              "status": "SUCCEEDED"
+              "observationId": "00000000-0000-4000-8000-000000000201"
+              "observedAt": "2026-08-31T15:00:00Z"
+              "lookupMethod": "USER_REQUESTED"
+              "failureCode": null
+            "representative":
+              "status": "KNOWN_SELECTED"
+              "representativeWishId": "00000000-0000-4000-8000-000000000301"
+              "historicalState": "AMOUNT_REACHED"
+              "numeratorAmount": 1000
+              "targetAmount": 1000
+              "progressPercent": 100
+            "provenance":
+              "checkpointId": "00000000-0000-4000-8000-000000000102"
+              "checkpointRevision": "2"
+              "ledgerApplicationOrder": "0"
+              "latestObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+          - "periodStart": "2026-09-02"
+            "periodEndExclusive": "2026-09-03"
+            "periodStatus": "COMPLETED"
+            "evaluatedAt": "2026-09-02T15:00:00Z"
+            "evaluationBoundary": "BEFORE"
+            "coverage":
+              "status": "FULL"
+              "coveredFrom": "2026-09-01T15:00:00Z"
+              "balanceKnownFrom": "2026-08-31T15:00:00Z"
+              "allocationKnownFrom": "2026-08-31T15:00:00Z"
+              "representativeKnownFrom": "2026-08-31T15:00:00Z"
+            "balance":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "lastSuccessfulObservedCardBalance": 1000
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservedAt": "2026-08-31T15:00:00Z"
+              "ledgerAvailableBalance": 1000
+              "displayAvailableBalance": 1000
+              "unresolvedShortage": 0
+            "allocation":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "activeWishAllocation": 0
+            "latestLookup":
+              "status": "SUCCEEDED"
+              "observationId": "00000000-0000-4000-8000-000000000201"
+              "observedAt": "2026-08-31T15:00:00Z"
+              "lookupMethod": "USER_REQUESTED"
+              "failureCode": null
+            "representative":
+              "status": "KNOWN_NONE"
+              "representativeWishId": null
+              "historicalState": null
+              "numeratorAmount": null
+              "targetAmount": null
+              "progressPercent": null
+            "provenance":
+              "checkpointId": "00000000-0000-4000-8000-000000000103"
+              "checkpointRevision": "3"
+              "ledgerApplicationOrder": "1"
+              "latestObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+          - "periodStart": "2026-09-03"
+            "periodEndExclusive": "2026-09-04"
+            "periodStatus": "COMPLETED"
+            "evaluatedAt": "2026-09-03T15:00:00Z"
+            "evaluationBoundary": "BEFORE"
+            "coverage":
+              "status": "FULL"
+              "coveredFrom": "2026-09-02T15:00:00Z"
+              "balanceKnownFrom": "2026-08-31T15:00:00Z"
+              "allocationKnownFrom": "2026-08-31T15:00:00Z"
+              "representativeKnownFrom": "2026-08-31T15:00:00Z"
+            "balance":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "lastSuccessfulObservedCardBalance": 1000
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservedAt": "2026-08-31T15:00:00Z"
+              "ledgerAvailableBalance": 1000
+              "displayAvailableBalance": 1000
+              "unresolvedShortage": 0
+            "allocation":
+              "knowledge": "KNOWN"
+              "unknownReason": null
+              "activeWishAllocation": 0
+            "latestLookup":
+              "status": "SUCCEEDED"
+              "observationId": "00000000-0000-4000-8000-000000000201"
+              "observedAt": "2026-08-31T15:00:00Z"
+              "lookupMethod": "USER_REQUESTED"
+              "failureCode": null
+            "representative":
+              "status": "KNOWN_NONE"
+              "representativeWishId": null
+              "historicalState": null
+              "numeratorAmount": null
+              "targetAmount": null
+              "progressPercent": null
+            "provenance":
+              "checkpointId": "00000000-0000-4000-8000-000000000104"
+              "checkpointRevision": "4"
+              "ledgerApplicationOrder": "1"
+              "latestObservationId": "00000000-0000-4000-8000-000000000201"
+              "lastSuccessfulObservationId": "00000000-0000-4000-8000-000000000201"
+    "HistoricalMalformedRequest":
+      "summary": "기간 또는 재생 revision 형식이 잘못되었습니다."
+      "x-schema-ref": "#/components/schemas/ErrorEnvelope"
+      "value":
+        "error":
+          "code": "MALFORMED_REQUEST"
+          "message": "기간 또는 재생 revision 형식이 잘못되었습니다."
+          "retryable": false
+          "traceId": "historical-example-malformed_request"
+          "fieldErrors": []
+          "details": {}
+    "HistoricalAuthRequired":
+      "summary": "머신 인증이 필요합니다."
+      "x-schema-ref": "#/components/schemas/ErrorEnvelope"
+      "value":
+        "error":
+          "code": "AUTH_REQUIRED"
+          "message": "머신 인증이 필요합니다."
+          "retryable": false
+          "traceId": "historical-example-auth_required"
+          "fieldErrors": []
+          "details": {}
+    "HistoricalAccountNotFound":
+      "summary": "카드 잔액 계정을 찾을 수 없습니다."
+      "x-schema-ref": "#/components/schemas/ErrorEnvelope"
+      "value":
+        "error":
+          "code": "CARD_BALANCE_ACCOUNT_NOT_FOUND"
+          "message": "카드 잔액 계정을 찾을 수 없습니다."
+          "retryable": false
+          "traceId": "historical-example-card_balance_account_not_found"
+          "fieldErrors": []
+          "details": {}
+    "HistoricalIntegrityError":
+      "summary": "이력 데이터의 무결성을 확인할 수 없습니다."
+      "x-schema-ref": "#/components/schemas/ErrorEnvelope"
+      "value":
+        "error":
+          "code": "HISTORICAL_BALANCE_INTEGRITY_ERROR"
+          "message": "이력 데이터의 무결성을 확인할 수 없습니다."
+          "retryable": false
+          "traceId": "historical-example-historical_balance_integrity_error"
+          "fieldErrors": []
+          "details": {}
+    "HistoricalQueryUnavailable":
+      "summary": "현재 이력을 조회할 수 없습니다."
+      "x-schema-ref": "#/components/schemas/ErrorEnvelope"
+      "value":
+        "error":
+          "code": "HISTORICAL_BALANCE_QUERY_UNAVAILABLE"
+          "message": "현재 이력을 조회할 수 없습니다."
+          "retryable": true
+          "traceId": "historical-example-historical_balance_query_unavailable"
+          "fieldErrors": []
+          "details": {}
     WeeklyRecapSucceeded:
       summary: "현재 공개 가능한 성공 story가 있는 주간 리캡"
       x-schema-ref: '#/components/schemas/WeeklyRecapResponse'
@@ -4511,7 +7489,53 @@ components:
           page3AcademySuccessStories:
             messageSummary: "현재 볼 수 있는 학원 친구 1명이 목표를 이뤘어요!"
             stories:
-              - {wishId: 11111111-1111-4111-8111-111111111111, typeTitle: "꾸준형 토끼", ownerStudentId: 22222222-2222-4222-8222-222222222222, sharedCardId: 33333333-3333-4333-8333-333333333333}
+              - {wishId: 11111111-1111-4111-8111-111111111111, typeTitle: "꾸준형 토끼", ownerStudentId: 22222222-2222-4222-8222-222222222222, sharedCardId: 33333333-3333-4333-8333-333333333333, kind: COMPLETION, ownerNickname: "지우", purpose: "자전거", targetAmount: 150000, progressPercent: 100, startDate: null, targetDate: null, createdAt: '2026-08-01T00:00:00Z', completedAt: '2026-08-30T00:00:00Z', actualDurationSeconds: 2505600, photo: null, contentUpdatedAt: '2026-08-30T00:00:00Z'}
+    WeeklyRecapStoryWithoutPhoto:
+      summary: "사진과 시작일·목표일이 없는 현재 완료 story"
+      x-schema-ref: '#/components/schemas/WeeklyRecapStory'
+      value:
+        wishId: 11111111-1111-4111-8111-111111111111
+        typeTitle: null
+        ownerStudentId: 22222222-2222-4222-8222-222222222222
+        sharedCardId: 33333333-3333-4333-8333-333333333333
+        kind: COMPLETION
+        ownerNickname: "지우"
+        purpose: "자전거"
+        targetAmount: 150000
+        progressPercent: 100
+        startDate: null
+        targetDate: null
+        createdAt: '2026-08-01T00:00:00Z'
+        completedAt: '2026-09-01T00:00:00Z'
+        actualDurationSeconds: 2678400
+        photo: null
+        contentUpdatedAt: '2026-09-01T00:00:00Z'
+    WeeklyRecapStoryWithPhoto:
+      summary: "세 크기의 비공개 사진 URL을 포함한 현재 완료 story"
+      x-schema-ref: '#/components/schemas/WeeklyRecapStory'
+      value:
+        wishId: 44444444-4444-4444-8444-444444444444
+        typeTitle: "꾸준형 토끼"
+        ownerStudentId: 55555555-5555-4555-8555-555555555555
+        sharedCardId: 66666666-6666-4666-8666-666666666666
+        kind: COMPLETION
+        ownerNickname: "서연"
+        purpose: "운동화"
+        targetAmount: 100000
+        progressPercent: 100
+        startDate: '2026-08-03'
+        targetDate: '2026-09-03'
+        createdAt: '2026-08-01T00:00:00Z'
+        completedAt: '2026-09-01T00:00:00Z'
+        actualDurationSeconds: 2678400
+        photo:
+          id: 77777777-7777-4777-8777-777777777777
+          variants:
+            small: 'https://photos.example.invalid/small.jpg?signature=example'
+            medium: 'https://photos.example.invalid/medium.jpg?signature=example'
+            large: 'https://photos.example.invalid/large.jpg?signature=example'
+          expiresAt: '2026-09-07T06:15:00Z'
+        contentUpdatedAt: '2026-09-01T00:00:00Z'
     WeeklyRecapZeroActivity:
       summary: "활동이 0이어도 성공인 주간 리캡"
       x-schema-ref: '#/components/schemas/WeeklyRecapResponse'
@@ -4628,6 +7652,28 @@ components:
           traceId: example-recap-query-unavailable
           fieldErrors: []
           details: {}
+    WeeklyRecapPhotoDeliveryUnavailable:
+      summary: "주간 story 사진 URL 발급 일시 사용 불가"
+      x-schema-ref: '#/components/schemas/ErrorEnvelope'
+      value:
+        error:
+          code: PHOTO_DELIVERY_UNAVAILABLE
+          message: "사진 URL을 지금 발급할 수 없습니다. 잠시 후 다시 시도해 주세요."
+          retryable: true
+          traceId: example-weekly-recap-photo-delivery
+          fieldErrors: []
+          details: {}
+    WeeklyRecapPhotoProcessingUnavailable:
+      summary: "주간 story 첨부 사진 런타임 일시 사용 불가"
+      x-schema-ref: '#/components/schemas/ErrorEnvelope'
+      value:
+        error:
+          code: PHOTO_PROCESSING_UNAVAILABLE
+          message: "사진 처리를 지금 사용할 수 없습니다. 잠시 후 다시 시도해 주세요."
+          retryable: true
+          traceId: example-weekly-recap-photo-processing
+          fieldErrors: []
+          details: {}
     BehaviorProfileVisitRequest:
       summary: "실제 프로필 경로 진입"
       x-schema-ref: "#/components/schemas/BehaviorProfileVisitRequest"
@@ -4701,6 +7747,168 @@ components:
       summary: "기본 크기의 첫 페이지 요청"
       x-schema-ref: "#/components/schemas/FeedResultRequest"
       value: {}
+    FeedRankingRequestExample:
+      summary: "3월 추천과 전년도 12월 완료 작성자 지표"
+      x-schema-ref: "#/components/schemas/FeedRankingRequest"
+      value:
+        schema_version: 1
+        request_id: "11111111-1111-4111-8111-111111111111"
+        context_id: "22222222-2222-4222-8222-222222222222"
+        viewer_id: "33333333-3333-4333-8333-333333333333"
+        academy_id: "44444444-4444-4444-8444-444444444444"
+        recommendation_at: "2026-03-10T03:00:00Z"
+        timezone: "Asia/Seoul"
+        feature_version: "feed-features-v1"
+        classifier_version: "wish-category-v1@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        viewer_previous_month:
+          month: "2026-02"
+          coverage: "COMPLETE"
+          metrics_version: "core-metrics-v1"
+          values:
+            deposit_count: 0
+            total_savings: 0
+            avg_amount: 0
+            regularity_std: null
+            pace_bias: null
+            abandon_count: 0
+            transfer_count: 0
+            visit_count: 0
+        candidates:
+          - card_id: "55555555-5555-4555-8555-555555555555"
+            author_id: "66666666-6666-4666-8666-666666666666"
+            state: "COMPLETED"
+            created_at: "2025-11-01T00:00:00Z"
+            target_date: "2026-01-31"
+            closed_at: "2026-01-15T00:00:00Z"
+            content_updated_at: "2026-03-09T00:00:00Z"
+            category_id: "전자기기"
+            basic_similarity: 0.6666666666666666
+            title_similarity: 0.8
+            visited_author_before: true
+            visited_category_before: false
+            author_previous_month:
+              month: "2025-12"
+              coverage: "UNOBSERVED"
+              metrics_version: "core-metrics-v1"
+              values: null
+          - card_id: "77777777-7777-4777-8777-777777777777"
+            author_id: "88888888-8888-4888-8888-888888888888"
+            state: "IN_PROGRESS"
+            created_at: "2026-02-20T00:00:00Z"
+            target_date: null
+            closed_at: null
+            content_updated_at: "2026-03-08T00:00:00Z"
+            category_id: "기타"
+            basic_similarity: 0
+            title_similarity: 0
+            visited_author_before: false
+            visited_category_before: false
+            author_previous_month:
+              month: "2026-02"
+              coverage: "PARTIAL"
+              metrics_version: "core-metrics-v1"
+              values: null
+    FeedRankingResponseDifferentOrder:
+      summary: "최신순과 다른 검증된 Python 순서"
+      x-schema-ref: "#/components/schemas/FeedRankingResponse"
+      value:
+        schema_version: 1
+        request_id: "11111111-1111-4111-8111-111111111111"
+        context_id: "22222222-2222-4222-8222-222222222222"
+        input_digest: "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        model_version: "feed-rules-v1"
+        ordered_card_ids:
+          - "77777777-7777-4777-8777-777777777777"
+          - "55555555-5555-4555-8555-555555555555"
+    FeedRankingEmptyRequest:
+      summary: "후보가 없는 유효한 ranking 요청"
+      x-schema-ref: "#/components/schemas/FeedRankingRequest"
+      value:
+        schema_version: 1
+        request_id: "99999999-9999-4999-8999-999999999999"
+        context_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+        viewer_id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+        academy_id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+        recommendation_at: "2026-03-10T03:00:00Z"
+        timezone: "Asia/Seoul"
+        feature_version: "feed-features-v1"
+        classifier_version: "wish-category-v1@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        viewer_previous_month:
+          month: "2026-02"
+          coverage: "UNOBSERVED"
+          metrics_version: "core-metrics-v1"
+          values: null
+        candidates: []
+    FeedRankingEmptyResponse:
+      summary: "후보가 없는 요청의 유효한 빈 Python 결과"
+      x-schema-ref: "#/components/schemas/FeedRankingResponse"
+      value:
+        schema_version: 1
+        request_id: "99999999-9999-4999-8999-999999999999"
+        context_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+        input_digest: "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+        model_version: "feed-rules-v1"
+        ordered_card_ids: []
+    FeedVisitEvidenceCompleteEmpty:
+      summary: "위시가 없음을 증명한 COMPLETE 빈 카테고리"
+      x-schema-ref: "#/components/schemas/FeedVisitCategoryEvidence"
+      value:
+        event_id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
+        actor_id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee"
+        target_author_id: "ffffffff-ffff-4fff-8fff-ffffffffffff"
+        academy_id: "44444444-4444-4444-8444-444444444444"
+        occurred_at: "2026-03-01T00:00:00Z"
+        received_at: "2026-03-01T00:00:01Z"
+        captured_at: "2026-03-01T00:00:01.100000Z"
+        evidence_status: "COMPLETE"
+        category_ids: []
+        evidence_version: "feed-visit-evidence-v1"
+        classifier_version: "wish-category-v1@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        history_coverage_start: "2026-02-01T00:00:00Z"
+        source_versions: ["profile:41", "wish-history:87", "privacy:19"]
+        unknown_reason: null
+    FeedVisitEvidenceUnknown:
+      summary: "과거 coverage가 없어 null인 UNKNOWN 카테고리"
+      x-schema-ref: "#/components/schemas/FeedVisitCategoryEvidence"
+      value:
+        event_id: "12121212-1212-4212-8212-121212121212"
+        actor_id: "13131313-1313-4313-8313-131313131313"
+        target_author_id: "14141414-1414-4414-8414-141414141414"
+        academy_id: "44444444-4444-4444-8444-444444444444"
+        occurred_at: "2026-01-01T00:00:00Z"
+        received_at: "2026-01-01T00:00:01Z"
+        captured_at: "2026-02-01T00:00:01.100000Z"
+        evidence_status: "UNKNOWN"
+        category_ids: null
+        evidence_version: "feed-visit-evidence-v1"
+        classifier_version: "wish-category-v1@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        history_coverage_start: "2026-02-01T00:00:00Z"
+        source_versions: ["profile:legacy"]
+        unknown_reason: "BEFORE_BASELINE"
+    FeedRecommendationCursorExpired:
+      summary: "5분 경계에 도달한 v2 feed cursor"
+      x-schema-ref: "#/components/schemas/ErrorEnvelope"
+      value:
+        error:
+          code: "RECOMMENDATION_CURSOR_EXPIRED"
+          message: "피드 문맥이 만료되었습니다. 새 피드를 요청해 주세요."
+          retryable: false
+          traceId: "feed-cursor-expired-example"
+          fieldErrors:
+            - field: "cursor"
+              message: "만료된 피드 커서입니다."
+          details: {}
+    FeedRecommendationContextUnavailable:
+      summary: "안전한 feed context 저장 불가"
+      x-schema-ref: "#/components/schemas/ErrorEnvelope"
+      value:
+        error:
+          code: "RECOMMENDATION_CONTEXT_UNAVAILABLE"
+          message: "피드 문맥을 지금 저장할 수 없습니다."
+          retryable: true
+          traceId: "feed-context-unavailable-example"
+          fieldErrors: []
+          details: {}
     BehaviorSelfVisit:
       summary: "행동 수집 오류 SELF_PROFILE_VISIT"
       x-schema-ref: "#/components/schemas/ErrorEnvelope"
@@ -6036,8 +9244,8 @@ components:
       x-request-purpose-by-category:
         Cc: "계획\n메모"
         Cf: "계획​메모"
-        Zl: "계획 메모"
-        Zp: "계획 메모"
+        Zl: "계획메모"
+        Zp: "계획메모"
       value:
         error:
           code: INVALID_PURPOSE

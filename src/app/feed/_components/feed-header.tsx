@@ -9,15 +9,12 @@ interface FeedHeaderProps {
   backHref: string;
   /** 현재 정렬 기준의 이름입니다. */
   sortLabel: string;
-  /** 눌렀을 때 다른 정렬 기준으로 바뀌는 주소입니다. */
-  sortHref?: string;
 }
 
 export function FeedHeader({
   academyName,
   backHref,
   sortLabel,
-  sortHref,
 }: FeedHeaderProps) {
   return (
     <header className="bg-layer-default sticky top-0 z-20">
@@ -45,18 +42,7 @@ export function FeedHeader({
 
       <div className="border-gray-3 flex items-end justify-between border-b px-4 pt-3 pb-4">
         <h1 className="text-t1 text-fg-neutral font-bold">{academyName}</h1>
-        {sortHref ? (
-          <Link
-            href={sortHref}
-            replace
-            scroll={false}
-            className="text-gray-7 text-b4 font-medium"
-          >
-            {sortLabel}
-          </Link>
-        ) : (
-          <span className="text-gray-7 text-b4 font-medium">{sortLabel}</span>
-        )}
+        <span className="text-gray-7 text-b4 font-medium">{sortLabel}</span>
       </div>
     </header>
   );

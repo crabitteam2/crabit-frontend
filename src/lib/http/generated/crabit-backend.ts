@@ -59,6 +59,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/internal/v1/academies/{academyId}/students/{studentId}/card-balance-accounts/{accountId}/historical-balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 기간별 잔액과 당시 대표 위시 달성률 조회
+         * @description 머신 통합이 활성화된 정확한 GET에서 계정·학생·학원의 현재 자격을 확인하고 서울 달력 기간별 역사 잔액을 반환합니다. 수집 전 UNKNOWN과 기록된 대표 부재를 구분하고 당시 대표·목표·상태로 달성률을 계산합니다. 요청·시각 경계·재생·무결성의 전체 규칙은 x-historical-balance-policy를 따릅니다. 요청 본문과 중복·알 수 없는 쿼리를 받지 않습니다. 모든 선언 응답은 Cache-Control: no-store입니다.
+         */
+        get: operations["getHistoricalBalances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/academies/{academyId}/feed-events": {
         parameters: {
             query?: never;
@@ -90,7 +110,7 @@ export interface paths {
         put?: never;
         /**
          * 피드 결과 맥락 생성
-         * @description 기존 공유 카드의 현재 가시성, 사진 전달, contentUpdatedAt DESC, sharedCardId DESC 및 커서를 재사용합니다. 매 호출과 각 페이지마다 실제 전달 카드·페이지 내 위치·actor·학원·시각·LATEST를 저장한 24시간 맥락을 만듭니다. 빈 페이지도 새 맥락을 생성합니다. SharedCard와 기존 GET 계약은 바꾸지 않고 방문·노출·클릭도 생성하지 않습니다. 페이지 전달 실패를 부분 성공이나 수집 성공으로 바꾸지 않습니다. 필수값 누락, null, 알 수 없는 필드, 중복 JSON 속성, 잘못된 타입 및 알 수 없거나 반복된 쿼리는 400 MALFORMED_REQUEST입니다. 성공과 오류 모두 Cache-Control: no-store입니다.
+         * @description 기존 SharedCard와 닫힌 cursor/limit 요청을 유지하면서 x-feed-ranking-v1의 동일한 unfiltered v2 continuation을 생성합니다. 첫 페이지는 현재 eligible 후보 최대 100개를 Python에 한 번만 전달하고 고정 ranked segment 최대 20개 뒤에 전체 latest traversal을 이어 붙입니다. 실제 반환 배열에 ranked 카드가 있으면 RECOMMENDATION과 원래 request UUID/feed-rules-v1을, tail-only·disabled·empty·fallback이면 LATEST와 null metadata를 반환합니다. 성공할 때마다 실제 카드와 0-based position의 24시간 behavior result context를 별도로 저장하며 방문·노출·클릭은 생성하지 않습니다. 5분 v2 context 만료·유실은 410, 안전한 context commit 불가는 503이고 cursor를 소비하거나 자동 rerank하지 않습니다. 모든 현재 인가와 사진 전달 오류는 유지하며 성공과 오류 모두 Cache-Control: no-store입니다.
          */
         post: operations["createFeedResult"];
         delete?: never;
@@ -202,7 +222,7 @@ export interface paths {
         };
         /**
          * 학원에서 현재 볼 수 있는 공유 카드 목록 조회
-         * @description 조회할 때마다 학원 소속, 위시 visibility, 방향성 팔로우 관계, 양방향 차단을 다시 평가하고 ownerId를 생략하면 소유자 본인은 제외합니다. ownerId를 명시하면 해당 학생의 허용된 카드만 반환하며, 본인을 지정하면 현재 공개 중인 자기 카드도 조회합니다. PRIVATE 카드는 포함하지 않습니다. photoId, object key, 과거 signed URL은 이 권한 검사를 대신하지 않습니다. PRIVATE 위시는 카드를 생성하지 않으며 비공개 또는 과거 비공개 상태에서 포기한 위시는 소유자가 FOLLOWERS 또는 ACADEMY로 명시적으로 공개할 때까지 카드를 만들지 않습니다. 첨부 사진이 하나라도 있으면 모든 항목의 새 5분 비공개 URL을 발급한 뒤에만 전체 페이지를 반환하며 signing 실패는 부분 페이지나 거짓 null 없이 503입니다. 임시 정렬은 contentUpdatedAt DESC, sharedCardId DESC 순입니다. 현재는 정렬 매개변수를 지원하지 않습니다. 이 임시 정책에서는 콘텐츠 또는 게시 상태가 바뀔 때만 카드 순서가 달라집니다. 팔로우 우선순위와 임베딩 기반 추천 정렬은 향후 계약에서 정할 사항이며 이 버전에서는 사용하지 않습니다. FOLLOWERS는 선택 학원의 현재 viewer → owner 팔로우가 있어야 비소유자에게 공개됩니다. owner → viewer만으로는 공개되지 않으며 상호 팔로우는 필요하지 않습니다. 진행·완료·포기 공유 카드의 목록·상세에 동일하게 적용합니다. 기존 소유자 예외, PRIVATE·ACADEMY 의미, 현재 학원 소속, 공유 카드의 카드 계정 자격과 각 변형의 게시 규칙, 전역 양방향 차단 우선순위를 유지합니다. 현재 공개된 IN_PROGRESS 또는 AMOUNT_REACHED 위시를 포기하면 같은 sharedCardId의 PROGRESS 카드를 ABANDONMENT 카드 하나로 원자적으로 교체하고 contentUpdatedAt을 한 번만 갱신합니다. 그 포기 요청의 멱등 재생은 다른 카드나 추가 정렬 갱신을 만들지 않습니다. ABANDONMENT의 progressPercent는 포기 직전 고정된 적립액에서 한 번 계산한 공개 값이며 현재 0원 배정이나 정확한 과거 금액은 반환하지 않습니다. 포기 카드는 추천 후보나 대표 위시가 아닙니다. 언팔로우·차단 후 다음 조회부터 제한된 카드를 숨기며 직접 조회는 SHARED_CARD_NOT_FOUND 경계를 유지합니다. ownerId 조건은 SQL LIMIT와 keyset pagination 전에 적용합니다. 대상이 없거나 다른 학원·탈퇴·차단 상태이거나 현재 볼 수 있는 카드가 없으면 이유를 구별하지 않고 items: [], nextCursor: null인 빈 페이지를 반환합니다. 모든 페이지에서 현재 조회자와 소유자의 학원 소속, 열린 카드 계정 자격, 공개 상태, 삭제 여부와 양방향 차단을 다시 평가합니다. 새 불투명 커서는 기존 relationship_cursor_key의 HMAC으로 서명하고 형식 version, operation=listAcademySharedCards, viewerId, academyId, ownerId 또는 명시적 무필터 표식, 마지막 contentUpdatedAt/sharedCardId 튜플을 묶습니다. 형식 오류·변조·미지원 버전·구형 무서명 커서 또는 작업·조회자·학원·작성자·필터 유무가 다른 커서는 400 MALFORMED_REQUEST이며 cursor를 제거하고 첫 페이지부터 다시 조회해야 합니다. 같은 문맥의 유효한 cursor는 유효한 limit 변경을 허용합니다. 권한을 커서에 저장해 재사용하지 않습니다. 안정된 데이터는 중복·누락 없이 순회하지만 동시 콘텐츠 변경이나 완료·포기 카드 교체에 대한 스냅샷 보장은 없습니다. 학생 단건 조회와 목록 사이에도 원자적 스냅샷을 보장하지 않습니다.
+         * @description 조회할 때마다 학원 소속, 위시 visibility, 방향성 팔로우 관계, 양방향 차단을 다시 평가하고 ownerId를 생략하면 소유자 본인은 제외합니다. ownerId를 명시하면 해당 학생의 허용된 카드만 반환하며, 본인을 지정하면 현재 공개 중인 자기 카드도 조회합니다. PRIVATE 카드는 포함하지 않습니다. photoId, object key, 과거 signed URL은 이 권한 검사를 대신하지 않습니다. PRIVATE 위시는 카드를 생성하지 않으며 비공개 또는 과거 비공개 상태에서 포기한 위시는 소유자가 FOLLOWERS 또는 ACADEMY로 명시적으로 공개할 때까지 카드를 만들지 않습니다. 첨부 사진이 하나라도 있으면 모든 항목의 새 5분 비공개 URL을 발급한 뒤에만 전체 페이지를 반환하며 signing 실패는 부분 페이지나 거짓 null 없이 503입니다. 임시 정렬은 contentUpdatedAt DESC, sharedCardId DESC 순입니다. 현재는 정렬 매개변수를 지원하지 않습니다. 이 임시 정책에서는 콘텐츠 또는 게시 상태가 바뀔 때만 카드 순서가 달라집니다. ownerId 없는 첫 페이지는 x-feed-ranking-v1에 따라 Python 추천을 한 번만 적용한 ranked segment 뒤에 전체 latest traversal을 이어 붙이며 ownerId가 있으면 기존 latest-only 정렬을 유지합니다. FOLLOWERS는 선택 학원의 현재 viewer → owner 팔로우가 있어야 비소유자에게 공개됩니다. owner → viewer만으로는 공개되지 않으며 상호 팔로우는 필요하지 않습니다. 진행·완료·포기 공유 카드의 목록·상세에 동일하게 적용합니다. 기존 소유자 예외, PRIVATE·ACADEMY 의미, 현재 학원 소속, 공유 카드의 카드 계정 자격과 각 변형의 게시 규칙, 전역 양방향 차단 우선순위를 유지합니다. 현재 공개된 IN_PROGRESS 또는 AMOUNT_REACHED 위시를 포기하면 같은 sharedCardId의 PROGRESS 카드를 ABANDONMENT 카드 하나로 원자적으로 교체하고 contentUpdatedAt을 한 번만 갱신합니다. 그 포기 요청의 멱등 재생은 다른 카드나 추가 정렬 갱신을 만들지 않습니다. ABANDONMENT의 progressPercent는 포기 직전 고정된 적립액에서 한 번 계산한 공개 값이며 현재 0원 배정이나 정확한 과거 금액은 반환하지 않습니다. 포기 카드는 추천 후보나 대표 위시가 아닙니다. 언팔로우·차단 후 다음 조회부터 제한된 카드를 숨기며 직접 조회는 SHARED_CARD_NOT_FOUND 경계를 유지합니다. ownerId 조건은 SQL LIMIT와 keyset pagination 전에 적용합니다. 대상이 없거나 다른 학원·탈퇴·차단 상태이거나 현재 볼 수 있는 카드가 없으면 이유를 구별하지 않고 items: [], nextCursor: null인 빈 페이지를 반환합니다. 모든 페이지에서 현재 조회자와 소유자의 학원 소속, 열린 카드 계정 자격, 공개 상태, 삭제 여부와 양방향 차단을 다시 평가합니다. 새 불투명 커서는 기존 relationship_cursor_key의 HMAC으로 서명하고 형식 version, operation=listAcademySharedCards, viewerId, academyId, ownerId 또는 명시적 무필터 표식, 마지막 contentUpdatedAt/sharedCardId 튜플을 묶습니다. 형식 오류·변조·미지원 버전·구형 무서명 커서 또는 작업·조회자·학원·작성자·필터 유무가 다른 커서는 400 MALFORMED_REQUEST이며 cursor를 제거하고 첫 페이지부터 다시 조회해야 합니다. 같은 문맥의 유효한 cursor는 유효한 limit 변경을 허용합니다. 권한을 커서에 저장해 재사용하지 않습니다. 안정된 데이터는 중복·누락 없이 순회하지만 동시 콘텐츠 변경이나 완료·포기 카드 교체에 대한 스냅샷 보장은 없습니다. 학생 단건 조회와 목록 사이에도 원자적 스냅샷을 보장하지 않습니다.
          */
         get: operations["listAcademySharedCards"];
         put?: never;
@@ -451,7 +471,7 @@ export interface paths {
         };
         /**
          * 소유한 계정의 완료된 주간 리캡 조회
-         * @description 인증된 학생이 소유한 활성 카드 잔액 계정에서 Asia/Seoul 기준으로 완료된 주간 리캡 하나를 조회합니다. weekStart를 생략하면 가장 최근 완료된 월요일~다음 월요일 기간을 선택합니다. 제공한 값은 월요일이어야 하고 미래 또는 진행 중인 주, 반복되거나 알 수 없는 쿼리 매개 변수는 400 MALFORMED_REQUEST입니다. 생성 이력이 없거나 진행 중이거나 최종 실패한 경우도 200 상태 리소스로 반환하며, 활동이 0인 성공 결과는 SUCCEEDED입니다. 재생성이 진행 중이거나 실패했더라도 이전 current 성공이 있으면 그 불변 버전을 SUCCEEDED로 계속 반환합니다. 성공 story는 저장된 wishId와 typeTitle을 기반으로 매 조회마다 현재 공유 카드 공개 범위, 논리 삭제, 양방향 차단, viewer에서 owner로의 팔로우와 학원 소속을 다시 검증해 허용된 ownerStudentId와 sharedCardId만 보강합니다. 허용되지 않은 story만 생략하며 저장된 결과는 바꾸지 않습니다.
+         * @description 인증된 학생이 소유한 활성 카드 잔액 계정에서 Asia/Seoul 기준으로 완료된 주간 리캡 하나를 조회합니다. weekStart를 생략하면 가장 최근 완료된 월요일~다음 월요일 기간을 선택합니다. 제공한 값은 월요일이어야 하고 미래 또는 진행 중인 주, 반복되거나 알 수 없는 쿼리 매개 변수는 400 MALFORMED_REQUEST입니다. 생성 이력이 없거나 진행 중이거나 최종 실패한 경우도 200 상태 리소스로 반환하며, 활동이 0인 성공 결과는 SUCCEEDED입니다. 재생성이 진행 중이거나 실패했더라도 이전 current 성공이 있으면 그 불변 버전을 SUCCEEDED로 계속 반환합니다. 성공 story는 저장된 wishId와 nullable typeTitle을 보존하고 x-recap-retrieval-policy.storyAuthorization에 따라 viewer·owner의 현재 학원 소속, 열린 owner 계정, 비삭제 COMPLETED 위시와 COMPLETION 카드, 명시적 completedAt, ACADEMY·FOLLOWERS 공개, viewer에서 owner로의 팔로우, 양방향 차단과 본인 제외를 검증한 뒤 현재 완료 카드의 16개 공개 필드를 반환합니다. 후보 순서와 최대 다섯 건을 유지하며 접근 불가·잘못된 UUID 후보만 생략하고 보충 후보를 찾지 않습니다. viewer 소속이 없어도 같은 생략 경로를 사용하며 원래 빈 stories의 요약은 보존합니다. 사진 조회·서명은 권한 확인 뒤 수행하고 ATTACHED 사진이 없을 때만 photo null입니다. 기존 300초 공통 만료 URL을 새로 발급하며 사진 런타임 또는 서명 실패는 PHOTO_PROCESSING_UNAVAILABLE 또는 PHOTO_DELIVERY_UNAVAILABLE인 전체 retryable 503으로 반환합니다. 저장 view·request, 과거 계산, 다른 페이지와 생성 메타데이터는 변경하지 않으며 모든 응답은 Cache-Control no-store입니다.
          */
         get: operations["getWeeklyRecap"];
         put?: never;
@@ -1412,7 +1432,7 @@ export interface components {
         };
         Cursor: string;
         /** @enum {string} */
-        ErrorCode: "SELF_PROFILE_VISIT" | "EVENT_TIME_OUT_OF_RANGE" | "PROFILE_NOT_FOUND" | "FEED_CONTEXT_NOT_FOUND" | "FEED_CONTEXT_EXPIRED" | "EVENT_ID_CONFLICT" | "IMPRESSION_CONFLICT" | "IMPRESSION_ALREADY_EXPOSED" | "MALFORMED_REQUEST" | "EXPECTED_VERSION_REQUIRED" | "IDEMPOTENCY_KEY_REQUIRED" | "AUTH_REQUIRED" | "FORBIDDEN" | "CARD_BALANCE_ACCOUNT_NOT_FOUND" | "WISH_NOT_FOUND" | "ACADEMY_NOT_FOUND" | "SHARED_CARD_NOT_FOUND" | "VERSION_CONFLICT" | "INVALID_STATE_TRANSITION" | "BALANCE_MISMATCH_LOCKED" | "INSUFFICIENT_AVAILABLE_BALANCE" | "INSUFFICIENT_WISH_AMOUNT" | "TARGET_AMOUNT_EXCEEDED" | "CROSS_ACCOUNT_TRANSFER_FORBIDDEN" | "IDEMPOTENCY_KEY_REUSED" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_AMOUNT" | "INVALID_PURPOSE" | "INVALID_DATE_RANGE" | "INVALID_VERSION" | "BALANCE_SYNC_FAILED" | "RECAP_QUERY_UNAVAILABLE" | "STUDENT_NOT_FOUND" | "STUDENT_BLOCK_NOT_FOUND" | "SELF_RELATIONSHIP" | "STUDENT_BLOCK_ALREADY_ACTIVE" | "WISH_PHOTO_NOT_FOUND" | "WISH_PHOTO_EXPIRED" | "WISH_PHOTO_ALREADY_ATTACHED" | "PHOTO_TOO_LARGE" | "UNSUPPORTED_PHOTO_TYPE" | "INVALID_PHOTO" | "PHOTO_CONTENT_NOT_ALLOWED" | "PHOTO_UPLOAD_RATE_LIMITED" | "PHOTO_PROCESSING_UNAVAILABLE" | "PHOTO_DELIVERY_UNAVAILABLE";
+        ErrorCode: "SELF_PROFILE_VISIT" | "EVENT_TIME_OUT_OF_RANGE" | "PROFILE_NOT_FOUND" | "FEED_CONTEXT_NOT_FOUND" | "FEED_CONTEXT_EXPIRED" | "RECOMMENDATION_CURSOR_EXPIRED" | "RECOMMENDATION_CONTEXT_UNAVAILABLE" | "EVENT_ID_CONFLICT" | "IMPRESSION_CONFLICT" | "IMPRESSION_ALREADY_EXPOSED" | "MALFORMED_REQUEST" | "EXPECTED_VERSION_REQUIRED" | "IDEMPOTENCY_KEY_REQUIRED" | "AUTH_REQUIRED" | "FORBIDDEN" | "CARD_BALANCE_ACCOUNT_NOT_FOUND" | "WISH_NOT_FOUND" | "ACADEMY_NOT_FOUND" | "SHARED_CARD_NOT_FOUND" | "VERSION_CONFLICT" | "INVALID_STATE_TRANSITION" | "BALANCE_MISMATCH_LOCKED" | "INSUFFICIENT_AVAILABLE_BALANCE" | "INSUFFICIENT_WISH_AMOUNT" | "TARGET_AMOUNT_EXCEEDED" | "CROSS_ACCOUNT_TRANSFER_FORBIDDEN" | "IDEMPOTENCY_KEY_REUSED" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_AMOUNT" | "INVALID_PURPOSE" | "INVALID_DATE_RANGE" | "INVALID_VERSION" | "BALANCE_SYNC_FAILED" | "RECAP_QUERY_UNAVAILABLE" | "HISTORICAL_BALANCE_INTEGRITY_ERROR" | "HISTORICAL_BALANCE_QUERY_UNAVAILABLE" | "STUDENT_NOT_FOUND" | "STUDENT_BLOCK_NOT_FOUND" | "SELF_RELATIONSHIP" | "STUDENT_BLOCK_ALREADY_ACTIVE" | "WISH_PHOTO_NOT_FOUND" | "WISH_PHOTO_EXPIRED" | "WISH_PHOTO_ALREADY_ATTACHED" | "PHOTO_TOO_LARGE" | "UNSUPPORTED_PHOTO_TYPE" | "INVALID_PHOTO" | "PHOTO_CONTENT_NOT_ALLOWED" | "PHOTO_UPLOAD_RATE_LIMITED" | "PHOTO_PROCESSING_UNAVAILABLE" | "PHOTO_DELIVERY_UNAVAILABLE";
         ErrorEnvelope: {
             /** @description 선언된 모든 실패 JSON 응답이 공통으로 사용하는 구조화된 오류 페이로드입니다. */
             error: {
@@ -1426,11 +1446,162 @@ export interface components {
                 fieldErrors: components["schemas"]["FieldError"][];
                 /** @description 이번 오류 발생을 사람이 읽을 수 있게 설명한 문장입니다. 안정적인 기계 판정 키가 아닙니다. */
                 message: string;
-                /** @description BALANCE_SYNC_FAILED, RECAP_QUERY_UNAVAILABLE, PHOTO_UPLOAD_RATE_LIMITED, PHOTO_PROCESSING_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE일 때만 true입니다. 정의된 그 밖의 클라이언트, 인가, 리소스 없음, 유효성 검사, 상태 충돌 오류에는 false입니다. */
+                /** @description BALANCE_SYNC_FAILED, RECAP_QUERY_UNAVAILABLE, HISTORICAL_BALANCE_QUERY_UNAVAILABLE, RECOMMENDATION_CONTEXT_UNAVAILABLE, PHOTO_UPLOAD_RATE_LIMITED, PHOTO_PROCESSING_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE일 때만 true입니다. 정의된 그 밖의 클라이언트, 인가, 리소스 없음, 유효성 검사, 상태 충돌 오류에는 false입니다. */
                 retryable: boolean;
                 /** @description 진단과 지원에 사용하는 불투명한 서버 상관관계 식별자입니다. 도메인 의미는 없습니다. */
                 traceId: string;
             } & unknown;
+        };
+        /** @description 기존 raw-input classifier가 사용하는 한 학생의 완전 관측 월간 CoreMetrics입니다. */
+        FeedCoreMetrics: {
+            /** @description 안전한 정수 포기 횟수입니다. */
+            abandon_count: number;
+            /** @description 계정 전체의 유한한 부호 있는 평균 금액입니다. */
+            avg_amount: number;
+            /** @description CoreMetrics.save_count에 대응하는 안전한 정수 입금 횟수입니다. */
+            deposit_count: number;
+            /** @description 계산 가능하면 유한한 부호 있는 pace bias이고 아니면 null입니다. */
+            pace_bias: number | null;
+            /** @description 계산 가능하면 음수가 아닌 유한한 규칙성 표준편차이고 아니면 null입니다. */
+            regularity_std: number | null;
+            /** @description 계정 전체의 부호 있는 안전한 정수 저축 합계입니다. */
+            total_savings: number;
+            /** @description 안전한 정수 이체 횟수입니다. */
+            transfer_count: number;
+            /** @description 안전한 정수 방문 횟수입니다. */
+            visit_count: number;
+        };
+        /** @description Asia/Seoul 이전 calendar month의 관측 coverage와 CoreMetrics를 구분합니다. */
+        FeedMonthMetrics: {
+            /**
+             * @description COMPLETE만 실제 complete values를 가집니다.
+             * @enum {string}
+             */
+            coverage: "COMPLETE" | "PARTIAL" | "UNOBSERVED";
+            /**
+             * @description 변경되지 않은 aggregate/classifier input semantics입니다.
+             * @constant
+             */
+            metrics_version: "core-metrics-v1";
+            /** @description 검증된 YYYY-MM이며 year rollover를 포함합니다. */
+            month: string;
+            /** @description COMPLETE이면 실제 zero/null을 포함한 완전한 값이고 PARTIAL/UNOBSERVED이면 null입니다. */
+            values: components["schemas"]["FeedCoreMetrics"] | null;
+        } & unknown;
+        /** @description 현재 viewer에게 eligible한 최초 최대 100개 population의 한 ranking 후보입니다. */
+        FeedRankingCandidate: {
+            /** @description 현재 eligible한 후보 작성자 UUID입니다. */
+            author_id: components["schemas"]["Uuid"];
+            /** @description ordinary 후보는 recommendation 이전 달, completed 후보는 closedAt 이전 달입니다. */
+            author_previous_month: components["schemas"]["FeedMonthMetrics"];
+            /**
+             * @description 대표 category·amount bucket·deadline bucket에서 계산한 0, 1/3, 2/3 또는 1입니다.
+             * @enum {number}
+             */
+            basic_similarity: 0 | 0.3333333333333333 | 0.6666666666666666 | 1;
+            /** @description 후보 shared card UUID입니다. */
+            card_id: components["schemas"]["Uuid"];
+            /**
+             * @description pinned TF-IDF classifier의 정확한 11-category 결과입니다.
+             * @enum {string}
+             */
+            category_id: "패션" | "문구" | "전자기기" | "취미" | "스포츠" | "게임" | "도서" | "뷰티" | "굿즈" | "생활용품" | "기타";
+            /**
+             * Format: date-time
+             * @description COMPLETED이면 UTC 종결 시각이고 그 밖에는 null입니다.
+             */
+            closed_at: string | null;
+            /** @description stable backend candidate order와 latest keyset의 콘텐츠 시각입니다. */
+            content_updated_at: components["schemas"]["UtcInstant"];
+            /** @description basic similarity의 실제 생성 시각입니다. */
+            created_at: components["schemas"]["UtcInstant"];
+            /**
+             * @description ABANDONMENT를 제외한 ranking 후보 상태입니다.
+             * @enum {string}
+             */
+            state: "IN_PROGRESS" | "AMOUNT_REACHED" | "COMPLETED";
+            /**
+             * Format: date
+             * @description 원래 목표일 또는 no-deadline null입니다.
+             */
+            target_date: string | null;
+            /** @description pinned SequenceMatcher semantics의 유한한 [0,1] 값입니다. */
+            title_similarity: number;
+            /** @description inclusive 90-day retained author interest 여부입니다. */
+            visited_author_before: boolean;
+            /** @description immutable COMPLETE category evidence에서만 계산한 interest 여부입니다. */
+            visited_category_before: boolean;
+        } & unknown;
+        /** @description Python feed service만 사용하는 bounded·sanitized 오류 body입니다. */
+        FeedRankingError: {
+            /**
+             * @description HTTP status에 고정 매핑되는 machine code입니다.
+             * @enum {string}
+             */
+            code: "MALFORMED_REQUEST" | "AUTH_REQUIRED" | "PAYLOAD_TOO_LARGE" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_FEED_INPUT" | "RANKING_FAILED" | "RANKING_UNAVAILABLE";
+            /** @description payload value 없이 field path만 담는 bounded array입니다. */
+            field_errors: string[];
+            /** @description payload value를 포함하지 않는 정제된 메시지입니다. */
+            message: string;
+            /** @description RANKING_UNAVAILABLE에만 true입니다. foreground retry를 뜻하지 않습니다. */
+            retryable: boolean;
+            /** @description opaque diagnostic correlation ID입니다. */
+            trace_id: string;
+        } & unknown;
+        /** @description backend가 Python feed service로 보내는 exact UTF-8 digest 대상의 닫힌 schema v1 요청입니다. */
+        FeedRankingRequest: {
+            /** @description 현재 인가된 academy UUID입니다. */
+            academy_id: components["schemas"]["Uuid"];
+            /** @description stable input order의 서로 다른 eligible card 후보 0~100개입니다. */
+            candidates: components["schemas"]["FeedRankingCandidate"][];
+            /** @description pinned portable classifier version과 artifact digest입니다. */
+            classifier_version: string;
+            /** @description durable v2 feed context UUID입니다. */
+            context_id: components["schemas"]["Uuid"];
+            /**
+             * @description backend feature semantics version입니다.
+             * @constant
+             */
+            feature_version: "feed-features-v1";
+            /** @description feature window와 month를 고정하는 UTC instant입니다. */
+            recommendation_at: components["schemas"]["UtcInstant"];
+            /** @description 한 foreground attempt의 UUID입니다. */
+            request_id: components["schemas"]["Uuid"];
+            /**
+             * @description feed ranking wire schema version입니다.
+             * @constant
+             */
+            schema_version: 1;
+            /**
+             * @description calendar 경계를 해석하는 고정 시간대입니다.
+             * @constant
+             */
+            timezone: "Asia/Seoul";
+            /** @description 인증 주체에서 얻은 viewer UUID입니다. */
+            viewer_id: components["schemas"]["Uuid"];
+            /** @description recommendationAt의 이전 Seoul calendar month viewer aggregate입니다. */
+            viewer_previous_month: components["schemas"]["FeedMonthMetrics"];
+        };
+        /** @description Python이 실제 scoring/composition 뒤 반환하는 닫힌 deterministic response입니다. */
+        FeedRankingResponse: {
+            /** @description 요청의 exact context UUID입니다. */
+            context_id: components["schemas"]["Uuid"];
+            /** @description 수신한 exact UTF-8 request body bytes의 SHA-256입니다. */
+            input_digest: string;
+            /**
+             * @description 허용된 ranking/composition model version입니다.
+             * @constant
+             */
+            model_version: "feed-rules-v1";
+            /** @description 제출 후보에만 속하는 min(20,candidate count)개의 서로 다른 ordered ID입니다. */
+            ordered_card_ids: components["schemas"]["Uuid"][];
+            /** @description 요청의 exact request UUID입니다. */
+            request_id: components["schemas"]["Uuid"];
+            /**
+             * @description feed ranking response schema version입니다.
+             * @constant
+             */
+            schema_version: 1;
         };
         /** @description 기존 공유 카드 커서와 정렬을 사용합니다. actor나 추천 출처를 클라이언트가 지정할 수 없습니다. */
         FeedResultRequest: {
@@ -1442,7 +1613,7 @@ export interface components {
              */
             limit: number;
         };
-        /** @description actor, 학원, 실제 카드와 위치, 생성 시각을 저장한 페이지입니다. 맥락 생성 자체는 노출·클릭·방문을 기록하지 않습니다. */
+        /** @description actor, 학원, 실제 카드와 위치, 생성 시각을 저장한 24시간 behavior result page입니다. 별도의 5분 v2 feed context에서 ranked와 latest segment를 이어 제공하며 맥락 생성 자체는 노출·클릭·방문을 기록하지 않습니다. */
         FeedResultResponse: {
             /** @description 맥락 생성 시각입니다. */
             createdAt: components["schemas"]["UtcInstant"];
@@ -1450,20 +1621,63 @@ export interface components {
             expiresAt: components["schemas"]["UtcInstant"];
             /** @description 실제로 전달한 순서의 기존 공유 카드입니다. 배열 인덱스가 position이며 빈 페이지도 맥락을 생성합니다. */
             items: components["schemas"]["SharedCard"][];
-            /** @description 최신순 페이지에는 추천 모델 버전이 없습니다. */
-            modelVersion: null;
-            /** @description 기존 공유 카드 커서입니다. 마지막 페이지는 null입니다. */
+            /** @description RECOMMENDATION이면 feed-rules-v1이고 LATEST이면 null입니다. */
+            modelVersion: string | null;
+            /** @description 마지막 페이지는 null입니다. 기존 v1은 latest-only를 유지하고 새 v2는 원래 5분 expiry와 durable transition에 결속됩니다. */
             nextCursor: string | null;
-            /** @description 최신순 페이지에는 추천 결과 식별자가 없습니다. */
-            recommendationResultId: null;
+            /**
+             * Format: uuid
+             * @description RECOMMENDATION이면 원래 Python request UUID이고 LATEST이면 null입니다.
+             */
+            recommendationResultId: string | null;
             /** @description 서버가 생성한 결과 맥락 UUID입니다. */
             resultContextId: components["schemas"]["Uuid"];
             /**
-             * @description 서버가 결정한 최신순 정렬 출처입니다.
+             * @description 실제 반환 배열에 ranked-segment 카드가 하나라도 있으면 RECOMMENDATION, latest-only·owner-filter·disabled·empty·fallback이면 LATEST입니다. mixed page는 RECOMMENDATION입니다.
+             * @enum {string}
+             */
+            sortSource: "LATEST" | "RECOMMENDATION";
+        } & unknown;
+        /** @description 최초 PROFILE_VISIT 수락 때 고정하는 historical category evidence와 opaque provenance입니다. */
+        FeedVisitCategoryEvidence: {
+            /** @description 수락한 academy UUID입니다. */
+            academy_id: components["schemas"]["Uuid"];
+            /** @description 인증된 방문 actor UUID입니다. */
+            actor_id: components["schemas"]["Uuid"];
+            /** @description database가 생성한 evidence linearization instant입니다. */
+            captured_at: components["schemas"]["UtcInstant"];
+            /** @description COMPLETE이면 empty를 포함한 전체 category set이고 UNKNOWN이면 null입니다. */
+            category_ids: ("패션" | "문구" | "전자기기" | "취미" | "스포츠" | "게임" | "도서" | "뷰티" | "굿즈" | "생활용품" | "기타")[] | null;
+            /** @description title version을 해석한 pinned classifier artifact입니다. */
+            classifier_version: string;
+            /** @description actor scope의 기존 event UUID입니다. */
+            event_id: components["schemas"]["Uuid"];
+            /**
+             * @description complete known set과 unprovable history를 구분합니다.
+             * @enum {string}
+             */
+            evidence_status: "COMPLETE" | "UNKNOWN";
+            /**
+             * @description immutable evidence encoding version입니다.
              * @constant
              */
-            sortSource: "LATEST";
-        };
+            evidence_version: "feed-visit-evidence-v1";
+            /** @description 소급하지 않는 관련 collection baseline입니다. */
+            history_coverage_start: components["schemas"]["UtcInstant"];
+            /** @description 변경하지 않는 원래 발생 시각입니다. */
+            occurred_at: components["schemas"]["UtcInstant"];
+            /** @description 변경하지 않는 원래 수신 시각입니다. */
+            received_at: components["schemas"]["UtcInstant"];
+            /** @description category/eligibility/privacy interval을 증명하는 opaque version references입니다. */
+            source_versions: string[];
+            /** @description 현재 인가를 통과한 target author UUID입니다. */
+            target_author_id: components["schemas"]["Uuid"];
+            /**
+             * @description UNKNOWN의 닫힌 reason이고 COMPLETE이면 null입니다.
+             * @enum {string|null}
+             */
+            unknown_reason: "LEGACY" | "BEFORE_BASELINE" | "FUTURE_OCCURRED_AT" | "HISTORY_GAP" | "CLASSIFIER_UNAVAILABLE" | null;
+        } & unknown;
         FieldError: {
             /** @description 이 유효성 검사 실패와 관련된 잘못된 요청 필드, 매개 변수 또는 헤더의 이름입니다. */
             field: string;
@@ -1497,6 +1711,199 @@ export interface components {
             items: components["schemas"]["Follow"][];
             /** @description 다음 검색 결과를 이어 읽는 불투명 커서이며 더 없으면 null입니다. */
             nextCursor: string | null;
+        };
+        /** @description 종결 위시를 제외한 내부 배정액입니다. */
+        HistoricalAllocation: {
+            /** @description 그 시점의 활성 위시 배정액 합계입니다. 외부 성공 관측이 없어도 독립적으로 알려진 0 또는 양수를 유지합니다. */
+            activeWishAllocation: components["schemas"]["KrwNonNegative"] | null;
+            /**
+             * @description 내부 활성 위시 배정액의 지식 상태입니다.
+             * @enum {string}
+             */
+            knowledge: "KNOWN" | "UNKNOWN";
+            /** @description UNKNOWN의 이유이며 KNOWN이면 null입니다. */
+            unknownReason: ("ACCOUNT_NOT_OPEN" | "PRE_COLLECTION_UNKNOWN") | null;
+        } & unknown;
+        /** @description UNKNOWN을 현재 잔액이나 숫자 0으로 대신하지 않습니다. */
+        HistoricalBalance: {
+            /** @description max(ledgerAvailableBalance, 0)인 표시 가용액입니다. */
+            displayAvailableBalance: components["schemas"]["KrwNonNegative"] | null;
+            /**
+             * @description 성공한 외부 관측과 수집된 내부 이력으로 계산 가능한지 구분합니다.
+             * @enum {string}
+             */
+            knowledge: "KNOWN" | "UNKNOWN";
+            /** @description 마지막 성공 관측 identity입니다. */
+            lastSuccessfulObservationId: components["schemas"]["Uuid"] | null;
+            /** @description 마지막 성공 외부 관측의 원래 시각입니다. */
+            lastSuccessfulObservedAt: components["schemas"]["UtcInstant"] | null;
+            /** @description 마지막 성공 외부 관측값을 원래 시각과 함께 이월합니다. 사이 시점의 실시간 외부 잔액이나 최신성을 보장하지 않습니다. */
+            lastSuccessfulObservedCardBalance: components["schemas"]["KrwNonNegative"] | null;
+            /** @description 마지막 성공 관측액에서 활성 위시 배정액을 뺀 장부 가용액입니다. 음수를 보존하고 checked arithmetic을 사용합니다. */
+            ledgerAvailableBalance: components["schemas"]["KrwSigned"] | null;
+            /** @description UNKNOWN의 이유이며 KNOWN이면 null입니다. */
+            unknownReason: ("ACCOUNT_NOT_OPEN" | "PRE_COLLECTION_UNKNOWN" | "NO_SUCCESSFUL_OBSERVATION") | null;
+            /** @description max(-ledgerAvailableBalance, 0)인 미해결 부족액입니다. */
+            unresolvedShortage: components["schemas"]["KrwNonNegative"] | null;
+        } & unknown;
+        /** @description 버킷마다 한 계정의 원자적이고 일관된 이력 투영을 반환합니다. 같은 적용 시각은 account revision, 원장 효과는 application_order로 결정합니다. */
+        HistoricalBalanceBucket: {
+            /** @description 그 시점 내부 활성 위시 배정액의 지식 상태입니다. */
+            allocation: components["schemas"]["HistoricalAllocation"];
+            /** @description 마지막 성공 외부 관측과 그 시점 장부 가용액입니다. */
+            balance: components["schemas"]["HistoricalBalance"];
+            /** @description 경과한 버킷 부분의 실제 수집 범위입니다. */
+            coverage: components["schemas"]["HistoricalCoverage"];
+            /** @description COMPLETED는 자연 종료 instant, PROVISIONAL은 고정 evaluationHorizon입니다. 가짜 마지막 나노초를 만들지 않습니다. */
+            evaluatedAt: components["schemas"]["UtcInstant"];
+            /**
+             * @description BEFORE는 evaluatedAt 미만, THROUGH는 evaluatedAt 이하 체크포인트를 선택합니다.
+             * @enum {string}
+             */
+            evaluationBoundary: "BEFORE" | "THROUGH";
+            /** @description 그 시점까지 알려진 최신 실제 조회 상태입니다. */
+            latestLookup: components["schemas"]["HistoricalLookup"];
+            /** @description 일·월요일 시작 주·월초 시작 달의 자연스러운 제외 종료일입니다. */
+            periodEndExclusive: components["schemas"]["UtcDate"];
+            /** @description Asia/Seoul 달력의 포함 시작일입니다. */
+            periodStart: components["schemas"]["UtcDate"];
+            /**
+             * @description 평가 horizon까지 끝난 기간은 COMPLETED, 현재 열린 기간은 PROVISIONAL입니다.
+             * @enum {string}
+             */
+            periodStatus: "COMPLETED" | "PROVISIONAL";
+            /** @description 계산에 사용한 불변 체크포인트와 실제 관측 identity입니다. */
+            provenance: components["schemas"]["HistoricalBucketProvenance"];
+            /** @description 당시 대표 선택 및 역사 목표로 계산한 달성률입니다. */
+            representative: components["schemas"]["HistoricalRepresentative"];
+        } & (unknown & unknown & unknown & unknown & unknown & unknown & unknown & unknown & unknown & unknown);
+        /** @description 현재 접근 자격을 다시 확인한 뒤 고정 금융 입력과 평가 horizon으로 재현하는 과거 잔액 및 당시 대표 달성률입니다. */
+        HistoricalBalancesResponse: {
+            /** @description 현재 자격을 확인한 계정 학원 identity입니다. */
+            academyId: components["schemas"]["Uuid"];
+            /** @description 불변인 실제 계정 개설 시각입니다. */
+            accountOpenedAt: components["schemas"]["UtcInstant"];
+            /** @description 이력과 재생 토큰이 귀속되는 정확한 계정 identity입니다. */
+            cardBalanceAccountId: components["schemas"]["Uuid"];
+            /** @description 실제 baseline 수집 시작 시각입니다. 개설 시각으로 소급하지 않습니다. */
+            collectionStartedAt: components["schemas"]["UtcInstant"];
+            /** @description 고정 입력과 평가 horizon을 그대로 재생할 불투명 토큰입니다. */
+            dataRevision: components["schemas"]["HistoricalDataRevision"];
+            /** @description 기간 및 현재 버킷을 평가하는 고정 시각입니다. asOfRevision 재생에서도 동일합니다. */
+            evaluationHorizon: components["schemas"]["UtcInstant"];
+            /** @description 정규화된 포함 시작일입니다. */
+            fromDate: components["schemas"]["UtcDate"];
+            /**
+             * @description 요청한 달력 집계 단위입니다.
+             * @enum {string}
+             */
+            granularity: "DAY" | "WEEK" | "MONTH";
+            /** @description x-historical-balance-policy의 canonical 금융 입력 객체 UTF-8 바이트에 대한 SHA-256입니다. 읽기 시각과 현재 접근 자격은 제외합니다. */
+            inputDigest: string;
+            /** @description 요청한 모든 버킷을 periodStart 오름차순으로 반환합니다. 페이지 나눔이 없으며 최대 366개입니다. */
+            items: components["schemas"]["HistoricalBalanceBucket"][];
+            /** @description 이번 repeatable-read 데이터베이스 snapshot 시각입니다. 재생 때 달라질 수 있습니다. */
+            readSnapshotAt: components["schemas"]["UtcInstant"];
+            /** @description 이 응답과 재생에 고정한 baseline 및 선택 revision 경계입니다. */
+            revisionBounds: components["schemas"]["HistoricalRevisionBounds"];
+            /**
+             * @description 불변 역사 잔액 wire schema 버전입니다.
+             * @constant
+             */
+            schemaVersion: 1;
+            /** @description 현재 자격을 확인한 계정 소유 학생 identity입니다. */
+            studentId: components["schemas"]["Uuid"];
+            /**
+             * @description 기간 경계를 해석하는 고정 시간대입니다.
+             * @constant
+             */
+            timezone: "Asia/Seoul";
+            /** @description 정규화된 제외 종료일입니다. */
+            toDateExclusive: components["schemas"]["UtcDate"];
+        };
+        /** @description 개설·수집 전에는 모든 필드가 null입니다. 수집된 버킷은 체크포인트와 원장 적용 순번을 반드시 보존합니다. */
+        HistoricalBucketProvenance: {
+            /** @description 버킷 경계에서 선택한 실제 불변 계정 체크포인트입니다. */
+            checkpointId: components["schemas"]["Uuid"] | null;
+            /** @description 버킷의 실제 계정 revision입니다. 수집 전이면 null입니다. */
+            checkpointRevision: components["schemas"]["HistoricalCounter"] | null;
+            /** @description 실제로 알려진 마지막 성공 관측 identity입니다. */
+            lastSuccessfulObservationId: components["schemas"]["Uuid"] | null;
+            /** @description 실제로 알려진 최신 조회 관측 identity입니다. */
+            latestObservationId: components["schemas"]["Uuid"] | null;
+            /** @description 그 체크포인트의 원장 적용 순번입니다. 알려진 빈 원장 cut은 문자열 0입니다. */
+            ledgerApplicationOrder: components["schemas"]["HistoricalCounter"] | null;
+        };
+        /** @description 부호와 선행 0이 없는 십진 정수 문자열입니다. 데이터베이스 순번과 버전은 클라이언트 정밀도 손실을 막기 위해 문자열로 반환합니다. 값은 9223372036854775807 이하여야 합니다. */
+        HistoricalCounter: string & unknown;
+        /** @description 수집 coverage는 외부 잔액 관측 성공 여부 및 기간 완료 여부와 독립적입니다. */
+        HistoricalCoverage: {
+            /** @description 버킷 평가 경계까지 내부 활성 배정액 지식이 처음 성립한 시각입니다. 배정액 UNKNOWN이면 null입니다. */
+            allocationKnownFrom: components["schemas"]["UtcInstant"] | null;
+            /** @description 버킷 평가 경계까지 잔액 지식이 처음 성립한 시각입니다. 수집 시작 전으로 소급하지 않으며 잔액 UNKNOWN이면 null입니다. */
+            balanceKnownFrom: components["schemas"]["UtcInstant"] | null;
+            /** @description 버킷 안에서 실제 수집 범위가 시작한 시각입니다. NONE이면 null입니다. */
+            coveredFrom: components["schemas"]["UtcInstant"] | null;
+            /** @description 버킷 평가 경계까지 대표 선택 또는 알려진 부재를 처음 기록한 시각입니다. 대표 이력이 불명확하면 null입니다. */
+            representativeKnownFrom: components["schemas"]["UtcInstant"] | null;
+            /**
+             * @description 버킷의 경과한 부분 전체를 수집했으면 FULL, 비어 있지 않은 뒷부분만 수집했으면 PARTIAL, 수집 부분이 없으면 NONE입니다.
+             * @enum {string}
+             */
+            status: "FULL" | "PARTIAL" | "NONE";
+        } & unknown;
+        /** @description 계정 identity, 불변 baseline·선택 체크포인트 identity와 revision 경계, evaluationHorizon을 결속한 버전 1 불투명 재생 토큰입니다. 클라이언트는 해석하거나 만들지 않고 그대로 보관합니다. 계정 자격을 대신하지 않으며 서버는 참조된 저장 경계와 일치하는 canonical 인코딩만 허용합니다. */
+        HistoricalDataRevision: string;
+        /** @description 실패·동일값 성공도 원장 이벤트를 만들지 않고 체크포인트와 관측 provenance를 진전시킬 수 있습니다. */
+        HistoricalLookup: {
+            /** @description FAILED에만 있는 기존 저장 실패 코드입니다. raw provider payload를 포함하지 않습니다. */
+            failureCode: string | null;
+            /** @description 저장된 조회 방식입니다. */
+            lookupMethod: ("USER_REQUESTED" | "PRE_DEPOSIT" | "AUTO_DAILY") | null;
+            /** @description 최신 실제 조회 관측 identity입니다. */
+            observationId: components["schemas"]["Uuid"] | null;
+            /** @description 최신 실제 조회 관측 시각입니다. */
+            observedAt: components["schemas"]["UtcInstant"] | null;
+            /**
+             * @description UNKNOWN은 과거 조회 지식 부재, NOT_LOOKED_UP은 조회가 없었다는 알려진 사실입니다. 성공과 실패는 실제 저장 관측을 뜻합니다.
+             * @enum {string}
+             */
+            status: "UNKNOWN" | "NOT_LOOKED_UP" | "SUCCEEDED" | "FAILED";
+        } & (unknown & unknown & unknown);
+        /** @description AMOUNT_REACHED는 명시적 종결 전까지 활성입니다. 종결 이후 기록된 대체 대표나 KNOWN_NONE을 반환합니다. */
+        HistoricalRepresentative: {
+            /** @description 당시 IN_PROGRESS 또는 AMOUNT_REACHED 상태입니다. 완료·포기·삭제 위시는 선택 대상에서 원자적으로 제거됩니다. */
+            historicalState: ("IN_PROGRESS" | "AMOUNT_REACHED") | null;
+            /** @description 당시 대표 위시에 배정된 금액입니다. 당시 목표 금액을 넘을 수 없습니다. */
+            numeratorAmount: components["schemas"]["KrwNonNegative"] | null;
+            /** @description IN_PROGRESS는 min(99, floor(100 * numeratorAmount / targetAmount)), AMOUNT_REACHED는 100입니다. 정수 계산은 overflow 없이 수행합니다. */
+            progressPercent: number | null;
+            /** @description 당시 선택된 활성 위시 identity입니다. */
+            representativeWishId: components["schemas"]["Uuid"] | null;
+            /**
+             * @description 계정 개설 전, 수집 전 불명, 기록된 대표 부재, 기록된 대표 선택을 구분합니다.
+             * @enum {string}
+             */
+            status: "ACCOUNT_NOT_OPEN" | "PRE_COLLECTION_UNKNOWN" | "KNOWN_NONE" | "KNOWN_SELECTED";
+            /** @description 당시의 양수 목표 금액입니다. 현재 목표나 대표 위시로 과거를 대체하지 않습니다. */
+            targetAmount: components["schemas"]["KrwPositive"] | null;
+        } & (unknown & unknown & unknown);
+        /** @description 재생에 고정되는 baseline 및 선택 체크포인트 경계입니다. 토큰의 경계는 참조한 불변 저장 행과 일치해야 합니다. */
+        HistoricalRevisionBounds: {
+            /** @description 수집 시작 시 생성한 불변 baseline 체크포인트입니다. */
+            baselineCheckpointId: components["schemas"]["Uuid"];
+            /** @description baseline에서 확인된 최대 원장 적용 순번입니다. 0은 원장 행이 없음을 뜻합니다. */
+            baselineLedgerApplicationOrder: components["schemas"]["HistoricalCounter"];
+            /** @description 1 이상 9223372036854775807 이하인 계정 체크포인트 revision입니다. */
+            baselineRevision: components["schemas"]["HistoricalCounter"];
+            /** @description 일관된 조회에서 선택한 최대 불변 계정 체크포인트입니다. */
+            checkpointId: components["schemas"]["Uuid"];
+            /** @description 1 이상 9223372036854775807 이하인 계정 체크포인트 revision입니다. */
+            checkpointRevision: components["schemas"]["HistoricalCounter"];
+            /** @description 선택 체크포인트가 허용하는 최대 원장 적용 순번입니다. 0은 원장 행이 없음을 뜻합니다. */
+            ledgerApplicationOrder: components["schemas"]["HistoricalCounter"];
+            /** @description 선택 체크포인트의 관측 lookup 버전입니다. 명시적으로 연결된 legacy 관측에 버전이 없으면 null입니다. */
+            observationLookupVersion: components["schemas"]["HistoricalCounter"] | null;
         };
         KnownCardBalanceAccount: {
             /** @description 이 카드 잔액 계정이 속한 학원의 UUID입니다. */
@@ -1893,10 +2300,49 @@ export interface components {
             period: components["schemas"]["WeeklyRecapViewPeriod"];
         };
         WeeklyRecapStory: {
+            /**
+             * Format: int64
+             * @description max(0, Duration.between(createdAt, completedAt).getSeconds())이며 달력 날짜와 독립적입니다.
+             */
+            actualDurationSeconds: number;
+            /** @description 명시적 위시 완료 시각이며 RFC 3339 UTC Z 형식입니다. */
+            completedAt: components["schemas"]["UtcInstant"];
+            /** @description 현재 완료 카드 내용·공개 변경 시각이며 조회 보강은 이 값이나 story 순서를 바꾸지 않습니다. */
+            contentUpdatedAt: components["schemas"]["UtcInstant"];
+            /** @description 위시 생성 시각이며 RFC 3339 UTC Z 형식입니다. */
+            createdAt: components["schemas"]["UtcInstant"];
+            /**
+             * @description 현재 공개 가능한 명시적 완료 카드입니다.
+             * @constant
+             */
+            kind: "COMPLETION";
+            /** @description CompletionSharedCard.ownerNickname과 같은 현재 소유자 표시 닉네임입니다. */
+            ownerNickname: string;
             /** @description 현재 조회 시점에 허용된 공유 카드 소유 학생 UUID입니다. */
             ownerStudentId: components["schemas"]["Uuid"];
+            /** @description 권한 확인 뒤 현재 ATTACHED WishPhoto의 비공개 URL을 새로 발급합니다. ATTACHED 사진이 없을 때만 null이며 런타임·서명 실패는 전체 조회를 실패시킵니다. */
+            photo: components["schemas"]["WishPhoto"] | null;
+            /**
+             * @description 완료 카드 달성률은 항상 100입니다.
+             * @constant
+             */
+            progressPercent: 100;
+            /** @description 현재 공개된 정규화 위시 목적입니다. */
+            purpose: components["schemas"]["Purpose"];
             /** @description 현재 조회 시점에 허용된 공유 카드 프로젝션 UUID입니다. */
             sharedCardId: components["schemas"]["Uuid"];
+            /**
+             * Format: date
+             * @description 저장된 LocalDate의 YYYY-MM-DD 또는 null을 추론이나 시간대 변환 없이 보존합니다.
+             */
+            startDate: string | null;
+            /** @description 공개된 양의 정수 원화 목표 금액입니다. */
+            targetAmount: components["schemas"]["KrwPositive"];
+            /**
+             * Format: date
+             * @description 저장된 LocalDate의 YYYY-MM-DD 또는 null을 추론이나 시간대 변환 없이 보존합니다.
+             */
+            targetDate: string | null;
             /** @description 작성자의 완료 달 이전 달 집계로 계산해 저장한 유형 제목이며 계산할 수 없으면 null입니다. */
             typeTitle: string | null;
             /** @description 저장된 성공 story 후보가 가리키는 위시 UUID입니다. */
@@ -2365,6 +2811,16 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /** @description RECOMMENDATION_CONTEXT_UNAVAILABLE 또는 PHOTO_DELIVERY_UNAVAILABLE — durable feed context 생성·전이를 안전하게 commit할 수 없거나 현재 허용된 카드의 새 비공개 사진 URL 전체를 발급할 수 없습니다. 부분 페이지를 반환하거나 입력 cursor를 소비하지 않으며 latest fallback으로 바꾸지 않습니다. */
+        FeedPageUnavailable: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
         /** @description FORBIDDEN — 인증 주체가 학생이 아닙니다. */
         Forbidden: {
             headers: {
@@ -2529,6 +2985,16 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /** @description RECOMMENDATION_CURSOR_EXPIRED — 올바르게 인증된 v2 feed cursor가 원래 5분 expiry에 도달했거나 필수 durable context를 잃었습니다. 부분 페이지, 자동 restart 또는 rerank 없이 새 cursor 없는 요청이 필요합니다. */
+        RecommendationCursorExpired: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
         /** @description INVALID_STATE_TRANSITION — 지정한 동일 계정 위시가 COMPLETED 또는 ABANDONED 상태이므로 대표 위시로 선택할 수 없습니다. */
         RepresentativeWishSelectionConflict: {
             headers: {
@@ -2670,6 +3136,16 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /** @description RECAP_QUERY_UNAVAILABLE는 저장 조회·트랜잭션 실패, PHOTO_DELIVERY_UNAVAILABLE는 현재 첨부 사진 URL·variant·서명 실패, PHOTO_PROCESSING_UNAVAILABLE는 첨부 사진 런타임 비활성입니다. 모두 retryable 503이며 전체 주간 조회가 실패합니다. 사진 오류를 photo null, story 생략 또는 부분 200으로 변환하지 않습니다. */
+        WeeklyRecapQueryUnavailable: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
         /** @description CARD_BALANCE_ACCOUNT_NOT_FOUND, WISH_NOT_FOUND 또는 WISH_PHOTO_NOT_FOUND — 계정·위시·후보 사진의 부재나 비소유 상태를 리소스별 not-found로 숨깁니다. */
         WishAccountOrPhotoNotFound: {
             headers: {
@@ -2750,6 +3226,8 @@ export interface components {
         CardBalanceAccountId: components["schemas"]["Uuid"];
         /** @description 이 API 작업의 고정 정렬 순서에 바인딩된 불투명 커서입니다. */
         Cursor: components["schemas"]["Cursor"];
+        /** @description 이력과 재생 토큰이 귀속되는 정확한 카드 잔액 계정 UUID입니다. */
+        HistoricalAccountId: components["schemas"]["Uuid"];
         /** @description 학생별 영구 네임스페이스입니다. 동일한 작업, 대상, 정규화된 요청에만 키를 재사용할 수 있습니다. */
         IdempotencyKey: string;
         /** @description 본문 없는 DELETE의 동시성 검사를 위한 정확한 음수 아닌 정수 위시 버전입니다. 값이 없거나 정수가 아니면 400, 디코딩된 값이 음수이면 422 INVALID_VERSION, 음수가 아니지만 최신 버전과 다르면 409 VERSION_CONFLICT를 반환합니다. */
@@ -2967,6 +3445,94 @@ export interface operations {
             };
         };
     };
+    getHistoricalBalances: {
+        parameters: {
+            query: {
+                /** @description 이 계정의 이전 응답 dataRevision을 그대로 재생합니다. 생략하면 최신 일관된 snapshot을 선택합니다. */
+                asOfRevision?: components["schemas"]["HistoricalDataRevision"];
+                /** @description 서울 달력의 포함 시작일입니다. YYYY-MM-DD를 엄격히 파싱합니다. WEEK는 월요일, MONTH는 1일이어야 합니다. */
+                fromDate: components["schemas"]["UtcDate"];
+                /** @description 대소문자를 구분하는 서울 달력 단위입니다. */
+                granularity: "DAY" | "WEEK" | "MONTH";
+                /** @description 서울 달력의 제외 종료일입니다. 시작보다 크며 최대 366일입니다. WEEK는 월요일, MONTH는 1일이어야 합니다. */
+                toDateExclusive: components["schemas"]["UtcDate"];
+            };
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description 이력과 재생 토큰이 귀속되는 정확한 카드 잔액 계정 UUID입니다. */
+                accountId: components["parameters"]["HistoricalAccountId"];
+                /** @description 계정 소유 학생의 정확한 UUID입니다. */
+                studentId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description UNKNOWN을 포함하여 요청한 모든 버킷을 일관되게 반환합니다. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoricalBalancesResponse"];
+                };
+            };
+            /** @description 날짜·기간·본문·쿼리 또는 재생 revision이 잘못되었습니다. */
+            400: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 머신 Bearer 인증이 필요합니다. */
+            401: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description Bearer 인증을 요구합니다. */
+                    "WWW-Authenticate": "Bearer";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 현재 조회 자격을 충족하는 정확한 계정이 없습니다. */
+            404: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 수집된 필수 이력의 무결성을 확인할 수 없습니다. */
+            500: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 현재 데이터베이스 이력 조회를 완료할 수 없습니다. */
+            503: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     createFeedEvent: {
         parameters: {
             query?: never;
@@ -3145,6 +3711,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
+            410: components["responses"]["RecommendationCursorExpired"];
             /** @description 요청 실패: UNSUPPORTED_MEDIA_TYPE */
             415: {
                 headers: {
@@ -3155,16 +3722,7 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            /** @description 요청 실패: PHOTO_DELIVERY_UNAVAILABLE */
-            503: {
-                headers: {
-                    "Cache-Control": components["headers"]["CacheControlNoStore"];
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ErrorEnvelope"];
-                };
-            };
+            503: components["responses"]["FeedPageUnavailable"];
         };
     };
     listAcademyFollowers: {
@@ -3417,7 +3975,8 @@ export interface operations {
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["AcademyNotFound"];
-            503: components["responses"]["PhotoDeliveryUnavailable"];
+            410: components["responses"]["RecommendationCursorExpired"];
+            503: components["responses"]["FeedPageUnavailable"];
         };
     };
     getAcademySharedCard: {
@@ -3735,7 +4294,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 선택한 완료 주의 현재 공개 리캡 상태와 불변 결과입니다. */
+            /** @description 선택한 완료 주의 공개 상태와 저장된 결과이며 성공 story만 현재 공개 가능한 완료 카드 상세로 보강합니다. */
             200: {
                 headers: {
                     "Cache-Control": components["headers"]["CacheControlNoStore"];
@@ -3749,7 +4308,7 @@ export interface operations {
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["CardBalanceAccountNotFound"];
-            503: components["responses"]["RecapQueryUnavailable"];
+            503: components["responses"]["WeeklyRecapQueryUnavailable"];
         };
     };
     getRepresentativeWish: {
