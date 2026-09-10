@@ -15,7 +15,7 @@ export function WeeklyRecapSavings({
 }: WeeklyRecapSavingsProps) {
   return (
     <>
-      <p className="text-fg-neutral px-4 pt-5 pb-[100px] text-[20px] leading-7 font-medium tracking-[-0.3px] whitespace-pre-line">
+      <p className="text-fg-neutral px-4 pt-5 pb-[100px] text-[20px] leading-7 font-medium tracking-[-0.3px] break-keep whitespace-pre-line">
         {headline}
       </p>
 

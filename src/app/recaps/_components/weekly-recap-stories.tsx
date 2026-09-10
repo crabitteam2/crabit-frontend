@@ -29,7 +29,7 @@ interface WeeklyRecapStoriesProps {
   feedHref: string;
   /** 완주 소식을 알리는 문구입니다. */
   headline: string;
-  /** 누가 무엇을 완주했는지 알리는 문구입니다. */
+  /** 누가 무엇을 완주했는지 알리는 문구이며, 없으면 빈 문자열입니다. */
   description: string;
   /** 완주한 위시 카드입니다. */
   cards: readonly WeeklyRecapStoryCard[];
@@ -45,12 +45,14 @@ export function WeeklyRecapStories({
   return (
     <>
       <div className="flex flex-col gap-4 px-4 pt-5 pb-[45px] tracking-[-0.3px]">
-        <p className="text-fg-neutral text-[20px] leading-7 font-medium whitespace-pre-line">
+        <p className="text-fg-neutral text-[20px] leading-7 font-medium break-keep whitespace-pre-line">
           {headline}
         </p>
-        <p className="text-gray-7 text-[13px] leading-[19px] whitespace-pre-line">
-          {description}
-        </p>
+        {description === "" ? null : (
+          <p className="text-gray-7 text-[13px] leading-[19px] break-keep whitespace-pre-line">
+            {description}
+          </p>
+        )}
       </div>
 
       <div className="flex flex-col gap-4 px-4 pb-10">
@@ -84,7 +86,7 @@ export function WeeklyRecapStories({
         ))}
       </div>
 
-      <div className="mt-auto px-4 pb-[calc(55px+env(safe-area-inset-bottom))]">
+      <div className="mt-auto px-4 pt-5 pb-[calc(55px+env(safe-area-inset-bottom))]">
         <Link
           href={feedHref}
           className="bg-brand-solid text-fg-contrast flex h-14 items-center justify-center rounded-xl px-6 text-[15px] leading-5 font-semibold tracking-[-0.3px]"

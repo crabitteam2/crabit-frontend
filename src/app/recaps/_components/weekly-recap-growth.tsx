@@ -4,7 +4,7 @@ import growthCharacter from "@/../public/images/recaps/growth-character.png";
 interface WeeklyRecapGrowthProps {
   /** 조회수 성장을 알리는 문구입니다. */
   headline: string;
-  /** 조회수를 풀어서 설명하는 문구입니다. */
+  /** 조회수를 풀어서 설명하는 문구이며, 없으면 빈 문자열입니다. */
   description: string;
   /** 카드 제목에 넣을 닉네임입니다. */
   nickname: string;
@@ -25,12 +25,14 @@ export function WeeklyRecapGrowth({
   return (
     <>
       <div className="flex flex-col gap-4 px-4 pt-5 pb-[45px] tracking-[-0.3px]">
-        <p className="text-fg-neutral text-[20px] leading-7 font-medium whitespace-pre-line">
+        <p className="text-fg-neutral text-[20px] leading-7 font-medium break-keep whitespace-pre-line">
           {headline}
         </p>
-        <p className="text-gray-7 text-[13px] leading-[19px] whitespace-pre-line">
-          {description}
-        </p>
+        {description === "" ? null : (
+          <p className="text-gray-7 text-[13px] leading-[19px] break-keep whitespace-pre-line">
+            {description}
+          </p>
+        )}
       </div>
 
       <div className="px-4 pb-[60px]">
