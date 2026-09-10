@@ -1,112 +1,16 @@
 export interface paths {
-    "/v1/academies/{academyId}/friend-requests": {
+    "/internal/v1/academies/{academyId}/behavior-metrics/feed": {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                academyId: components["parameters"]["AcademyId"];
-            };
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * 친구 요청 보내기
-         * @description 현재 인증 주체의 subjectId를 발신자로 하여 같은 학원의 현재 학생에게 PENDING 요청 하나를 생성합니다. 클라이언트 입력으로 발신자를 지정할 수 없습니다. 정규 학생 쌍 잠금 아래에서 어느 방향이든 활성 차단이 있으면 STUDENT_NOT_FOUND로 숨깁니다. 자기 자신, 현재 친구 관계, 같은 방향의 PENDING 요청, 반대 방향의 PENDING 요청은 각각 문서화된 충돌을 반환합니다. Idempotency-Key는 받지 않으며 재요청도 현재 상태를 기준으로 평가합니다.
-         */
-        post: operations["sendFriendRequest"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/academies/{academyId}/friend-requests/{friendRequestId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                academyId: components["parameters"]["AcademyId"];
-                /** @description 친구 요청의 UUID입니다. 승인되지 않았거나 잘못된 역할 식별자는 FRIEND_REQUEST_NOT_FOUND로 정규화됩니다. */
-                friendRequestId: components["parameters"]["FriendRequestId"];
-            };
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        /**
-         * 보낸 대기 중 친구 요청 취소
-         * @description 보낸 사람으로서 인증된 학생이 소유한 PENDING 요청만 취소합니다. 보낸 사람이 소유하지 않거나 승인되지 않은 학원 외부 요청은 FRIEND_REQUEST_NOT_FOUND로 숨겨집니다. 처리된 소유 요청은 FRIEND_REQUEST_NOT_PENDING를 반환합니다.
-         */
-        delete: operations["cancelFriendRequest"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/academies/{academyId}/friend-requests/{friendRequestId}/acceptance": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                academyId: components["parameters"]["AcademyId"];
-                /** @description 친구 요청의 UUID입니다. 승인되지 않았거나 잘못된 역할 식별자는 FRIEND_REQUEST_NOT_FOUND로 정규화됩니다. */
-                friendRequestId: components["parameters"]["FriendRequestId"];
-            };
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * 받은 대기 중 친구 요청 수락
-         * @description 인증된 학생이 수신자로 소유한 PENDING 요청만 수락합니다. 정규 학생 쌍 잠금 아래에서 현재 학원 소속, 정확한 요청, 현재 친구 관계가 없음, 양방향 차단이 없음을 다시 확인합니다. 한 트랜잭션에서 요청을 ACCEPTED로 바꾸고 현재 친구 관계를 정확히 하나 생성하거나 재개합니다. 동시성 경쟁에서 실패한 요청은 문서화된 충돌을 반환합니다.
-         */
-        post: operations["acceptFriendRequest"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/academies/{academyId}/friend-requests/{friendRequestId}/rejection": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                academyId: components["parameters"]["AcademyId"];
-                /** @description 친구 요청의 UUID입니다. 승인되지 않았거나 잘못된 역할 식별자는 FRIEND_REQUEST_NOT_FOUND로 정규화됩니다. */
-                friendRequestId: components["parameters"]["FriendRequestId"];
-            };
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * 받은 대기 중 친구 요청 거절
-         * @description 인증된 학생이 수신자로 소유한 PENDING 요청만 거부합니다. 수신자 소유가 아닌 학원 외부 요청 또는 승인되지 않은 요청은 FRIEND_REQUEST_NOT_FOUND로 숨겨집니다. 처리된 소유 요청은 FRIEND_REQUEST_NOT_PENDING를 반환합니다.
-         */
-        post: operations["rejectFriendRequest"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/academies/{academyId}/friend-requests/received": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                academyId: components["parameters"]["AcademyId"];
-            };
+            path?: never;
             cookie?: never;
         };
         /**
-         * 받은 대기 중 친구 요청 목록 조회
-         * @description 인증된 학생이 수신자인 현재 PENDING 요청만 반환합니다. 결과는 createdAt DESC, friendRequestId DESC 순으로 정렬합니다. 불투명 커서는 이 작업, 인증된 학생, 학원, 정렬 버전, 마지막 튜플에 바인딩됩니다. 형식이 잘못되었거나 바인딩이 일치하지 않는 커서는 부분 페이지 없이 400을 반환합니다. 다음 페이지는 마지막 튜플보다 엄격히 뒤에 이어지며 유효한 커서에는 유효한 limit 값을 함께 사용할 수 있습니다.
+         * 피드 정렬 출처 및 위치별 행동 지표 조회
+         * @description 머신 통합이 활성화된 경우에만 제공하며 기존 recommendation handoff trigger credential을 사용합니다. Authorization 헤더는 정확히 하나여야 하고 학생·receiver·잘못된·중복 자격증명은 401입니다. 이 세 GET 경로만 정확히 매칭하며 POST recommendation-handoffs 동작은 유지합니다. 잘못된 메서드나 추가 경로에 학생 필터 우회를 적용하지 않습니다. 학원 존재 및 이벤트별 현재 actor·카드 가시성을 재검증합니다. 노출과 클릭이 각각 발생 시각 반개구간·논리 보존·현재 접근을 통과해야 하며 불변 actor/impression·맥락·카드·위치로 결합합니다. 카드·위치·도착 순서만으로 결합하지 않습니다. 발생 시각은 [fromInclusive, toExclusive)이며 asOf 이후를 제외합니다. receivedAt <= asOf -90일은 물리 삭제 전에도 제외합니다. 늦은 수신으로 종료 후 24시간까지 바뀔 수 있고 현재 접근 변경은 이후에도 영향을 줍니다. 백엔드 수집 활성화는 프런트 계측 여부를 보장하지 않으며 과거 GET에서 소급 생성하지 않습니다. 필수값 누락, null, 알 수 없는 필드, 중복 JSON 속성, 잘못된 타입 및 알 수 없거나 반복된 쿼리는 400 MALFORMED_REQUEST입니다. 성공과 오류 모두 Cache-Control: no-store입니다.
          */
-        get: operations["listReceivedFriendRequests"];
+        get: operations["getFeedBehaviorMetrics"];
         put?: never;
         post?: never;
         delete?: never;
@@ -115,7 +19,107 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/academies/{academyId}/friend-requests/sent": {
+    "/internal/v1/academies/{academyId}/behavior-metrics/students/{studentId}/author-interest/{authorStudentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 작성자로 향한 방문 관심 조회
+         * @description 머신 통합이 활성화된 경우에만 제공하며 기존 recommendation handoff trigger credential을 사용합니다. Authorization 헤더는 정확히 하나여야 하고 학생·receiver·잘못된·중복 자격증명은 401입니다. 이 세 GET 경로만 정확히 매칭하며 POST recommendation-handoffs 동작은 유지합니다. 잘못된 메서드나 추가 경로에 학생 필터 우회를 적용하지 않습니다. 양쪽 학생의 현재 학원 소속과 양방향 차단 부재가 필요하며 실패는 PROFILE_NOT_FOUND입니다. 방향성 프로필 방문만 집계하며 클릭이나 카테고리 관심으로 대체하지 않습니다. 발생 시각은 [fromInclusive, toExclusive)이며 asOf 이후를 제외합니다. receivedAt <= asOf -90일은 물리 삭제 전에도 제외합니다. 늦은 수신으로 종료 후 24시간까지 바뀔 수 있고 현재 접근 변경은 이후에도 영향을 줍니다. 백엔드 수집 활성화는 프런트 계측 여부를 보장하지 않으며 과거 GET에서 소급 생성하지 않습니다. 필수값 누락, null, 알 수 없는 필드, 중복 JSON 속성, 잘못된 타입 및 알 수 없거나 반복된 쿼리는 400 MALFORMED_REQUEST입니다. 성공과 오류 모두 Cache-Control: no-store입니다.
+         */
+        get: operations["getOutgoingAuthorInterestMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/v1/academies/{academyId}/behavior-metrics/students/{studentId}/profile-visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 들어온 프로필 방문 지표 조회
+         * @description 머신 통합이 활성화된 경우에만 제공하며 기존 recommendation handoff trigger credential을 사용합니다. Authorization 헤더는 정확히 하나여야 하고 학생·receiver·잘못된·중복 자격증명은 401입니다. 이 세 GET 경로만 정확히 매칭하며 POST recommendation-handoffs 동작은 유지합니다. 잘못된 메서드나 추가 경로에 학생 필터 우회를 적용하지 않습니다. 대상의 현재 학원 소속을 확인하고 각 방문자의 현재 소속과 양방향 차단을 다시 평가합니다. 전체 기간 고유 방문자 수는 일별 고유 방문자의 합이 아닙니다. 발생 시각은 [fromInclusive, toExclusive)이며 asOf 이후를 제외합니다. receivedAt <= asOf -90일은 물리 삭제 전에도 제외합니다. 늦은 수신으로 종료 후 24시간까지 바뀔 수 있고 현재 접근 변경은 이후에도 영향을 줍니다. 백엔드 수집 활성화는 프런트 계측 여부를 보장하지 않으며 과거 GET에서 소급 생성하지 않습니다. 필수값 누락, null, 알 수 없는 필드, 중복 JSON 속성, 잘못된 타입 및 알 수 없거나 반복된 쿼리는 400 MALFORMED_REQUEST입니다. 성공과 오류 모두 Cache-Control: no-store입니다.
+         */
+        get: operations["getIncomingProfileVisitMetrics"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/v1/academies/{academyId}/students/{studentId}/card-balance-accounts/{accountId}/historical-balances": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 기간별 잔액과 당시 대표 위시 달성률 조회
+         * @description 머신 통합이 활성화된 정확한 GET에서 계정·학생·학원의 현재 자격을 확인하고 서울 달력 기간별 역사 잔액을 반환합니다. 수집 전 UNKNOWN과 기록된 대표 부재를 구분하고 당시 대표·목표·상태로 달성률을 계산합니다. 요청·시각 경계·재생·무결성의 전체 규칙은 x-historical-balance-policy를 따릅니다. 요청 본문과 중복·알 수 없는 쿼리를 받지 않습니다. 모든 선언 응답은 Cache-Control: no-store입니다.
+         */
+        get: operations["getHistoricalBalances"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academies/{academyId}/feed-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 피드 노출 및 클릭 기록
+         * @description 맥락의 본인·학원 소유권, 실제 카드와 정확한 위치를 확인합니다. 없거나 타인·다른 학원·잘못된 카드 위치는 FEED_CONTEXT_NOT_FOUND입니다. 현재 구성원·계정·공개 범위·방향성 팔로우·양방향 차단·위시 상태를 재검증하고 비공개·삭제·포기 카드는 SHARED_CARD_NOT_FOUND입니다. 새 이벤트 receivedAt은 expiresAt보다 작아야 하며 occurredAt은 createdAt -5분 이상이어야 합니다. impressionId는 actor·맥락·카드·위치에 불변 결속되며 변경은 IMPRESSION_CONFLICT, 두 번째 노출 eventId는 IMPRESSION_ALREADY_EXPOSED입니다. 클릭이 먼저 결속할 수 있고 노출 없이도 유효합니다. 여러 실제 클릭은 서로 다른 eventId로 같은 impressionId를 사용합니다. 노출을 합성하지 않습니다. eventId는 현재 학생 범위에서 모든 행동 유형에 걸쳐 공유합니다. 현재 제출 범위와 보존 원본의 접근 권한을 먼저 재확인한 정확한 재생은 시간·맥락 만료 검사에 앞서 200과 Idempotency-Replayed: true로 최초 두 시각을 유지합니다. 불변값이 다르면 409 EVENT_ID_CONFLICT이며 원본 내용을 노출하지 않습니다. 최초 receivedAt부터 90일, 만료 경계는 제외합니다. 새 occurredAt은 receivedAt -24시간부터 +5분까지 양끝 포함이며 보정하지 않습니다. 동시 수락과 impression 유일성은 트랜잭션으로 보장합니다. 필수값 누락, null, 알 수 없는 필드, 중복 JSON 속성, 잘못된 타입 및 알 수 없거나 반복된 쿼리는 400 MALFORMED_REQUEST입니다. 성공과 오류 모두 Cache-Control: no-store입니다.
+         */
+        post: operations["createFeedEvent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academies/{academyId}/feed-results": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 피드 결과 맥락 생성
+         * @description 기존 SharedCard와 닫힌 cursor/limit 요청을 유지하면서 x-feed-ranking-v1의 동일한 unfiltered v2 continuation을 생성합니다. 첫 페이지는 현재 eligible 후보 최대 100개를 Python에 한 번만 전달하고 고정 ranked segment 최대 20개 뒤에 전체 latest traversal을 이어 붙입니다. 실제 반환 배열에 ranked 카드가 있으면 RECOMMENDATION과 원래 request UUID/feed-rules-v1을, tail-only·disabled·empty·fallback이면 LATEST와 null metadata를 반환합니다. 성공할 때마다 실제 카드와 0-based position의 24시간 behavior result context를 별도로 저장하며 방문·노출·클릭은 생성하지 않습니다. 5분 v2 context 만료·유실은 410, 안전한 context commit 불가는 503이고 cursor를 소비하거나 자동 rerank하지 않습니다. 모든 현재 인가와 사진 전달 오류는 유지하며 성공과 오류 모두 Cache-Control: no-store입니다.
+         */
+        post: operations["createFeedResult"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academies/{academyId}/followers": {
         parameters: {
             query?: never;
             header?: never;
@@ -125,10 +129,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 보낸 대기 중 친구 요청 목록 조회
-         * @description 인증된 학생이 발신자인 현재 PENDING 요청만 반환합니다. 결과는 createdAt DESC, friendRequestId DESC 순으로 정렬합니다. 불투명 커서는 이 작업, 인증된 학생, 학원, 정렬 버전, 마지막 튜플에 바인딩됩니다. 형식이 잘못되었거나 바인딩이 일치하지 않는 커서는 부분 페이지 없이 400을 반환합니다. 다음 페이지는 마지막 튜플보다 엄격히 뒤에 이어지며 유효한 커서에는 유효한 limit 값을 함께 사용할 수 있습니다.
+         * 현재 같은 학원 팔로워 목록 조회
+         * @description 인증된 학생의 현재 학원 소속을 요청마다 재검증합니다. 유효 관계는 현재 활성 방향성 팔로우, 상대방의 현재 학원 소속, 양방향 활성 차단 부재를 모두 충족합니다. 카드 계정 보유·활성·공개 자격은 요구하지 않습니다. isFollowedBy는 true이며 isFollowing은 독립적인 본인 → 상대방 관계입니다. items, 양방향 상태 및 두 카운트는 요청 내 일관된 데이터베이스 스냅샷에서 읽습니다. followingCount와 followerCount는 선택 학원의 모든 유효 관계 수이며 nickname, cursor, limit, 로드된 행 수에 영향을 받지 않습니다. 검색 결과가 비어도 전체 카운트는 0이 아닐 수 있습니다. followedAt DESC, studentId DESC로 정렬합니다. 커서는 인증된 학생, 학원, 작업 및 목록 방향, 정규화된 닉네임 또는 명시적 필터 없음 표식, 커서·정렬 버전, 최초 탐색 경계, 마지막 followedAt·studentId 튜플에 바인딩됩니다. 다음 페이지는 마지막 튜플 아래의 엄격한 keyset 조건을 적용합니다. 최초 탐색 경계를 유지하여 새로 생성되거나 종료 후 다시 시작된 관계는 새로고침에서만 나타납니다. 타임스탬프가 같거나 반올림되어도 새 활성화를 구분하여 이전 탐색에 섞이지 않게 합니다. 매 페이지에서 현재 관계·소속·닉네임·양방향 차단을 재검증하여 종료·차단·탈퇴한 행은 사라집니다. 안정된 관계와 검색 데이터는 중복·누락 없이 순회하며 그 밖의 실시간 변경에 대해 과거 스냅샷을 약속하지 않습니다. 형식·인코딩 오류, 위조 또는 컨텍스트 불일치 커서는 부분 페이지 없이 400 MALFORMED_REQUEST와 cursor 필드 오류를 반환합니다. 유효한 limit 변경은 커서를 무효화하지 않습니다.
          */
-        get: operations["listSentFriendRequests"];
+        get: operations["listAcademyFollowers"];
         put?: never;
         post?: never;
         delete?: never;
@@ -137,7 +141,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/academies/{academyId}/friends": {
+    "/v1/academies/{academyId}/following": {
         parameters: {
             query?: never;
             header?: never;
@@ -147,10 +151,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * 현재 같은 학원 친구 목록 조회
-         * @description 상대방이 요청한 학원의 현재 회원인 인증된 학생의 현재 정식 친구 관계를 나열합니다. 결과는 friendsSince DESC, studentId DESC 순으로 정렬됩니다. 불투명 커서는 이 작업, 인증된 학생, 학원, 정렬 버전 및 최종 튜플에 바인딩됩니다. 형식이 잘못되었거나 일치하지 않는 커서는 부분 페이지 없이 400을 반환합니다. 연속은 엄격하게 최종 튜플 아래에 있으며 유효한 커서와 함께 유효한 제한을 사용할 수 있습니다.
+         * 현재 같은 학원 팔로잉 목록 조회
+         * @description 인증된 학생의 현재 학원 소속을 요청마다 재검증합니다. 유효 관계는 현재 활성 방향성 팔로우, 상대방의 현재 학원 소속, 양방향 활성 차단 부재를 모두 충족합니다. 카드 계정 보유·활성·공개 자격은 요구하지 않습니다. isFollowing은 true이며 isFollowedBy는 독립적인 상대방 → 본인 관계입니다. items, 양방향 상태 및 두 카운트는 요청 내 일관된 데이터베이스 스냅샷에서 읽습니다. followingCount와 followerCount는 선택 학원의 모든 유효 관계 수이며 nickname, cursor, limit, 로드된 행 수에 영향을 받지 않습니다. 검색 결과가 비어도 전체 카운트는 0이 아닐 수 있습니다. followedAt DESC, studentId DESC로 정렬합니다. 커서는 인증된 학생, 학원, 작업 및 목록 방향, 정규화된 닉네임 또는 명시적 필터 없음 표식, 커서·정렬 버전, 최초 탐색 경계, 마지막 followedAt·studentId 튜플에 바인딩됩니다. 다음 페이지는 마지막 튜플 아래의 엄격한 keyset 조건을 적용합니다. 최초 탐색 경계를 유지하여 새로 생성되거나 종료 후 다시 시작된 관계는 새로고침에서만 나타납니다. 타임스탬프가 같거나 반올림되어도 새 활성화를 구분하여 이전 탐색에 섞이지 않게 합니다. 매 페이지에서 현재 관계·소속·닉네임·양방향 차단을 재검증하여 종료·차단·탈퇴한 행은 사라집니다. 안정된 관계와 검색 데이터는 중복·누락 없이 순회하며 그 밖의 실시간 변경에 대해 과거 스냅샷을 약속하지 않습니다. 형식·인코딩 오류, 위조 또는 컨텍스트 불일치 커서는 부분 페이지 없이 400 MALFORMED_REQUEST와 cursor 필드 오류를 반환합니다. 유효한 limit 변경은 커서를 무효화하지 않습니다.
          */
-        get: operations["listAcademyFriends"];
+        get: operations["listAcademyFollowing"];
         put?: never;
         post?: never;
         delete?: never;
@@ -159,7 +163,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/academies/{academyId}/friends/{studentId}": {
+    "/v1/academies/{academyId}/following/{studentId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -171,13 +175,37 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        put?: never;
+        /**
+         * 같은 학원 학생 팔로우
+         * @description 선택한 학원에서 본인 → 대상 관계만 생성합니다. 유효 대상을 이미 팔로우하면 followedAt과 카운트를 변경하지 않고 204입니다. 실제 종료 후 재팔로우하면 시계 정밀도로 시각이 같아도 새 활성화와 정렬 위치를 얻습니다. 인증된 학생의 현재 학원 소속을 요청마다 재검증합니다. 유효 관계는 현재 활성 방향성 팔로우, 상대방의 현재 학원 소속, 양방향 활성 차단 부재를 모두 충족합니다. 카드 계정 보유·활성·공개 자격은 요구하지 않습니다. 없는 학생, 현재 같은 학원 구성원이 아닌 대상, 어느 방향이든 활성 차단이 있는 대상은 누가 차단했는지 구분할 수 없는 동일한 메시지와 details의 404 STUDENT_NOT_FOUND입니다. 자신을 대상으로 하면 409 SELF_RELATIONSHIP입니다. 영구 Idempotency-Key나 expectedVersion은 받지 않습니다. 팔로우·언팔로우의 중복 성공은 과거 결과 재생이 아닌 현재 상태의 no-op입니다. 겹치는 유효 요청은 서버 직렬화 순서대로 처리하며 마지막 유효 요청이 현재 상태를 결정합니다. 언팔로우 뒤 지연된 팔로우 재시도는 새 관계를 만들 수 있습니다. 같은 상대방에 대한 클라이언트 변경 요청은 순차 실행해야 하며 기기 간 순서는 서버 처리 순서만 보장합니다. 팔로우·언팔로우·차단·차단 해제는 전역 학생 쌍 단위로 일관되게 직렬화하고 관계 변경과 같은 트랜잭션에서 양방향 차단을 재검증합니다.
+         */
+        put: operations["followAcademyStudent"];
         post?: never;
         /**
-         * 현재 같은 학원 친구 관계 종료
-         * @description 인증된 학생과 요청한 학원의 대상 학생 사이에 현재 맺어진 친구 관계를 종료합니다. 관계가 없거나 이미 종료되었거나, 학원 구성원이 아니거나, 인증된 학생이 당사자가 아닌 경우는 FRIENDSHIP_NOT_FOUND로 숨깁니다. 이 작업은 과거 친구 요청을 다시 활성화하지 않으며 성공 응답 본문이 없습니다.
+         * 같은 학원 학생 언팔로우
+         * @description 선택한 학원의 본인 → 대상 관계만 종료합니다. 반대 방향과 다른 학원의 관계는 유지합니다. 유효 대상과 현재 관계가 없어도 204입니다. 대상 유효성을 먼저 검사하므로 숨겨진 대상·차단 대상은 관계 부재 no-op보다 우선하여 STUDENT_NOT_FOUND입니다. 인증된 학생의 현재 학원 소속을 요청마다 재검증합니다. 유효 관계는 현재 활성 방향성 팔로우, 상대방의 현재 학원 소속, 양방향 활성 차단 부재를 모두 충족합니다. 카드 계정 보유·활성·공개 자격은 요구하지 않습니다. 없는 학생, 현재 같은 학원 구성원이 아닌 대상, 어느 방향이든 활성 차단이 있는 대상은 누가 차단했는지 구분할 수 없는 동일한 메시지와 details의 404 STUDENT_NOT_FOUND입니다. 자신을 대상으로 하면 409 SELF_RELATIONSHIP입니다. 영구 Idempotency-Key나 expectedVersion은 받지 않습니다. 팔로우·언팔로우의 중복 성공은 과거 결과 재생이 아닌 현재 상태의 no-op입니다. 겹치는 유효 요청은 서버 직렬화 순서대로 처리하며 마지막 유효 요청이 현재 상태를 결정합니다. 언팔로우 뒤 지연된 팔로우 재시도는 새 관계를 만들 수 있습니다. 같은 상대방에 대한 클라이언트 변경 요청은 순차 실행해야 하며 기기 간 순서는 서버 처리 순서만 보장합니다. 팔로우·언팔로우·차단·차단 해제는 전역 학생 쌍 단위로 일관되게 직렬화하고 관계 변경과 같은 트랜잭션에서 양방향 차단을 재검증합니다.
          */
-        delete: operations["unfriendAcademyStudent"];
+        delete: operations["unfollowAcademyStudent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academies/{academyId}/profile-visits": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 프로필 방문 기록
+         * @description 현재 인증 주체에서 방문자를 결정하고 활성 학원 소속을 확인합니다. 대상의 현재 학원 소속과 양방향 차단 부재를 확인하며 숨겨진 대상은 PROFILE_NOT_FOUND입니다. 본인 방문은 저장 없이 SELF_PROFILE_VISIT입니다. 새로고침·뒤로 가기 재진입을 포함한 실제 프로필 경로 진입마다 기록하고 렌더링·refetch·prefetch·탭 재포커스·재전송은 새 방문으로 세지 않습니다. 서로 다른 진입에는 세션 억제를 적용하지 않고 작성자 관심만 기록합니다. eventId는 현재 학생 범위에서 모든 행동 유형에 걸쳐 공유합니다. 현재 제출 범위와 보존 원본의 접근 권한을 먼저 재확인한 정확한 재생은 시간·맥락 만료 검사에 앞서 200과 Idempotency-Replayed: true로 최초 두 시각을 유지합니다. 불변값이 다르면 409 EVENT_ID_CONFLICT이며 원본 내용을 노출하지 않습니다. 최초 receivedAt부터 90일, 만료 경계는 제외합니다. 새 occurredAt은 receivedAt -24시간부터 +5분까지 양끝 포함이며 보정하지 않습니다. 동시 수락과 impression 유일성은 트랜잭션으로 보장합니다. 필수값 누락, null, 알 수 없는 필드, 중복 JSON 속성, 잘못된 타입 및 알 수 없거나 반복된 쿼리는 400 MALFORMED_REQUEST입니다. 성공과 오류 모두 Cache-Control: no-store입니다.
+         */
+        post: operations["createProfileVisit"];
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -194,7 +222,7 @@ export interface paths {
         };
         /**
          * 학원에서 현재 볼 수 있는 공유 카드 목록 조회
-         * @description 조회할 때마다 학원 소속, 친구 관계, 양방향 차단을 다시 평가하고 소유자 본인은 제외합니다. PRIVATE 위시는 카드를 생성하지 않습니다. 임시 정렬은 contentUpdatedAt DESC, sharedCardId DESC 순입니다. 현재는 정렬 매개변수를 지원하지 않습니다. 이 임시 정책에서는 콘텐츠 또는 게시 상태가 바뀔 때만 카드 순서가 달라집니다. 친구 우선순위와 임베딩 기반 추천 정렬은 향후 계약에서 정할 사항이며 이 버전에서는 사용하지 않습니다.
+         * @description 조회할 때마다 학원 소속, 위시 visibility, 방향성 팔로우 관계, 양방향 차단을 다시 평가하고 ownerId를 생략하면 소유자 본인은 제외합니다. ownerId를 명시하면 해당 학생의 허용된 카드만 반환하며, 본인을 지정하면 현재 공개 중인 자기 카드도 조회합니다. PRIVATE 카드는 포함하지 않습니다. photoId, object key, 과거 signed URL은 이 권한 검사를 대신하지 않습니다. PRIVATE 위시는 카드를 생성하지 않으며 비공개 또는 과거 비공개 상태에서 포기한 위시는 소유자가 FOLLOWERS 또는 ACADEMY로 명시적으로 공개할 때까지 카드를 만들지 않습니다. 첨부 사진이 하나라도 있으면 모든 항목의 새 5분 비공개 URL을 발급한 뒤에만 전체 페이지를 반환하며 signing 실패는 부분 페이지나 거짓 null 없이 503입니다. 임시 정렬은 contentUpdatedAt DESC, sharedCardId DESC 순입니다. 현재는 정렬 매개변수를 지원하지 않습니다. 이 임시 정책에서는 콘텐츠 또는 게시 상태가 바뀔 때만 카드 순서가 달라집니다. ownerId 없는 첫 페이지는 x-feed-ranking-v1에 따라 Python 추천을 한 번만 적용한 ranked segment 뒤에 전체 latest traversal을 이어 붙이며 ownerId가 있으면 기존 latest-only 정렬을 유지합니다. FOLLOWERS는 선택 학원의 현재 viewer → owner 팔로우가 있어야 비소유자에게 공개됩니다. owner → viewer만으로는 공개되지 않으며 상호 팔로우는 필요하지 않습니다. 진행·완료·포기 공유 카드의 목록·상세에 동일하게 적용합니다. 기존 소유자 예외, PRIVATE·ACADEMY 의미, 현재 학원 소속, 공유 카드의 카드 계정 자격과 각 변형의 게시 규칙, 전역 양방향 차단 우선순위를 유지합니다. 현재 공개된 IN_PROGRESS 또는 AMOUNT_REACHED 위시를 포기하면 같은 sharedCardId의 PROGRESS 카드를 ABANDONMENT 카드 하나로 원자적으로 교체하고 contentUpdatedAt을 한 번만 갱신합니다. 그 포기 요청의 멱등 재생은 다른 카드나 추가 정렬 갱신을 만들지 않습니다. ABANDONMENT의 progressPercent는 포기 직전 고정된 적립액에서 한 번 계산한 공개 값이며 현재 0원 배정이나 정확한 과거 금액은 반환하지 않습니다. 포기 카드는 추천 후보나 대표 위시가 아닙니다. 언팔로우·차단 후 다음 조회부터 제한된 카드를 숨기며 직접 조회는 SHARED_CARD_NOT_FOUND 경계를 유지합니다. ownerId 조건은 SQL LIMIT와 keyset pagination 전에 적용합니다. 대상이 없거나 다른 학원·탈퇴·차단 상태이거나 현재 볼 수 있는 카드가 없으면 이유를 구별하지 않고 items: [], nextCursor: null인 빈 페이지를 반환합니다. 모든 페이지에서 현재 조회자와 소유자의 학원 소속, 열린 카드 계정 자격, 공개 상태, 삭제 여부와 양방향 차단을 다시 평가합니다. 새 불투명 커서는 기존 relationship_cursor_key의 HMAC으로 서명하고 형식 version, operation=listAcademySharedCards, viewerId, academyId, ownerId 또는 명시적 무필터 표식, 마지막 contentUpdatedAt/sharedCardId 튜플을 묶습니다. 형식 오류·변조·미지원 버전·구형 무서명 커서 또는 작업·조회자·학원·작성자·필터 유무가 다른 커서는 400 MALFORMED_REQUEST이며 cursor를 제거하고 첫 페이지부터 다시 조회해야 합니다. 같은 문맥의 유효한 cursor는 유효한 limit 변경을 허용합니다. 권한을 커서에 저장해 재사용하지 않습니다. 안정된 데이터는 중복·누락 없이 순회하지만 동시 콘텐츠 변경이나 완료·포기 카드 교체에 대한 스냅샷 보장은 없습니다. 학생 단건 조회와 목록 사이에도 원자적 스냅샷을 보장하지 않습니다.
          */
         get: operations["listAcademySharedCards"];
         put?: never;
@@ -217,7 +245,7 @@ export interface paths {
         };
         /**
          * 현재 볼 수 있는 공유 카드 조회
-         * @description 소유자는 자신의 카드가 현재 공개 상태라면 조회할 수 있습니다. 그 밖의 리소스 부재나 공개 범위 조건 위반은 모두 숨깁니다.
+         * @description 소유자는 자신의 카드가 현재 공개 상태라면 조회할 수 있습니다. 다른 호출자는 현재 학원 소속, 위시 visibility, 방향성 팔로우 관계와 양방향 차단을 매번 다시 통과해야 하며 photoId나 과거 signed URL은 권한을 부여하지 않습니다. 사진이 있으면 새 5분 비공개 URL 세 개를 모두 발급한 뒤 반환하고 signing 실패는 거짓 null 없이 503입니다. 이미 발급된 URL은 접근이 철회되어도 최대 기존 5분 만료까지만 유효할 수 있고 새 URL은 발급하지 않습니다. 그 밖의 리소스 부재나 공개 범위 조건 위반은 모두 숨깁니다. FOLLOWERS는 선택 학원의 현재 viewer → owner 팔로우가 있어야 비소유자에게 공개됩니다. owner → viewer만으로는 공개되지 않으며 상호 팔로우는 필요하지 않습니다. 진행·완료·포기 공유 카드의 목록·상세에 동일하게 적용합니다. 기존 소유자 예외, PRIVATE·ACADEMY 의미, 현재 학원 소속, 공유 카드의 카드 계정 자격과 각 변형의 게시 규칙, 전역 양방향 차단 우선순위를 유지합니다. 공개된 진행 카드를 포기하면 같은 sharedCardId의 ABANDONMENT 카드로 원자적으로 교체하며 공개 progressPercent는 포기 직전 고정된 적립액에서 한 번 계산됩니다. 정확한 과거 금액, 포기 뒤 현재 0원 배정, 위시·계정 식별자는 이 응답에 포함하지 않습니다. 비공개 또는 과거 비공개 포기 위시는 명시적으로 공개되기 전까지 조회할 카드가 없고, 삭제하거나 PRIVATE로 바꾸면 카드를 제거합니다. 언팔로우·차단 후 다음 조회부터 제한된 카드를 숨기며 직접 조회는 SHARED_CARD_NOT_FOUND 경계를 유지합니다.
          */
         get: operations["getAcademySharedCard"];
         put?: never;
@@ -239,9 +267,81 @@ export interface paths {
         };
         /**
          * 닉네임으로 현재 같은 학원 학생 검색
-         * @description 저장된 NFC 정규화 닉네임을 대상으로 대소문자를 구분하는 연속 유니코드 코드 포인트 부분 문자열을 검색해 인증된 학생과 같은 학원의 현재 구성원을 찾습니다. 인증된 학생 본인, 현재 구성원이 아닌 학생, 어느 방향으로든 활성 차단이 있는 후보는 제외합니다. 각 결과에는 NONE, FRIEND, OUTGOING_PENDING, INCOMING_PENDING 중 정확히 하나의 현재 관계 상태를 계산합니다. 결과는 nickname ASC, studentId ASC 순으로 정렬합니다. 불투명 커서는 이 작업, 인증된 학생, 학원, 정렬 버전, 정규화된 닉네임 필터, 마지막 정렬 튜플에 바인딩됩니다. 형식이 잘못되었거나 작업·행위자·학원이 다르거나 필터가 일치하지 않는 커서는 부분 페이지 없이 400을 반환합니다. 다음 페이지는 마지막 튜플 직후부터 이어지며 유효한 커서에는 유효한 limit 값을 함께 사용할 수 있습니다.
+         * @description 저장된 NFC 정규화 닉네임을 대상으로 대소문자를 구분하는 연속 유니코드 코드 포인트 부분 문자열을 검색해 인증된 학생과 같은 학원의 현재 구성원을 찾습니다. 인증된 학생 본인, 현재 구성원이 아닌 학생, 어느 방향으로든 활성 차단이 있는 후보는 제외합니다. 각 결과에는 본인 → 상대방 isFollowing과 상대방 → 본인 isFollowedBy를 독립적으로 계산합니다. 카드 계정 보유·활성·공개 자격은 요구하지 않습니다. 결과는 nickname ASC, studentId ASC 순으로 정렬합니다. 불투명 커서는 이 작업, 인증된 학생, 학원, 정렬 버전, 정규화된 닉네임 필터, 마지막 정렬 튜플에 바인딩됩니다. 형식이 잘못되었거나 작업·행위자·학원이 다르거나 필터가 일치하지 않는 커서는 부분 페이지 없이 400을 반환합니다. 다음 페이지는 마지막 튜플 직후부터 이어지며 유효한 커서에는 유효한 limit 값을 함께 사용할 수 있습니다.
          */
         get: operations["searchAcademyStudents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academies/{academyId}/students/{studentId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description 관계 상대방의 UUID입니다. 인증된 소유자 정보는 항상 현재 인증 주체에서 가져오며 이 매개변수로 받지 않습니다. */
+                studentId: components["parameters"]["StudentId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * 현재 같은 학원 학생의 신원과 관계 조회
+         * @description 현재 인증 학생과 대상 학생 모두 해당 학원에 속하고 양방향 차단이 없어야 합니다. 카드 계정 보유 여부는 요구하지 않습니다. 정확한 자기 studentId 조회는 현재 학원 소속 조건을 통과하면 허용하며 isFollowing과 isFollowedBy는 모두 false입니다. 기존 닉네임 검색은 계속 본인을 제외합니다. 학원 접근 실패는 ACADEMY_NOT_FOUND, 없는 학생·다른 학원·탈퇴·양방향 차단은 동일한 메시지와 details를 가진 STUDENT_NOT_FOUND로 숨기며 차단 주체나 원인을 구별하지 않습니다. 잘못된 path UUID는 400 MALFORMED_REQUEST입니다. 자기 조회에는 SELF_RELATIONSHIP 409를 적용하지 않습니다. 관계와 개인정보는 Cache-Control: no-store로 반환합니다.
+         */
+        get: operations["getAcademyStudent"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academies/{academyId}/students/{studentId}/followers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description 관계 상대방의 UUID입니다. 인증된 소유자 정보는 항상 현재 인증 주체에서 가져오며 이 매개변수로 받지 않습니다. */
+                studentId: components["parameters"]["StudentId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * 같은 학원 다른 학생의 팔로워 목록 조회
+         * @description 경로 studentId는 목록 소유자이고 인증된 SyntheticBearer 주체는 조회자입니다. 조회자 자신의 studentId를 요청하면 기존 /v1/academies/{academyId}/followers와 같은 관찰 가능한 목록 의미로 성공합니다. 먼저 조회자의 현재 academyId 소속을 확인하고, 이어 목록 소유자의 현재 소속과 조회자-소유자 사이 양방향 활성 차단 부재를 확인합니다. 소유자가 없거나 탈퇴·다른 학원·차단으로 접근할 수 없으면 차단 방향이나 이유를 구별하지 않는 STUDENT_NOT_FOUND이며, 목록 소유자를 열거하지 않습니다. 카드 계정, 활성 카드 또는 위시 공개 자격은 요구하지 않습니다. 보이는 소유자의 항목은 academyId에서 현재 활성인 항목 학생 → 소유자 관계와 항목 학생의 현재 소속만으로 결정합니다. 조회자와 항목 학생 사이의 차단은 제3자인 소유자의 목록이나 nickname 검색에서 그 항목을 숨기지 않습니다. followedAt은 항목 학생 → 소유자 관계의 시작 시점이고, isFollowing과 isFollowedBy는 각각 조회자 → 항목 및 항목 → 조회자의 독립적인 현재 관계입니다. followingCount와 followerCount는 nickname, cursor, limit, 반환된 항목 수와 무관한 소유자의 현재 유효 outgoing·incoming 관계 수입니다. followedAt DESC, studentId DESC로 정렬합니다. 불투명 서명 커서는 형식·정렬 버전, 작업과 방향, 조회자 ID, 목록 소유자 studentId, academyId, 정규화 nickname 또는 명시적 필터 없음 표식, 최초 watermark와 snapshot discriminator, 마지막 followedAt/studentId 튜플에 결속합니다. 다른 조회자·소유자·학원·방향·작업·nickname·서명·형식·정렬 문맥의 커서는 부분 페이지 없이 400 MALFORMED_REQUEST와 cursor 필드 오류를 반환하며 유효한 limit 변경은 커서를 무효화하지 않습니다. 요청은 페이지 행과 소유자 카운트를 repeatable-read 스냅샷에서 읽고 최초 watermark 뒤에 새로 생성되거나 재팔로우된 관계를 기존 순회에 넣지 않습니다. 각 다음 페이지는 현재 소유자 접근, 관계, 소속, nickname, 차단 상태를 다시 확인합니다. 그 뒤 소유자가 접근 불가하면 부분 결과 대신 STUDENT_NOT_FOUND를 반환하며, 후속 독립 요청은 follow, unfollow, block, unblock, 소속 또는 닉네임 변경을 현재 규칙으로 반영합니다. 성공과 오류 모두 Cache-Control: no-store입니다.
+         */
+        get: operations["listAcademyStudentFollowers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/academies/{academyId}/students/{studentId}/following": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description 관계 상대방의 UUID입니다. 인증된 소유자 정보는 항상 현재 인증 주체에서 가져오며 이 매개변수로 받지 않습니다. */
+                studentId: components["parameters"]["StudentId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * 같은 학원 다른 학생의 팔로잉 목록 조회
+         * @description 경로 studentId는 목록 소유자이고 인증된 SyntheticBearer 주체는 조회자입니다. 조회자 자신의 studentId를 요청하면 기존 /v1/academies/{academyId}/following과 같은 관찰 가능한 목록 의미로 성공합니다. 먼저 조회자의 현재 academyId 소속을 확인하고, 이어 목록 소유자의 현재 소속과 조회자-소유자 사이 양방향 활성 차단 부재를 확인합니다. 소유자가 없거나 탈퇴·다른 학원·차단으로 접근할 수 없으면 차단 방향이나 이유를 구별하지 않는 STUDENT_NOT_FOUND이며, 목록 소유자를 열거하지 않습니다. 카드 계정, 활성 카드 또는 위시 공개 자격은 요구하지 않습니다. 보이는 소유자의 항목은 academyId에서 현재 활성인 소유자 → 항목 학생 관계와 항목 학생의 현재 소속만으로 결정합니다. 조회자와 항목 학생 사이의 차단은 제3자인 소유자의 목록이나 nickname 검색에서 그 항목을 숨기지 않습니다. followedAt은 소유자 → 항목 관계의 시작 시점이고, isFollowing과 isFollowedBy는 각각 조회자 → 항목 및 항목 → 조회자의 독립적인 현재 관계입니다. followingCount와 followerCount는 nickname, cursor, limit, 반환된 항목 수와 무관한 소유자의 현재 유효 outgoing·incoming 관계 수입니다. followedAt DESC, studentId DESC로 정렬합니다. 불투명 서명 커서는 형식·정렬 버전, 작업과 방향, 조회자 ID, 목록 소유자 studentId, academyId, 정규화 nickname 또는 명시적 필터 없음 표식, 최초 watermark와 snapshot discriminator, 마지막 followedAt/studentId 튜플에 결속합니다. 다른 조회자·소유자·학원·방향·작업·nickname·서명·형식·정렬 문맥의 커서는 부분 페이지 없이 400 MALFORMED_REQUEST와 cursor 필드 오류를 반환하며 유효한 limit 변경은 커서를 무효화하지 않습니다. 요청은 페이지 행과 소유자 카운트를 repeatable-read 스냅샷에서 읽고 최초 watermark 뒤에 새로 생성되거나 재팔로우된 관계를 기존 순회에 넣지 않습니다. 각 다음 페이지는 현재 소유자 접근, 관계, 소속, nickname, 차단 상태를 다시 확인합니다. 그 뒤 소유자가 접근 불가하면 부분 결과 대신 STUDENT_NOT_FOUND를 반환하며, 후속 독립 요청은 follow, unfollow, block, unblock, 소속 또는 닉네임 변경을 현재 규칙으로 반영합니다. 성공과 오류 모두 Cache-Control: no-store입니다.
+         */
+        get: operations["listAcademyStudentFollowing"];
         put?: never;
         post?: never;
         delete?: never;
@@ -338,6 +438,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/card-balance-accounts/{cardBalanceAccountId}/recaps/monthly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * 소유한 계정의 완료된 월간 리캡 조회
+         * @description 인증된 학생이 소유한 활성 카드 잔액 계정에서 Asia/Seoul 기준으로 완료된 월간 리캡 하나를 조회합니다. month를 생략하면 가장 최근 완료된 달을 선택합니다. 제공한 값은 정확한 YYYY-MM 형식이어야 하고 미래 또는 진행 중인 달, 반복되거나 알 수 없는 쿼리 매개 변수는 400 MALFORMED_REQUEST입니다. 유효 입금이 세 건 미만이면 transport 오류가 아닌 확정 NOT_ELIGIBLE 상태를 200으로 반환합니다. 생성 이력이 없거나 진행 중이거나 최종 실패한 경우도 200 상태 리소스이며, 재생성이 진행 중이거나 실패했더라도 이전 current 성공이 있으면 그 불변 버전을 SUCCEEDED로 계속 반환합니다. 내부 생성 오류, QA 메트릭, peer identity와 원장 행은 공개하지 않습니다.
+         */
+        get: operations["getMonthlyRecap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/card-balance-accounts/{cardBalanceAccountId}/recaps/weekly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * 소유한 계정의 완료된 주간 리캡 조회
+         * @description 인증된 학생이 소유한 활성 카드 잔액 계정에서 Asia/Seoul 기준으로 완료된 주간 리캡 하나를 조회합니다. weekStart를 생략하면 가장 최근 완료된 월요일~다음 월요일 기간을 선택합니다. 제공한 값은 월요일이어야 하고 미래 또는 진행 중인 주, 반복되거나 알 수 없는 쿼리 매개 변수는 400 MALFORMED_REQUEST입니다. 생성 이력이 없거나 진행 중이거나 최종 실패한 경우도 200 상태 리소스로 반환하며, 활동이 0인 성공 결과는 SUCCEEDED입니다. 재생성이 진행 중이거나 실패했더라도 이전 current 성공이 있으면 그 불변 버전을 SUCCEEDED로 계속 반환합니다. 성공 story는 저장된 wishId와 nullable typeTitle을 보존하고 x-recap-retrieval-policy.storyAuthorization에 따라 viewer·owner의 현재 학원 소속, 열린 owner 계정, 비삭제 COMPLETED 위시와 COMPLETION 카드, 명시적 completedAt, ACADEMY·FOLLOWERS 공개, viewer에서 owner로의 팔로우, 양방향 차단과 본인 제외를 검증한 뒤 현재 완료 카드의 16개 공개 필드를 반환합니다. 후보 순서와 최대 다섯 건을 유지하며 접근 불가·잘못된 UUID 후보만 생략하고 보충 후보를 찾지 않습니다. viewer 소속이 없어도 같은 생략 경로를 사용하며 원래 빈 stories의 요약은 보존합니다. 사진 조회·서명은 권한 확인 뒤 수행하고 ATTACHED 사진이 없을 때만 photo null입니다. 기존 300초 공통 만료 URL을 새로 발급하며 사진 런타임 또는 서명 실패는 PHOTO_PROCESSING_UNAVAILABLE 또는 PHOTO_DELIVERY_UNAVAILABLE인 전체 retryable 503으로 반환합니다. 저장 view·request, 과거 계산, 다른 페이지와 생성 메타데이터는 변경하지 않으며 모든 응답은 Cache-Control no-store입니다.
+         */
+        get: operations["getWeeklyRecap"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/card-balance-accounts/{cardBalanceAccountId}/representative-wish": {
         parameters: {
             query?: never;
@@ -375,7 +519,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 동일 계정의 두 위시 간 자금 원자적 이체 */
+        /**
+         * 동일 계정의 두 위시 간 자금 원자적 이체
+         * @description 출발·도착 Wish snapshot과 각각의 private photo replay state를 이체 성공 결과와 함께 원자적으로 캡처합니다. 일치 재생은 두 상태를 URL 발급 전에 함께 평가합니다. 각 NO_PHOTO는 이후 현재 attachment와 무관하게 null을 유지하고, 각 ACTIVE_PHOTO는 캡처된 정확한 photoId가 같은 소유자와 정확한 위시에 유효하게 ATTACHED인 경우에만 새 5분 URL을 받습니다. 어느 한쪽이라도 PHOTO_REVOKED이면 다른 쪽 URL을 발급하거나 부분 본문을 반환하지 않고 전체 재생이 409 WISH_PHOTO_EXPIRED로 실패합니다. 모든 필요한 URL 중 하나라도 발급하지 못하면 receipt를 바꾸지 않고 전체 재생이 503 PHOTO_DELIVERY_UNAVAILABLE로 실패합니다. 성공 재생에만 Idempotency-Replayed true를 보냅니다.
+         */
         post: operations["transferWishFunds"];
         delete?: never;
         options?: never;
@@ -394,13 +541,13 @@ export interface paths {
         };
         /**
          * 계정이 소유한 삭제되지 않은 위시 목록 조회
-         * @description 불투명 커서를 사용하며 createdAt DESC, id DESC 순으로 정렬합니다. 각 위시는 카드 잔액 계정의 조회 시점 OPEN 잔액 조정 상태를 반환합니다.
+         * @description 불투명 커서를 사용하며 createdAt DESC, id DESC 순으로 정렬합니다. 각 위시는 카드 잔액 계정의 조회 시점 OPEN 잔액 조정 상태를 반환합니다. 첨부 사진이 하나라도 있으면 모든 항목의 새 5분 비공개 URL을 발급한 뒤에만 전체 페이지를 반환하며, signing 실패는 부분 페이지나 거짓 null 없이 503입니다.
          */
         get: operations["listWishes"];
         put?: never;
         /**
          * 초기 적립금이 0인 비공개 위시 생성
-         * @description 잔액 정보가 UNKNOWN이거나 OPEN 잔액 불일치가 없을 때 amount 0, state IN_PROGRESS, visibility PRIVATE인 위시를 생성합니다. startDate와 targetDate는 각각 생략하거나 null로 지정할 수 있고, 둘 다 날짜이면 startDate가 targetDate보다 늦지 않아야 합니다. 역전된 날짜 범위는 새 멱등 기록이나 위시 변경을 만들기 전에 거부합니다. 새로 캡처하는 멱등 요청 식별에는 정규화된 startDate의 명시적 null 또는 ISO 달력 날짜가 포함되므로, 같은 Idempotency-Key를 다른 startDate와 사용하면 409 IDEMPOTENCY_KEY_REUSED입니다. 기능 도입 전에 성공한 키는 startDate가 null인 재시도만 이전 식별 방식으로 재생하며, 이전 스냅샷에 이 속성이 없어도 응답에는 startDate null을 명시합니다. 일치하는 Idempotency-Key의 이전 성공 결과는 현재 불일치 방어 조건보다 먼저 재생됩니다. 그 밖의 경우 OPEN 잔액 조정 건이 있으면 새 위시를 저장하기 전에 409 BALANCE_MISMATCH_LOCKED로 생성을 거부합니다.
+         * @description 잔액 정보가 UNKNOWN이거나 OPEN 잔액 불일치가 없을 때 amount 0, state IN_PROGRESS, visibility PRIVATE인 위시를 생성합니다. startDate와 targetDate는 각각 생략하거나 null로 지정할 수 있고, 둘 다 날짜이면 startDate가 targetDate보다 늦지 않아야 합니다. 역전된 날짜 범위는 새 멱등 기록이나 위시 변경을 만들기 전에 거부합니다. photoId가 생략되거나 null이면 사진 없이 만들고, UUID이면 인증된 학생 소유의 만료되지 않은 미첨부 Pending 사진을 새 위시에 원자적으로 첨부합니다. 성공한 첨부는 사진 업로드 receipt의 ACTIVE_SUCCESS를 유지하며 24시간 retainUntil을 소비·연장·교체하지 않습니다. 첨부 실패 시 위시와 attachment 모두 생성하지 않습니다. 새로 캡처하는 멱등 요청 식별에는 정규화된 startDate의 명시적 null 또는 ISO 달력 날짜와 photoId의 명시적 null 또는 UUID가 포함되므로, 같은 Idempotency-Key를 다른 startDate 또는 photoId와 사용하면 409 IDEMPOTENCY_KEY_REUSED입니다. 기능 도입 전에 성공한 키는 startDate가 null인 재시도 중 photoId도 동일한 경우에만 이전 식별 방식으로 재생하며, 이전 스냅샷에 startDate가 없어도 응답에는 startDate null을 명시합니다. 일치하는 Idempotency-Key의 이전 성공 결과는 현재 불일치 방어 조건보다 먼저 재생됩니다. 최초 성공에 사진이 있으면 private ACTIVE_PHOTO 상태가 그 정확한 photoId를 유효한 동안만 보존하고 재생 때 소유권과 같은 위시 attachment를 재검증하여 새 5분 URL을 발급합니다. 최초 성공에 사진이 없던 NO_PHOTO는 이후 현재 사진이 붙어도 대체하지 않고 photo null을 반환합니다. 원래 사진이 교체·제거·revocation·Wish 삭제·cleanup으로 무효화되면 식별자 없는 PHOTO_REVOKED가 되어 Wish 성공 본문 없이 409 WISH_PHOTO_EXPIRED를 반환합니다. 새 URL 발급만 실패하면 receipt를 바꾸지 않고 부분 성공 본문 없이 503 PHOTO_DELIVERY_UNAVAILABLE을 반환합니다. 성공 재생에만 Idempotency-Replayed true를 보냅니다. 응답 capability 발급은 commit 전에 완료하므로 signing 실패가 비멱등 commit을 모호하게 만들지 않습니다. 그 밖의 경우 OPEN 잔액 조정 건이 있으면 새 위시를 저장하기 전에 409 BALANCE_MISMATCH_LOCKED로 생성을 거부합니다.
          */
         post: operations["createWish"];
         delete?: never;
@@ -421,21 +568,21 @@ export interface paths {
         };
         /**
          * 소유한 삭제되지 않은 위시 조회
-         * @description 위시가 속한 카드 잔액 계정의 조회 시점 OPEN 잔액 조정 상태를 반환합니다. OPEN 잔액 조정 건이 있어도 이 조회를 차단하지 않습니다.
+         * @description 위시가 속한 카드 잔액 계정의 조회 시점 OPEN 잔액 조정 상태를 반환합니다. OPEN 잔액 조정 건이 있어도 이 조회를 차단하지 않습니다. 사진이 있으면 현재 소유권을 다시 확인하고 새 5분 비공개 URL을 모두 발급한 뒤 반환하며 signing 실패는 거짓 null 없이 503입니다.
          */
         get: operations["getWish"];
         put?: never;
         post?: never;
         /**
          * 위시 논리 삭제
-         * @description 최종 변경 결과를 반환합니다. 이후의 모든 조회는 WISH_NOT_FOUND로 숨깁니다. OPEN 잔액 조정 건이 있어도 삭제를 차단하지 않습니다.
+         * @description 최종 변경 결과를 반환합니다. 첨부 사진은 같은 domain transaction에서 즉시 접근 불가능한 DELETE_PENDING으로 바꾸고, 보존 중인 성공 업로드 receipt를 파괴적 정리 전에 REVOKED_SUCCESS로 변경하여 retainUntil까지 남깁니다. 동시에 소유자의 모든 Wish mutation receipt에서 그 photoId인 ACTIVE_PHOTO를 식별자 없는 PHOTO_REVOKED로 원자적으로 바꾼 뒤 삭제 성공 snapshot을 캡처합니다. 따라서 deleteWish 자체의 성공 receipt는 항상 NO_PHOTO를 저장하고 일치 재생은 이후 사진 상태를 조회하지 않은 채 원래 photo null 결과를 반환하므로 DeleteConflict에는 WISH_PHOTO_EXPIRED가 없습니다. redaction이 실패하면 삭제와 사진 revocation도 rollback합니다. tombstone과 불변 이력에는 사진 identity나 URL을 남기지 않습니다. 응답 capability 발급은 commit 전에 완료합니다. 이후의 모든 조회는 WISH_NOT_FOUND로 숨깁니다. OPEN 잔액 조정 건이 있어도 삭제를 차단하지 않습니다.
          */
         delete: operations["deleteWish"];
         options?: never;
         head?: never;
         /**
          * 변경 가능한 위시 필드를 원자적으로 병합 패치
-         * @description 필드를 생략하면 기존 값을 유지하고 startDate 또는 targetDate에 null을 지정하면 해당 날짜를 지웁니다. 두 날짜를 함께 변경할 때는 중간 상태가 아니라 원자적으로 적용한 최종 날짜 쌍을 검증하며, 둘 다 날짜이면 startDate가 targetDate보다 늦지 않아야 합니다. 성공한 날짜 변경은 updatedAt과 version을 정확히 한 번 갱신하고, 역전된 날짜 범위는 어떤 필드, version, updatedAt 또는 공유 카드도 변경하지 않습니다. 잔액 불일치가 없을 때 COMPLETED 또는 ABANDONED 위시는 공개 범위만 변경할 수 있습니다. 위시를 포기하면 공유 카드를 제거합니다. 포기된 위시의 공개 범위를 변경하면 소유자에게 보이는 위시 메타데이터만 갱신하고 공유 카드는 절대 생성하지 않습니다. OPEN 잔액 조정 건이 있으면 purpose, targetAmount, startDate, targetDate를 비롯해 공개 범위를 확대·축소하거나 PRIVATE로 바꾸는 모든 요청 필드를 거부합니다.
+         * @description 필드를 생략하면 기존 값을 유지하고 startDate 또는 targetDate에 null을 지정하면 해당 날짜를 지웁니다. 두 날짜를 함께 변경할 때는 중간 상태가 아니라 원자적으로 적용한 최종 날짜 쌍을 검증하며, 둘 다 날짜이면 startDate가 targetDate보다 늦지 않아야 합니다. photoId를 생략하면 현재 사진을 유지하고 null이면 제거하며, 현재 사진과 같은 UUID이면 성공 no-op, 다른 UUID이면 새 Pending 사진을 원자적으로 첨부하고 이전 사진을 즉시 접근 불가능한 DELETE_PENDING으로 만듭니다. 교체나 명시적 제거는 이전 사진의 보존 중인 성공 업로드 receipt를 파괴적 정리 전에 REVOKED_SUCCESS로 바꾸고, 새로 첨부한 사진의 ACTIVE_SUCCESS와 retainUntil은 유지합니다. 사진 추가·교체·제거는 IN_PROGRESS 또는 AMOUNT_REACHED에서만 허용하고, terminal 위시에 photoId를 제공하면 보존된 사진과 같은 값이어도 INVALID_STATE_TRANSITION입니다. expectedVersion은 계속 필수이며 stale 음수 아닌 값은 VERSION_CONFLICT입니다. 교체 실패는 기존 attachment와 후보 Pending 사진을 그대로 유지합니다. 성공한 날짜 변경은 updatedAt과 version을 정확히 한 번 갱신합니다. 성공한 사진 변경도 version과 updatedAt, 존재하는 Shared Card의 contentUpdatedAt을 갱신합니다. 역전된 날짜 범위는 어떤 필드, version, updatedAt 또는 공유 카드도 변경하지 않습니다. 잔액 불일치가 없을 때 COMPLETED 또는 ABANDONED 위시는 공개 범위만 변경할 수 있습니다. 위시를 포기하면 공유 카드를 제거하지만 첨부 사진과 ACTIVE_SUCCESS receipt는 보존합니다. 포기된 위시의 공개 범위를 변경하면 소유자에게 보이는 위시 메타데이터만 갱신하고 공유 카드는 절대 생성하지 않습니다. OPEN 잔액 조정 건이 있으면 purpose, targetAmount, startDate, targetDate를 비롯해 공개 범위를 확대·축소하거나 PRIVATE로 바꾸는 모든 요청 필드를 거부합니다. 응답 capability 발급은 commit 전에 끝나야 합니다.
          */
         patch: operations["patchWish"];
         trace?: never;
@@ -454,7 +601,7 @@ export interface paths {
         put?: never;
         /**
          * 위시를 포기하고 영구 비공개로 전환
-         * @description OPEN 잔액 조정 건이 있어도 포기를 차단하지 않습니다. 반환된 위시는 변경 커밋 후의 잔액 조정 플래그를 담습니다.
+         * @description OPEN 잔액 조정 건이 있어도 포기를 차단하지 않습니다. 첨부 사진은 보존되지만 이후 사진 변경은 허용하지 않습니다. 일치하는 멱등 재생은 최초 포기 snapshot의 NO_PHOTO를 그대로 null로 유지하거나 유효한 ACTIVE_PHOTO의 정확한 photoId에만 새 5분 URL을 발급합니다. 이후 Wish 삭제 등으로 원래 사진이 PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, URL 발급만 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다. 반환된 위시는 변경 커밋 후의 잔액 조정 플래그를 담고 응답 capability는 commit 전에 발급합니다.
          */
         post: operations["abandonWish"];
         delete?: never;
@@ -477,7 +624,7 @@ export interface paths {
         put?: never;
         /**
          * 목표 금액에 도달한 위시 완료
-         * @description OPEN 잔액 조정 건이 있어도 완료를 차단하지 않습니다. 반환된 위시는 변경 커밋 후의 잔액 조정 플래그를 담습니다.
+         * @description OPEN 잔액 조정 건이 있어도 완료를 차단하지 않습니다. 첨부 사진은 보존되지만 이후 사진 변경은 허용하지 않습니다. 일치하는 멱등 재생은 최초 완료 snapshot의 NO_PHOTO를 그대로 null로 유지하거나 유효한 ACTIVE_PHOTO의 정확한 photoId에만 새 5분 URL을 발급합니다. 이후 Wish 삭제 등으로 원래 사진이 PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, URL 발급만 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다. 반환된 위시는 변경 커밋 후의 잔액 조정 플래그를 담고 응답 capability는 commit 전에 발급합니다.
          */
         post: operations["completeWish"];
         delete?: never;
@@ -500,7 +647,7 @@ export interface paths {
         put?: never;
         /**
          * 카드 잔액 계정 자금을 위시에 적립
-         * @description 내부에서 PRE_DEPOSIT 조회를 수행합니다. 외부 제공자 조회가 실패하면 위시는 변경되지 않습니다. 저장된 불일치 관측 결과는 이 입금 작업만 잠그고 거부합니다.
+         * @description 내부에서 PRE_DEPOSIT 조회를 수행합니다. 외부 제공자 조회가 실패하면 위시는 변경되지 않습니다. 저장된 불일치 관측 결과는 이 입금 작업만 잠그고 거부합니다. 일치하는 멱등 재생은 최초 Wish snapshot의 NO_PHOTO를 그대로 null로 유지하거나, 유효한 ACTIVE_PHOTO의 정확한 photoId에만 새 5분 URL을 발급합니다. 원래 사진이 PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, URL 발급만 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다.
          */
         post: operations["depositToWish"];
         delete?: never;
@@ -544,7 +691,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 위시에서 자금 인출 */
+        /**
+         * 위시에서 자금 인출
+         * @description 일치하는 멱등 재생은 최초 Wish snapshot의 identity·상태·version·event identity를 유지합니다. NO_PHOTO는 이후 현재 attachment가 있어도 null이고, ACTIVE_PHOTO는 캡처된 정확한 photoId가 같은 소유자와 위시에 유효하게 ATTACHED인 경우에만 새 5분 URL로 성공합니다. PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, 유효한 사진의 URL 발급만 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다.
+         */
         post: operations["withdrawFromWish"];
         delete?: never;
         options?: never;
@@ -587,7 +737,7 @@ export interface paths {
         put?: never;
         /**
          * 학생을 전체 범위에서 차단
-         * @description 인증된 학생의 단방향 전역 차단을 생성하거나 다시 생성합니다. 클라이언트 입력으로 차단 주체를 지정할 수 없습니다. 정규 학생 쌍 잠금 아래에서 모든 학원의 현재 친구 관계를 종료하고, 모든 학원에서 양방향의 PENDING 요청을 processedAt이 설정된 CANCELED로 바꾸며, 같은 트랜잭션에서 차단을 활성화합니다. 재요청은 현재 상태를 기준으로 평가하며 Idempotency-Key는 받지 않습니다.
+         * @description 인증 주체에서만 차단 주체를 가져와 전역 단방향 차단을 활성화합니다. 같은 학원 소속을 요구하지 않으며 기존 상대방의 역방향 차단도 자신의 차단 생성을 금지하지 않습니다. 같은 트랜잭션에서 모든 학원의 양방향 현재 팔로우를 종료합니다. 이미 활성인 자기 소유 차단은 409 STUDENT_BLOCK_ALREADY_ACTIVE, 자신은 409 SELF_RELATIONSHIP입니다. 영구 Idempotency-Key나 expectedVersion은 받지 않습니다. 팔로우·언팔로우의 중복 성공은 과거 결과 재생이 아닌 현재 상태의 no-op입니다. 겹치는 유효 요청은 서버 직렬화 순서대로 처리하며 마지막 유효 요청이 현재 상태를 결정합니다. 언팔로우 뒤 지연된 팔로우 재시도는 새 관계를 만들 수 있습니다. 같은 상대방에 대한 클라이언트 변경 요청은 순차 실행해야 하며 기기 간 순서는 서버 처리 순서만 보장합니다. 팔로우·언팔로우·차단·차단 해제는 전역 학생 쌍 단위로 일관되게 직렬화하고 관계 변경과 같은 트랜잭션에서 양방향 차단을 재검증합니다.
          */
         post: operations["blockStudent"];
         delete?: never;
@@ -611,9 +761,52 @@ export interface paths {
         post?: never;
         /**
          * 단방향 학생 차단 해제
-         * @description 차단 주체가 인증된 학생인 현재 차단만 해제합니다. 차단이 없거나 이미 해제되었거나 인증된 학생이 소유하지 않은 차단은 STUDENT_BLOCK_NOT_FOUND로 숨깁니다. 차단을 해제해도 친구 관계나 차단 과정에서 취소된 요청은 절대 복원하지 않으며 성공 응답 본문이 없습니다.
+         * @description 인증된 학생이 소유한 현재 차단만 해제합니다. 부재·비활성·비소유 차단은 404 STUDENT_BLOCK_NOT_FOUND입니다. 팔로우는 절대 복원하지 않으며 독립적인 역방향 활성 차단은 계속 적용됩니다. 성공 응답 본문은 없습니다. 전역 학생 쌍 직렬화를 관계 변경과 공유합니다.
          */
         delete: operations["unblockStudent"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/wish-photos": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 위시에 첨부할 비공개 사진 업로드
+         * @description 인증된 학생 소유의 Pending 사진을 동기적으로 만듭니다. 정확히 하나의 photo 파트만 허용하고 5 MiB보다 큰 바이트 스트림은 디코딩 전에 중단합니다. 실제 JPEG 1080x1080 이미지만 디코딩한 뒤 EXIF·위치 메타데이터를 제거하고 1080x1080, 720x720, 360x360 JPEG로 재인코딩합니다. adult, racy, violence가 LIKELY 또는 VERY_LIKELY이면 PHOTO_CONTENT_NOT_ALLOWED로 거부하지만 medical 또는 spoof가 POSSIBLE인 것만으로는 거부하지 않습니다. 요청 지문은 multipart framing·boundary·filename을 제외한, 변환 전 수신 photo 파트 정확한 바이트의 SHA-256입니다. 소유자와 Idempotency-Key로 범위가 정해진 최소 receipt는 최초 receipt 생성 업로드가 시작된 시점부터 정확히 24시간 동안만 효력이 있습니다. 보존 중인 같은 지문의 ACTIVE_SUCCESS는 변환·검사·저장·quota 소비를 반복하지 않고 같은 photoId와 새 5분 signed URL을 201로 재생합니다. 새 URL 발급만 실패하면 receipt를 바꾸지 않고 503 PHOTO_DELIVERY_UNAVAILABLE을 반환합니다. 같은 지문의 REVOKED_SUCCESS 또는 이미 재생할 수 없는 사진은 사진·URL·receipt 세부 정보 없이 409 WISH_PHOTO_EXPIRED를 반환하고, 다른 지문은 처리 전에 409 IDEMPOTENCY_KEY_REUSED를 반환합니다. 보존한 결정적 거부는 원래 status와 안정적 code를 재생하되 자유 형식 message는 보존하지 않습니다. request time이 retainUntil에 도달하면 이전 receipt는 논리적으로 없으며 같은 key를 새 업로드에 재사용할 수 있습니다. 첨부 자체와 완료·포기는 성공 receipt를 폐기하지 않지만 Pending 취소·만료, 교체·명시적 제거, Wish 삭제, DELETE_PENDING 전환, hard cleanup은 파괴적 정리 전에 REVOKED_SUCCESS로 바꾸고 retainUntil까지 receipt를 남깁니다. 학생별 미첨부 Pending 사진은 최대 3개이고 rolling 1시간의 새 처리 시도는 최대 20회입니다. 파일 이름은 신뢰하지 않고 업로더 identity는 인증 주체에서만 결정합니다.
+         */
+        post: operations["uploadWishPhoto"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/wish-photos/{photoId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Opaque 위시 사진 UUID입니다. 식별자 knowledge만으로 읽기, 취소 또는 첨부 권한이 생기지 않습니다. */
+                photoId: components["parameters"]["WishPhotoId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * 미첨부 Pending 위시 사진 취소
+         * @description 인증된 소유자만 미첨부 Pending 사진을 취소할 수 있습니다. 소유한 PENDING 또는 만료 사진은 즉시 첨부 불가능한 DELETE_PENDING으로 바꾸고 204를 반환하며 객체 제거와 hard delete는 비동기로 이어집니다. 성공한 취소는 정리를 enqueue하기 전에 보존 중인 성공 업로드 receipt를 REVOKED_SUCCESS로 바꾸고 retainUntil까지 남깁니다. 같은 소유자가 DELETE_PENDING 상태에서 반복하면 204 no-op입니다. 없거나 다른 학생 소유인 식별자는 404 WISH_PHOTO_NOT_FOUND로 숨기고, 위시에 이미 첨부된 사진은 409 WISH_PHOTO_ALREADY_ATTACHED를 반환합니다. photoId나 기존 signed URL 자체는 권한을 부여하지 않습니다.
+         */
+        delete: operations["deletePendingWishPhoto"];
         options?: never;
         head?: never;
         patch?: never;
@@ -623,6 +816,44 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AbandonmentSharedCard: {
+            /** @description 임시 정렬에 사용하는 포기 카드 게시 또는 콘텐츠 변경의 RFC 3339 UTC Z 시점입니다. 공개된 진행 카드가 포기로 교체될 때 한 번 갱신되며 멱등 재생이나 조회 시점 권한 검사는 이 값을 바꾸지 않습니다. */
+            contentUpdatedAt: components["schemas"]["UtcInstant"];
+            /**
+             * @description 포기 결과를 게시한 공유 카드임을 식별하는 ABANDONMENT 판별자입니다. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            kind: "ABANDONMENT";
+            /** @description 작성 학생의 안정적인 UUID입니다. 학생 조회의 studentId와 같으며 sharedCardId 및 비공개 wishId와 구별됩니다. 닉네임 변경이나 완료 카드 교체 또는 포기 카드 교체 후에도 유지됩니다. */
+            ownerId: components["schemas"]["Uuid"];
+            /** @description 소유자의 현재 표시 닉네임이며 식별 키가 아닙니다. 작성자 식별은 ownerId를 사용하며 실명, 별도 studentId 속성, 계정 데이터 또는 실제 카드 데이터는 노출하지 않습니다. */
+            ownerNickname: string;
+            /** @description 현재 권한 검사 뒤 발급된 5분 비공개 사진 URL 세트이며 첨부 사진이 없으면 null입니다. 사진 식별자, object key, 과거 signed URL은 노출하지 않습니다. */
+            photo: components["schemas"]["WishPhoto"] | null;
+            /** @description 포기 직전에 불변으로 캡처한 적립액과 targetAmount에서 floor(abandonmentAmount * 100 / targetAmount)로 한 번 계산한 정수입니다. 캡처 금액이 0이면 0이며 null이나 생략으로 바꾸지 않습니다. 100은 캡처 금액이 targetAmount와 같을 때만 반환합니다. 정확한 KRW 금액과 현재 배정 금액은 노출하지 않습니다. */
+            progressPercent: number;
+            /** @description 게시된 NFC 정규화 위시 목적입니다. */
+            purpose: components["schemas"]["Purpose"];
+            /** @description 개인정보를 노출하지 않는 이 공유 카드 프로젝션의 안정적인 UUID입니다. 기반 위시 또는 계정 식별자는 노출하지 않습니다. */
+            sharedCardId: components["schemas"]["Uuid"];
+            /**
+             * Format: date
+             * @description 저장된 위시 시작 달력 날짜 LocalDate를 YYYY-MM-DD 또는 null로 직접 투영합니다. 필드는 항상 존재하며 미지정은 null입니다. 생성 시각이나 오늘 날짜로 보충하거나 시간대를 변환하지 않습니다.
+             */
+            startDate: string | null;
+            /**
+             * @description 이 포기 공유 카드의 고정된 위시 상태 ABANDONED입니다.
+             * @constant
+             */
+            state: "ABANDONED";
+            /** @description 게시된 양의 정수 KRW 목표 금액입니다. 포기 직전 적립액이나 포기 뒤 현재 0원 배정은 노출하지 않습니다. */
+            targetAmount: components["schemas"]["KrwPositive"];
+            /**
+             * Format: date
+             * @description 저장된 위시 목표 달력 날짜 LocalDate를 YYYY-MM-DD 또는 null로 직접 투영합니다. 필드는 항상 존재하며 미지정은 null입니다. 생성 시각이나 오늘 날짜로 보충하거나 시간대를 변환하지 않습니다.
+             */
+            targetDate: string | null;
+        };
         AccountCardBalanceChange: {
             /** @description 이벤트 직후 부호 있는 원장 기준 가용 계정 잔액 음수 값은 유지되며 표시가 고정되지 않습니다. */
             accountAvailableBalanceAfter: components["schemas"]["KrwSigned"];
@@ -843,6 +1074,257 @@ export interface components {
             /** @description 이 외부 잔액 조회를 시도한 RFC 3339 UTC Z 시점입니다. */
             observedAt: components["schemas"]["UtcInstant"];
         };
+        /** @description 방향성 작성자 관심만 나타내며 카테고리 관심이나 클릭을 방문으로 대체하지 않습니다. */
+        BehaviorAuthorInterestDaily: {
+            /**
+             * @description 해당 기간의 수집 및 논리 보존 범위입니다.
+             * @enum {string}
+             */
+            coverageStatus: "COMPLETE" | "PARTIAL" | "NONE";
+            /** @description 서울 기준 날짜이며 요청한 모든 날짜를 오름차순으로 반환합니다. */
+            date: components["schemas"]["UtcDate"];
+            /**
+             * Format: int64
+             * @description 본인에서 특정 작성자로 향한 날짜별 방문 수이며 NONE이면 null입니다.
+             */
+            profileVisitCount: number | null;
+        } & unknown;
+        /** @description 양쪽 현재 학원 소속과 양방향 차단 부재가 필요하며 작성자 관심만 제공합니다. */
+        BehaviorAuthorInterestMetrics: {
+            /** @description 조회 대상 학원 UUID입니다. */
+            academyId: components["schemas"]["Uuid"];
+            /** @description 발생 시각 상한과 보존 판정에 쓰는 한 번의 일관된 조회 시각입니다. */
+            asOf: components["schemas"]["UtcInstant"];
+            /** @description 관심 대상 작성자의 학생 UUID입니다. */
+            authorStudentId: components["schemas"]["Uuid"];
+            /** @description 수집 가능성과 논리 보존 상태를 수치와 함께 해석합니다. */
+            coverage: components["schemas"]["BehaviorMetricCoverage"];
+            /** @description 요청한 모든 날짜의 오름차순 작성자 방문 지표입니다. */
+            daily: components["schemas"]["BehaviorAuthorInterestDaily"][];
+            /** @description 조회한 서울 날짜 반개구간입니다. */
+            period: components["schemas"]["BehaviorMetricPeriod"];
+            /**
+             * Format: int64
+             * @description studentId에서 authorStudentId로 향한 방문 수이며 NONE이면 null입니다.
+             */
+            profileVisitCount: number | null;
+            /**
+             * @description 내부 지표 계약 버전입니다.
+             * @constant
+             */
+            schemaVersion: 1;
+            /** @description 관심을 보낸 현재 학원 학생 UUID입니다. */
+            studentId: components["schemas"]["Uuid"];
+        } & unknown;
+        /** @description 새 이벤트는 201, 현재 접근을 확인한 동일 이벤트 재생은 200으로 같은 본문을 반환합니다. */
+        BehaviorEventAccepted: {
+            /** @description 최초 수락한 이벤트 UUID입니다. */
+            eventId: components["schemas"]["Uuid"];
+            /**
+             * @description 수락한 행동 유형입니다.
+             * @enum {string}
+             */
+            eventType: "PROFILE_VISIT" | "FEED_EXPOSURE" | "FEED_CLICK";
+            /** @description 마이크로초로 절삭한 최초 발생 시각이며 재생에도 그대로 유지합니다. */
+            occurredAt: components["schemas"]["UtcInstant"];
+            /** @description 최초 수신 시각이며 재생에도 그대로 유지합니다. */
+            receivedAt: components["schemas"]["UtcInstant"];
+        };
+        /** @description 노출보다 먼저 또는 노출 없이 발생한 클릭도 수락하며 노출을 합성하지 않습니다. */
+        BehaviorFeedClickRequest: {
+            /** @description 해당 맥락에 실제 기록된 카드 UUID입니다. */
+            cardId: components["schemas"]["Uuid"];
+            /**
+             * @description 기존 방문하기 동작입니다. 도착 프로필의 방문 기록은 별도 이벤트입니다.
+             * @constant
+             */
+            clickKind: "AUTHOR_PROFILE";
+            /** @description 인증 학생별 이벤트 UUID입니다. */
+            eventId: components["schemas"]["Uuid"];
+            /**
+             * @description 피드 클릭 이벤트입니다. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            eventType: "FEED_CLICK";
+            /** @description 학생 범위에서 맥락·카드·위치에 불변 결속되는 가시성 주기 UUID입니다. */
+            impressionId: components["schemas"]["Uuid"];
+            /** @description 실제 행동 시각이며 마이크로초 아래 정밀도는 절삭합니다. */
+            occurredAt: components["schemas"]["UtcInstant"];
+            /** @description 결과 페이지 안의 0부터 시작하는 카드 위치입니다. */
+            position: number;
+            /** @description 본인과 현재 학원에 속한 결과 맥락 UUID입니다. */
+            resultContextId: components["schemas"]["Uuid"];
+        };
+        /** @description eventType에 맞는 닫힌 요청 하나만 허용하며 알 수 없는 필드와 null을 거부합니다. */
+        BehaviorFeedEventRequest: components["schemas"]["BehaviorFeedExposureRequest"] | components["schemas"]["BehaviorFeedClickRequest"];
+        /** @description 문서가 보이는 동안 카드가 50% 이상 연속 1000ms 보인 주기당 하나의 노출입니다. clickKind는 금지됩니다. */
+        BehaviorFeedExposureRequest: {
+            /** @description 해당 맥락에 실제 기록된 카드 UUID입니다. */
+            cardId: components["schemas"]["Uuid"];
+            /** @description 인증 학생별 이벤트 UUID입니다. */
+            eventId: components["schemas"]["Uuid"];
+            /**
+             * @description 피드 노출 이벤트입니다. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            eventType: "FEED_EXPOSURE";
+            /** @description 학생 범위에서 맥락·카드·위치에 불변 결속되는 가시성 주기 UUID입니다. */
+            impressionId: components["schemas"]["Uuid"];
+            /** @description 실제 행동 시각이며 마이크로초 아래 정밀도는 절삭합니다. */
+            occurredAt: components["schemas"]["UtcInstant"];
+            /** @description 결과 페이지 안의 0부터 시작하는 카드 위치입니다. */
+            position: number;
+            /** @description 본인과 현재 학원에 속한 결과 맥락 UUID입니다. */
+            resultContextId: components["schemas"]["Uuid"];
+        };
+        /** @description actor/impression과 불변 맥락·카드·위치로 결합합니다. 여러 클릭은 클릭 수만 늘리고 CTR 분자는 한 번만 늘립니다. */
+        BehaviorFeedMetricItem: {
+            /**
+             * Format: int64
+             * @description 유효한 AUTHOR_PROFILE 클릭 이벤트 수입니다.
+             */
+            clickCount: number;
+            /**
+             * Format: int64
+             * @description 기간 내 유효한 노출과 하나 이상 클릭이 함께 있는 고유 actor/impression 수입니다.
+             */
+            clickedExposedImpressionCount: number;
+            /** @description 노출이 0이면 null, 아니면 clickedExposedImpressionCount / exposureCount입니다. */
+            ctr: number | null;
+            /**
+             * Format: int64
+             * @description 유효한 고유 actor/impression 노출 수입니다.
+             */
+            exposureCount: number;
+            /** @description 결과 페이지 안의 0부터 시작하는 카드 위치입니다. */
+            position: number;
+            /**
+             * @description 서버가 기록한 정렬 출처입니다.
+             * @constant
+             */
+            sortSource: "LATEST";
+            /**
+             * Format: int64
+             * @description 요청 기간 안의 유효한 대응 노출이 없는 클릭 이벤트 수입니다.
+             */
+            unmatchedClickCount: number;
+        } & unknown;
+        /** @description 각 이벤트의 현재 카드 가시성과 발생 시각, 수신 보존을 독립적으로 검사한 피드 지표입니다. */
+        BehaviorFeedMetrics: {
+            /** @description 조회 대상 학원 UUID입니다. */
+            academyId: components["schemas"]["Uuid"];
+            /** @description 발생 시각 상한과 보존 판정에 쓰는 한 번의 일관된 조회 시각입니다. */
+            asOf: components["schemas"]["UtcInstant"];
+            /** @description 수집 가능성과 논리 보존 상태를 수치와 함께 해석합니다. */
+            coverage: components["schemas"]["BehaviorMetricCoverage"];
+            /** @description 관측된 유효 활동이 있는 행만 sortSource, position 오름차순으로 반환합니다. NONE이면 빈 배열입니다. */
+            items: components["schemas"]["BehaviorFeedMetricItem"][];
+            /** @description 조회한 서울 날짜 반개구간입니다. */
+            period: components["schemas"]["BehaviorMetricPeriod"];
+            /**
+             * @description 내부 지표 계약 버전입니다.
+             * @constant
+             */
+            schemaVersion: 1;
+        } & unknown;
+        /** @description COMPLETE도 모든 클라이언트 활동 전달을 보장하지 않습니다. NONE은 알려진 범위와 겹치지 않고 기여 이벤트도 없는 경우입니다. 일부 보존 이벤트가 있으면 PARTIAL로 계산합니다. */
+        BehaviorMetricCoverage: {
+            /** @description 조회 전체에 일관되게 적용하는 asOf입니다. */
+            availableThrough: components["schemas"]["UtcInstant"];
+            /** @description 최초 이벤트가 아닌 영속적인 백엔드 수집 활성화 시각이며 재시작으로 초기화하지 않습니다. */
+            collectionStartedAt: components["schemas"]["UtcInstant"];
+            /**
+             * @description 기록되었고 현재 접근 가능한 이벤트만 셉니다. 실제 미수집 활동이 0임을 주장하지 않습니다.
+             * @constant
+             */
+            countsMeaning: "RECORDED_ELIGIBLE_EVENTS_ONLY";
+            /** @description collectionStartedAt과 retentionCutoffReceivedAt에 5분을 더한 시각 중 최댓값입니다. */
+            fullyRetainedFrom: components["schemas"]["UtcInstant"];
+            /** @description 수집 이전·보존 만료·진행 중 기간의 적용 사유입니다. */
+            reasons: ("BEFORE_COLLECTION" | "RETENTION_EXPIRED" | "OPEN_PERIOD")[];
+            /** @description 일관된 asOf에서 90일을 뺀 값입니다. 이 시각 이하에 수신한 이벤트는 제외합니다. */
+            retentionCutoffReceivedAt: components["schemas"]["UtcInstant"];
+            /**
+             * @description 해당 기간의 수집 및 논리 보존 범위입니다.
+             * @enum {string}
+             */
+            status: "COMPLETE" | "PARTIAL" | "NONE";
+        };
+        /** @description 양의 기간이며 최대 90일, 종료일은 서울 기준 내일을 넘지 않습니다. */
+        BehaviorMetricPeriod: {
+            /** @description 서울 기준 포함 시작일입니다. */
+            fromDate: components["schemas"]["UtcDate"];
+            /** @description 시작일 서울 자정에 해당하는 UTC 시각입니다. */
+            fromInclusive: components["schemas"]["UtcInstant"];
+            /**
+             * @description 날짜 경계에 적용하는 시간대입니다.
+             * @constant
+             */
+            timezone: "Asia/Seoul";
+            /** @description 서울 기준 제외 종료일입니다. */
+            toDate: components["schemas"]["UtcDate"];
+            /** @description 종료일 서울 자정에 해당하는 UTC 시각입니다. */
+            toExclusive: components["schemas"]["UtcInstant"];
+        };
+        /** @description 날짜별 수집 범위를 독립적으로 계산한 들어온 프로필 방문 지표입니다. */
+        BehaviorProfileVisitDaily: {
+            /**
+             * @description 해당 기간의 수집 및 논리 보존 범위입니다.
+             * @enum {string}
+             */
+            coverageStatus: "COMPLETE" | "PARTIAL" | "NONE";
+            /** @description 서울 기준 날짜이며 요청한 모든 날짜를 오름차순으로 반환합니다. */
+            date: components["schemas"]["UtcDate"];
+            /**
+             * Format: int64
+             * @description 해당 날짜의 서로 다른 방문 학생 수이며 NONE이면 null입니다.
+             */
+            distinctVisitorCount: number | null;
+            /**
+             * Format: int64
+             * @description 해당 날짜의 방문 수이며 NONE이면 null입니다.
+             */
+            visitCount: number | null;
+        } & unknown;
+        /** @description 개별 방문자 목록 없이 집계만 제공합니다. 이벤트마다 현재 구성원 상태와 양방향 차단을 재검증합니다. */
+        BehaviorProfileVisitMetrics: {
+            /** @description 조회 대상 학원 UUID입니다. */
+            academyId: components["schemas"]["Uuid"];
+            /** @description 발생 시각 상한과 보존 판정에 쓰는 한 번의 일관된 조회 시각입니다. */
+            asOf: components["schemas"]["UtcInstant"];
+            /** @description 수집 가능성과 논리 보존 상태를 수치와 함께 해석합니다. */
+            coverage: components["schemas"]["BehaviorMetricCoverage"];
+            /** @description 요청한 모든 날짜의 오름차순 지표입니다. */
+            daily: components["schemas"]["BehaviorProfileVisitDaily"][];
+            /**
+             * Format: int64
+             * @description 전체 기간의 서로 다른 방문자 수로 일별 고유 방문자 수를 더한 값이 아닙니다. NONE이면 null입니다.
+             */
+            distinctVisitorCount: number | null;
+            /** @description 조회한 서울 날짜 반개구간입니다. */
+            period: components["schemas"]["BehaviorMetricPeriod"];
+            /**
+             * @description 내부 지표 계약 버전입니다.
+             * @constant
+             */
+            schemaVersion: 1;
+            /** @description 들어온 방문을 집계할 현재 학원 학생 UUID입니다. */
+            studentId: components["schemas"]["Uuid"];
+            /**
+             * Format: int64
+             * @description 현재 접근이 유효한 방문 이벤트 수입니다. NONE이면 null입니다.
+             */
+            visitCount: number | null;
+        } & unknown;
+        /** @description 실제 프로필 경로 진입을 기록합니다. 재렌더링이나 재전송은 새 방문이 아닙니다. */
+        BehaviorProfileVisitRequest: {
+            /** @description 인증 학생 범위에서 모든 행동 유형에 걸쳐 유일한 이벤트 UUID입니다. */
+            eventId: components["schemas"]["Uuid"];
+            /** @description 실제 경로 진입 시점입니다. 비교와 저장 전에 마이크로초 아래 자릿수를 버립니다. */
+            occurredAt: components["schemas"]["UtcInstant"];
+            /** @description 같은 학원의 방문 대상 학생 UUID입니다. */
+            targetStudentId: components["schemas"]["Uuid"];
+        };
         CardBalanceAccount: components["schemas"]["UnknownCardBalanceAccount"] | components["schemas"]["KnownCardBalanceAccount"];
         CardBalanceAccountPage: {
             /** @description 이 페이지에서 인증된 학생이 볼 수 있는 카드 잔액 계정입니다. */
@@ -885,7 +1367,7 @@ export interface components {
         CompletionSharedCard: {
             /**
              * Format: int64
-             * @description createdAt부터 completedAt까지 경과한 음수 아닌 정수 초입니다.
+             * @description max(0, completedAt-createdAt)의 정수 초입니다. 실제 UTC 시각의 차이를 사용하며 startDate 또는 targetDate의 날짜 차이로 재계산하지 않습니다.
              */
             actualDurationSeconds: number;
             /** @description 소유자가 위시를 명시적으로 완료한 RFC 3339 UTC Z 시점입니다. */
@@ -899,8 +1381,12 @@ export interface components {
              * @enum {string}
              */
             kind: "COMPLETION";
-            /** @description 소유자의 표시 별명입니다. 소유자 식별자, 학생 식별자, 계정 데이터 또는 실제 카드 데이터가 노출되지 않습니다. */
+            /** @description 작성 학생의 안정적인 UUID입니다. 학생 조회의 studentId와 같으며 sharedCardId 및 비공개 wishId와 구별됩니다. 닉네임 변경이나 완료 카드 교체 후에도 유지됩니다. */
+            ownerId: components["schemas"]["Uuid"];
+            /** @description 소유자의 현재 표시 닉네임이며 식별 키가 아닙니다. 작성자 식별은 ownerId를 사용합니다. 실명, 별도 studentId 속성, 계정 데이터 또는 실제 카드 데이터는 노출하지 않습니다. */
             ownerNickname: string;
+            /** @description 현재 권한 검사 뒤 발급된 5분 비공개 사진 URL 세트이며 첨부 사진이 없으면 null입니다. 완료 이후 사진은 보존되지만 변경할 수 없습니다. */
+            photo: components["schemas"]["WishPhoto"] | null;
             /**
              * @description 완료 카드 변형에서는 항상 100입니다.
              * @constant
@@ -910,18 +1396,18 @@ export interface components {
             purpose: components["schemas"]["Purpose"];
             /** @description 개인정보를 노출하지 않는 이 공유 카드 프로젝션의 안정적인 UUID입니다. 기반 위시 또는 계정 식별자는 노출하지 않습니다. */
             sharedCardId: components["schemas"]["Uuid"];
+            /**
+             * Format: date
+             * @description 저장된 위시 시작 달력 날짜 LocalDate를 YYYY-MM-DD 또는 null로 직접 투영합니다. 필드는 항상 존재하며 미지정은 null입니다. 생성 시각이나 오늘 날짜로 보충하거나 시간대를 변환하지 않습니다.
+             */
+            startDate: string | null;
             /** @description 게시된 양의 정수 KRW 목표 금액입니다. 소유자의 정확한 과거 위시 잔액은 노출하지 않습니다. */
             targetAmount: components["schemas"]["KrwPositive"];
             /**
              * Format: date
-             * @description 소유자가 선택적으로 지정한 목표 달력 날짜입니다. 완료된 위시에 목표 날짜가 없었으면 null입니다.
+             * @description 저장된 위시 목표 달력 날짜 LocalDate를 YYYY-MM-DD 또는 null로 직접 투영합니다. 필드는 항상 존재하며 미지정은 null입니다. 생성 시각이나 오늘 날짜로 보충하거나 시간대를 변환하지 않습니다.
              */
             targetDate: string | null;
-        };
-        /** @description 수신자만 지정하는 요청 페이로드입니다. 발신자는 항상 현재 인증 주체의 subjectId에서 가져옵니다. */
-        CreateFriendRequestRequest: {
-            /** @description 친구 요청을 받을 같은 학원의 현재 학생 UUID입니다. */
-            studentId: components["schemas"]["Uuid"];
         };
         /** @description 차단할 학생만 지정하는 요청 페이로드입니다. 차단 주체는 항상 현재 인증 주체의 subjectId에서 가져옵니다. */
         CreateStudentBlockRequest: {
@@ -929,6 +1415,11 @@ export interface components {
             studentId: components["schemas"]["Uuid"];
         };
         CreateWishRequest: {
+            /**
+             * Format: uuid
+             * @description 생략하거나 null이면 사진 없이 생성합니다. UUID이면 인증된 학생 소유의 만료되지 않은 미첨부 Pending 사진을 새 위시에 원자적으로 첨부합니다.
+             */
+            photoId?: string | null;
             purpose: components["schemas"]["PurposeInput"];
             /**
              * Format: date
@@ -941,13 +1432,13 @@ export interface components {
         };
         Cursor: string;
         /** @enum {string} */
-        ErrorCode: "MALFORMED_REQUEST" | "EXPECTED_VERSION_REQUIRED" | "IDEMPOTENCY_KEY_REQUIRED" | "AUTH_REQUIRED" | "FORBIDDEN" | "CARD_BALANCE_ACCOUNT_NOT_FOUND" | "WISH_NOT_FOUND" | "ACADEMY_NOT_FOUND" | "SHARED_CARD_NOT_FOUND" | "VERSION_CONFLICT" | "INVALID_STATE_TRANSITION" | "BALANCE_MISMATCH_LOCKED" | "INSUFFICIENT_AVAILABLE_BALANCE" | "INSUFFICIENT_WISH_AMOUNT" | "TARGET_AMOUNT_EXCEEDED" | "CROSS_ACCOUNT_TRANSFER_FORBIDDEN" | "IDEMPOTENCY_KEY_REUSED" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_AMOUNT" | "INVALID_PURPOSE" | "INVALID_DATE_RANGE" | "INVALID_VERSION" | "BALANCE_SYNC_FAILED" | "STUDENT_NOT_FOUND" | "FRIENDSHIP_NOT_FOUND" | "FRIEND_REQUEST_NOT_FOUND" | "STUDENT_BLOCK_NOT_FOUND" | "SELF_RELATIONSHIP" | "ALREADY_FRIENDS" | "FRIEND_REQUEST_ALREADY_PENDING" | "INCOMING_FRIEND_REQUEST_PENDING" | "FRIEND_REQUEST_NOT_PENDING" | "FRIEND_REQUEST_NOT_ACTIONABLE" | "STUDENT_BLOCK_ALREADY_ACTIVE";
+        ErrorCode: "SELF_PROFILE_VISIT" | "EVENT_TIME_OUT_OF_RANGE" | "PROFILE_NOT_FOUND" | "FEED_CONTEXT_NOT_FOUND" | "FEED_CONTEXT_EXPIRED" | "RECOMMENDATION_CURSOR_EXPIRED" | "RECOMMENDATION_CONTEXT_UNAVAILABLE" | "EVENT_ID_CONFLICT" | "IMPRESSION_CONFLICT" | "IMPRESSION_ALREADY_EXPOSED" | "MALFORMED_REQUEST" | "EXPECTED_VERSION_REQUIRED" | "IDEMPOTENCY_KEY_REQUIRED" | "AUTH_REQUIRED" | "FORBIDDEN" | "CARD_BALANCE_ACCOUNT_NOT_FOUND" | "WISH_NOT_FOUND" | "ACADEMY_NOT_FOUND" | "SHARED_CARD_NOT_FOUND" | "VERSION_CONFLICT" | "INVALID_STATE_TRANSITION" | "BALANCE_MISMATCH_LOCKED" | "INSUFFICIENT_AVAILABLE_BALANCE" | "INSUFFICIENT_WISH_AMOUNT" | "TARGET_AMOUNT_EXCEEDED" | "CROSS_ACCOUNT_TRANSFER_FORBIDDEN" | "IDEMPOTENCY_KEY_REUSED" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_AMOUNT" | "INVALID_PURPOSE" | "INVALID_DATE_RANGE" | "INVALID_VERSION" | "BALANCE_SYNC_FAILED" | "RECAP_QUERY_UNAVAILABLE" | "HISTORICAL_BALANCE_INTEGRITY_ERROR" | "HISTORICAL_BALANCE_QUERY_UNAVAILABLE" | "STUDENT_NOT_FOUND" | "STUDENT_BLOCK_NOT_FOUND" | "SELF_RELATIONSHIP" | "STUDENT_BLOCK_ALREADY_ACTIVE" | "WISH_PHOTO_NOT_FOUND" | "WISH_PHOTO_EXPIRED" | "WISH_PHOTO_ALREADY_ATTACHED" | "PHOTO_TOO_LARGE" | "UNSUPPORTED_PHOTO_TYPE" | "INVALID_PHOTO" | "PHOTO_CONTENT_NOT_ALLOWED" | "PHOTO_UPLOAD_RATE_LIMITED" | "PHOTO_PROCESSING_UNAVAILABLE" | "PHOTO_DELIVERY_UNAVAILABLE";
         ErrorEnvelope: {
             /** @description 선언된 모든 실패 JSON 응답이 공통으로 사용하는 구조화된 오류 페이로드입니다. */
             error: {
                 /** @description 안정적으로 기계 판독할 수 있는 ErrorCode입니다. 클라이언트는 message 텍스트가 아니라 이 값으로 분기해야 합니다. */
                 code: components["schemas"]["ErrorCode"];
-                /** @description 오류 코드별로 확장할 수 있는 메타데이터 객체입니다. 적용할 세부 정보가 없으면 비어 있으며 클라이언트는 알 수 없는 키를 무시해야 합니다. */
+                /** @description 오류 코드별로 확장할 수 있는 메타데이터 객체입니다. 적용할 세부 정보가 없으면 비어 있으며 클라이언트는 알 수 없는 키를 무시해야 합니다. 사진 오류에는 raw·transformed bytes, Base64, multipart content, filename, photoId, receipt outcome, retainUntil, signed URL, bucket, object path, content digest, 이미지 메타데이터, traceId 외 사진 내부 정보, 콘텐츠 안전성 category·likelihood 또는 provider payload를 절대 담지 않습니다. WISH_PHOTO_EXPIRED, IDEMPOTENCY_KEY_REUSED, PHOTO_PROCESSING_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE은 빈 details 객체를 반환합니다. */
                 details: {
                     [key: string]: unknown;
                 };
@@ -955,72 +1446,465 @@ export interface components {
                 fieldErrors: components["schemas"]["FieldError"][];
                 /** @description 이번 오류 발생을 사람이 읽을 수 있게 설명한 문장입니다. 안정적인 기계 판정 키가 아닙니다. */
                 message: string;
-                /** @description BALANCE_SYNC_FAILED일 때만 true입니다. 정의된 모든 클라이언트, 인가, 리소스 없음, 유효성 검사, 상태 충돌 오류에는 false입니다. */
+                /** @description BALANCE_SYNC_FAILED, RECAP_QUERY_UNAVAILABLE, HISTORICAL_BALANCE_QUERY_UNAVAILABLE, RECOMMENDATION_CONTEXT_UNAVAILABLE, PHOTO_UPLOAD_RATE_LIMITED, PHOTO_PROCESSING_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE일 때만 true입니다. 정의된 그 밖의 클라이언트, 인가, 리소스 없음, 유효성 검사, 상태 충돌 오류에는 false입니다. */
                 retryable: boolean;
                 /** @description 진단과 지원에 사용하는 불투명한 서버 상관관계 식별자입니다. 도메인 의미는 없습니다. */
                 traceId: string;
             } & unknown;
         };
+        /** @description 기존 raw-input classifier가 사용하는 한 학생의 완전 관측 월간 CoreMetrics입니다. */
+        FeedCoreMetrics: {
+            /** @description 안전한 정수 포기 횟수입니다. */
+            abandon_count: number;
+            /** @description 계정 전체의 유한한 부호 있는 평균 금액입니다. */
+            avg_amount: number;
+            /** @description CoreMetrics.save_count에 대응하는 안전한 정수 입금 횟수입니다. */
+            deposit_count: number;
+            /** @description 계산 가능하면 유한한 부호 있는 pace bias이고 아니면 null입니다. */
+            pace_bias: number | null;
+            /** @description 계산 가능하면 음수가 아닌 유한한 규칙성 표준편차이고 아니면 null입니다. */
+            regularity_std: number | null;
+            /** @description 계정 전체의 부호 있는 안전한 정수 저축 합계입니다. */
+            total_savings: number;
+            /** @description 안전한 정수 이체 횟수입니다. */
+            transfer_count: number;
+            /** @description 안전한 정수 방문 횟수입니다. */
+            visit_count: number;
+        };
+        /** @description Asia/Seoul 이전 calendar month의 관측 coverage와 CoreMetrics를 구분합니다. */
+        FeedMonthMetrics: {
+            /**
+             * @description COMPLETE만 실제 complete values를 가집니다.
+             * @enum {string}
+             */
+            coverage: "COMPLETE" | "PARTIAL" | "UNOBSERVED";
+            /**
+             * @description 변경되지 않은 aggregate/classifier input semantics입니다.
+             * @constant
+             */
+            metrics_version: "core-metrics-v1";
+            /** @description 검증된 YYYY-MM이며 year rollover를 포함합니다. */
+            month: string;
+            /** @description COMPLETE이면 실제 zero/null을 포함한 완전한 값이고 PARTIAL/UNOBSERVED이면 null입니다. */
+            values: components["schemas"]["FeedCoreMetrics"] | null;
+        } & unknown;
+        /** @description 현재 viewer에게 eligible한 최초 최대 100개 population의 한 ranking 후보입니다. */
+        FeedRankingCandidate: {
+            /** @description 현재 eligible한 후보 작성자 UUID입니다. */
+            author_id: components["schemas"]["Uuid"];
+            /** @description ordinary 후보는 recommendation 이전 달, completed 후보는 closedAt 이전 달입니다. */
+            author_previous_month: components["schemas"]["FeedMonthMetrics"];
+            /**
+             * @description 대표 category·amount bucket·deadline bucket에서 계산한 0, 1/3, 2/3 또는 1입니다.
+             * @enum {number}
+             */
+            basic_similarity: 0 | 0.3333333333333333 | 0.6666666666666666 | 1;
+            /** @description 후보 shared card UUID입니다. */
+            card_id: components["schemas"]["Uuid"];
+            /**
+             * @description pinned TF-IDF classifier의 정확한 11-category 결과입니다.
+             * @enum {string}
+             */
+            category_id: "패션" | "문구" | "전자기기" | "취미" | "스포츠" | "게임" | "도서" | "뷰티" | "굿즈" | "생활용품" | "기타";
+            /**
+             * Format: date-time
+             * @description COMPLETED이면 UTC 종결 시각이고 그 밖에는 null입니다.
+             */
+            closed_at: string | null;
+            /** @description stable backend candidate order와 latest keyset의 콘텐츠 시각입니다. */
+            content_updated_at: components["schemas"]["UtcInstant"];
+            /** @description basic similarity의 실제 생성 시각입니다. */
+            created_at: components["schemas"]["UtcInstant"];
+            /**
+             * @description ABANDONMENT를 제외한 ranking 후보 상태입니다.
+             * @enum {string}
+             */
+            state: "IN_PROGRESS" | "AMOUNT_REACHED" | "COMPLETED";
+            /**
+             * Format: date
+             * @description 원래 목표일 또는 no-deadline null입니다.
+             */
+            target_date: string | null;
+            /** @description pinned SequenceMatcher semantics의 유한한 [0,1] 값입니다. */
+            title_similarity: number;
+            /** @description inclusive 90-day retained author interest 여부입니다. */
+            visited_author_before: boolean;
+            /** @description immutable COMPLETE category evidence에서만 계산한 interest 여부입니다. */
+            visited_category_before: boolean;
+        } & unknown;
+        /** @description Python feed service만 사용하는 bounded·sanitized 오류 body입니다. */
+        FeedRankingError: {
+            /**
+             * @description HTTP status에 고정 매핑되는 machine code입니다.
+             * @enum {string}
+             */
+            code: "MALFORMED_REQUEST" | "AUTH_REQUIRED" | "PAYLOAD_TOO_LARGE" | "UNSUPPORTED_MEDIA_TYPE" | "INVALID_FEED_INPUT" | "RANKING_FAILED" | "RANKING_UNAVAILABLE";
+            /** @description payload value 없이 field path만 담는 bounded array입니다. */
+            field_errors: string[];
+            /** @description payload value를 포함하지 않는 정제된 메시지입니다. */
+            message: string;
+            /** @description RANKING_UNAVAILABLE에만 true입니다. foreground retry를 뜻하지 않습니다. */
+            retryable: boolean;
+            /** @description opaque diagnostic correlation ID입니다. */
+            trace_id: string;
+        } & unknown;
+        /** @description backend가 Python feed service로 보내는 exact UTF-8 digest 대상의 닫힌 schema v1 요청입니다. */
+        FeedRankingRequest: {
+            /** @description 현재 인가된 academy UUID입니다. */
+            academy_id: components["schemas"]["Uuid"];
+            /** @description stable input order의 서로 다른 eligible card 후보 0~100개입니다. */
+            candidates: components["schemas"]["FeedRankingCandidate"][];
+            /** @description pinned portable classifier version과 artifact digest입니다. */
+            classifier_version: string;
+            /** @description durable v2 feed context UUID입니다. */
+            context_id: components["schemas"]["Uuid"];
+            /**
+             * @description backend feature semantics version입니다.
+             * @constant
+             */
+            feature_version: "feed-features-v1";
+            /** @description feature window와 month를 고정하는 UTC instant입니다. */
+            recommendation_at: components["schemas"]["UtcInstant"];
+            /** @description 한 foreground attempt의 UUID입니다. */
+            request_id: components["schemas"]["Uuid"];
+            /**
+             * @description feed ranking wire schema version입니다.
+             * @constant
+             */
+            schema_version: 1;
+            /**
+             * @description calendar 경계를 해석하는 고정 시간대입니다.
+             * @constant
+             */
+            timezone: "Asia/Seoul";
+            /** @description 인증 주체에서 얻은 viewer UUID입니다. */
+            viewer_id: components["schemas"]["Uuid"];
+            /** @description recommendationAt의 이전 Seoul calendar month viewer aggregate입니다. */
+            viewer_previous_month: components["schemas"]["FeedMonthMetrics"];
+        };
+        /** @description Python이 실제 scoring/composition 뒤 반환하는 닫힌 deterministic response입니다. */
+        FeedRankingResponse: {
+            /** @description 요청의 exact context UUID입니다. */
+            context_id: components["schemas"]["Uuid"];
+            /** @description 수신한 exact UTF-8 request body bytes의 SHA-256입니다. */
+            input_digest: string;
+            /**
+             * @description 허용된 ranking/composition model version입니다.
+             * @constant
+             */
+            model_version: "feed-rules-v1";
+            /** @description 제출 후보에만 속하는 min(20,candidate count)개의 서로 다른 ordered ID입니다. */
+            ordered_card_ids: components["schemas"]["Uuid"][];
+            /** @description 요청의 exact request UUID입니다. */
+            request_id: components["schemas"]["Uuid"];
+            /**
+             * @description feed ranking response schema version입니다.
+             * @constant
+             */
+            schema_version: 1;
+        };
+        /** @description 기존 공유 카드 커서와 정렬을 사용합니다. actor나 추천 출처를 클라이언트가 지정할 수 없습니다. */
+        FeedResultRequest: {
+            /** @description 첫 페이지에는 생략합니다. 명시적인 null 또는 빈 값은 허용하지 않습니다. */
+            cursor?: components["schemas"]["Cursor"];
+            /**
+             * @description 페이지 크기이며 기본값은 20입니다.
+             * @default 20
+             */
+            limit: number;
+        };
+        /** @description actor, 학원, 실제 카드와 위치, 생성 시각을 저장한 24시간 behavior result page입니다. 별도의 5분 v2 feed context에서 ranked와 latest segment를 이어 제공하며 맥락 생성 자체는 노출·클릭·방문을 기록하지 않습니다. */
+        FeedResultResponse: {
+            /** @description 맥락 생성 시각입니다. */
+            createdAt: components["schemas"]["UtcInstant"];
+            /** @description createdAt에서 정확히 24시간 뒤입니다. */
+            expiresAt: components["schemas"]["UtcInstant"];
+            /** @description 실제로 전달한 순서의 기존 공유 카드입니다. 배열 인덱스가 position이며 빈 페이지도 맥락을 생성합니다. */
+            items: components["schemas"]["SharedCard"][];
+            /** @description RECOMMENDATION이면 feed-rules-v1이고 LATEST이면 null입니다. */
+            modelVersion: string | null;
+            /** @description 마지막 페이지는 null입니다. 기존 v1은 latest-only를 유지하고 새 v2는 원래 5분 expiry와 durable transition에 결속됩니다. */
+            nextCursor: string | null;
+            /**
+             * Format: uuid
+             * @description RECOMMENDATION이면 원래 Python request UUID이고 LATEST이면 null입니다.
+             */
+            recommendationResultId: string | null;
+            /** @description 서버가 생성한 결과 맥락 UUID입니다. */
+            resultContextId: components["schemas"]["Uuid"];
+            /**
+             * @description 실제 반환 배열에 ranked-segment 카드가 하나라도 있으면 RECOMMENDATION, latest-only·owner-filter·disabled·empty·fallback이면 LATEST입니다. mixed page는 RECOMMENDATION입니다.
+             * @enum {string}
+             */
+            sortSource: "LATEST" | "RECOMMENDATION";
+        } & unknown;
+        /** @description 최초 PROFILE_VISIT 수락 때 고정하는 historical category evidence와 opaque provenance입니다. */
+        FeedVisitCategoryEvidence: {
+            /** @description 수락한 academy UUID입니다. */
+            academy_id: components["schemas"]["Uuid"];
+            /** @description 인증된 방문 actor UUID입니다. */
+            actor_id: components["schemas"]["Uuid"];
+            /** @description database가 생성한 evidence linearization instant입니다. */
+            captured_at: components["schemas"]["UtcInstant"];
+            /** @description COMPLETE이면 empty를 포함한 전체 category set이고 UNKNOWN이면 null입니다. */
+            category_ids: ("패션" | "문구" | "전자기기" | "취미" | "스포츠" | "게임" | "도서" | "뷰티" | "굿즈" | "생활용품" | "기타")[] | null;
+            /** @description title version을 해석한 pinned classifier artifact입니다. */
+            classifier_version: string;
+            /** @description actor scope의 기존 event UUID입니다. */
+            event_id: components["schemas"]["Uuid"];
+            /**
+             * @description complete known set과 unprovable history를 구분합니다.
+             * @enum {string}
+             */
+            evidence_status: "COMPLETE" | "UNKNOWN";
+            /**
+             * @description immutable evidence encoding version입니다.
+             * @constant
+             */
+            evidence_version: "feed-visit-evidence-v1";
+            /** @description 소급하지 않는 관련 collection baseline입니다. */
+            history_coverage_start: components["schemas"]["UtcInstant"];
+            /** @description 변경하지 않는 원래 발생 시각입니다. */
+            occurred_at: components["schemas"]["UtcInstant"];
+            /** @description 변경하지 않는 원래 수신 시각입니다. */
+            received_at: components["schemas"]["UtcInstant"];
+            /** @description category/eligibility/privacy interval을 증명하는 opaque version references입니다. */
+            source_versions: string[];
+            /** @description 현재 인가를 통과한 target author UUID입니다. */
+            target_author_id: components["schemas"]["Uuid"];
+            /**
+             * @description UNKNOWN의 닫힌 reason이고 COMPLETE이면 null입니다.
+             * @enum {string|null}
+             */
+            unknown_reason: "LEGACY" | "BEFORE_BASELINE" | "FUTURE_OCCURRED_AT" | "HISTORY_GAP" | "CLASSIFIER_UNAVAILABLE" | null;
+        } & unknown;
         FieldError: {
             /** @description 이 유효성 검사 실패와 관련된 잘못된 요청 필드, 매개 변수 또는 헤더의 이름입니다. */
             field: string;
             /** @description 해당 필드 오류를 사람이 읽을 수 있게 설명한 문장입니다. */
             message: string;
         };
-        Friend: {
-            /** @description 현재 친구 관계가 생성되거나 재개된 RFC 3339 UTC Z 시점입니다. */
-            friendsSince: components["schemas"]["UtcInstant"];
-            /** @description 현재 친구 닉네임이며 공백 문자열이 아닙니다. */
+        Follow: {
+            /** @description 이 목록을 정의하는 현재 관계의 시작 시점입니다. 팔로잉은 목록 소유자 → 항목 학생, 팔로워는 항목 학생 → 목록 소유자이며 조회자와 항목 학생 사이 역방향 관계의 시작 시점과 같을 필요가 없습니다. */
+            followedAt: components["schemas"]["UtcInstant"];
+            /** @description 선택 학원에서 현재 항목 학생 → 조회자의 유효 팔로우 여부입니다. 목록 소유자의 관계 상태를 나타내지 않습니다. */
+            isFollowedBy: boolean;
+            /** @description 선택 학원에서 현재 조회자 → 항목 학생의 유효 팔로우 여부입니다. 목록 소유자의 관계 상태를 나타내지 않습니다. */
+            isFollowing: boolean;
+            /** @description 현재 상대 학생의 비어 있지 않은 닉네임입니다. */
             nickname: string;
-            /** @description 현재 친구의 안정적인 UUID입니다. */
+            /** @description 상대 학생의 안정적인 UUID입니다. */
             studentId: components["schemas"]["Uuid"];
         };
-        FriendPage: {
-            /** @description 현재 학원 친구는 friendsSince 내림차순, studentId 내림차순으로 정렬됩니다. */
-            items: components["schemas"]["Friend"][];
-            /** @description 최종 반환된 (friendsSince, studentId) 튜플에서 파생된 불투명 커서입니다. 더 이상 항목이 없으면 null입니다. */
+        FollowPage: {
+            /**
+             * Format: int64
+             * @description 검색·커서·페이지 크기와 무관한 목록 소유자의 선택 학원 모든 유효 incoming 관계 수입니다.
+             */
+            followerCount: number;
+            /**
+             * Format: int64
+             * @description 검색·커서·페이지 크기와 무관한 목록 소유자의 선택 학원 모든 유효 outgoing 관계 수입니다.
+             */
+            followingCount: number;
+            /** @description 현재 학원의 목록 소유자 유효 관계 검색 결과이며 followedAt DESC, studentId DESC 순입니다. 조회자와 항목 사이 차단은 제3자 목록 항목을 제거하지 않습니다. */
+            items: components["schemas"]["Follow"][];
+            /** @description 다음 검색 결과를 이어 읽는 불투명 커서이며 더 없으면 null입니다. */
             nextCursor: string | null;
         };
-        /** @description 개인정보를 최소화한 친구 요청 프로젝션입니다. 상대방은 보낸 요청 결과에서는 수신자이고 받은 요청 결과에서는 발신자입니다. */
-        FriendRequest: {
-            /** @description 보낸 요청 결과에서는 수신자이고 받은 요청 결과에서는 발신자입니다. 별도의 소유권 식별자는 노출하지 않습니다. */
-            counterpart: components["schemas"]["StudentSummary"];
-            /** @description 이 요청이 생성된 RFC 3339 UTC Z 시점입니다. */
-            createdAt: components["schemas"]["UtcInstant"];
-            /** @description 이 친구 요청의 안정적인 UUID입니다. */
-            friendRequestId: components["schemas"]["Uuid"];
-            /** @description ACCEPTED, REJECTED, CANCELED 상태로 처리된 RFC 3339 UTC Z 시점입니다. PENDING 상태일 때만 null입니다. */
-            processedAt: components["schemas"]["UtcInstant"] | null;
-            /** @description 친구 요청의 현재 수명 주기 상태입니다. */
-            status: components["schemas"]["FriendRequestStatus"];
-        } & ({
-            /** @description 상태가 PENDING인 동안 반드시 null입니다. */
-            processedAt?: null;
+        /** @description 종결 위시를 제외한 내부 배정액입니다. */
+        HistoricalAllocation: {
+            /** @description 그 시점의 활성 위시 배정액 합계입니다. 외부 성공 관측이 없어도 독립적으로 알려진 0 또는 양수를 유지합니다. */
+            activeWishAllocation: components["schemas"]["KrwNonNegative"] | null;
             /**
-             * @description 아직 처리되지 않은 요청 분기를 식별하며 반드시 PENDING입니다.
+             * @description 내부 활성 위시 배정액의 지식 상태입니다.
+             * @enum {string}
+             */
+            knowledge: "KNOWN" | "UNKNOWN";
+            /** @description UNKNOWN의 이유이며 KNOWN이면 null입니다. */
+            unknownReason: ("ACCOUNT_NOT_OPEN" | "PRE_COLLECTION_UNKNOWN") | null;
+        } & unknown;
+        /** @description UNKNOWN을 현재 잔액이나 숫자 0으로 대신하지 않습니다. */
+        HistoricalBalance: {
+            /** @description max(ledgerAvailableBalance, 0)인 표시 가용액입니다. */
+            displayAvailableBalance: components["schemas"]["KrwNonNegative"] | null;
+            /**
+             * @description 성공한 외부 관측과 수집된 내부 이력으로 계산 가능한지 구분합니다.
+             * @enum {string}
+             */
+            knowledge: "KNOWN" | "UNKNOWN";
+            /** @description 마지막 성공 관측 identity입니다. */
+            lastSuccessfulObservationId: components["schemas"]["Uuid"] | null;
+            /** @description 마지막 성공 외부 관측의 원래 시각입니다. */
+            lastSuccessfulObservedAt: components["schemas"]["UtcInstant"] | null;
+            /** @description 마지막 성공 외부 관측값을 원래 시각과 함께 이월합니다. 사이 시점의 실시간 외부 잔액이나 최신성을 보장하지 않습니다. */
+            lastSuccessfulObservedCardBalance: components["schemas"]["KrwNonNegative"] | null;
+            /** @description 마지막 성공 관측액에서 활성 위시 배정액을 뺀 장부 가용액입니다. 음수를 보존하고 checked arithmetic을 사용합니다. */
+            ledgerAvailableBalance: components["schemas"]["KrwSigned"] | null;
+            /** @description UNKNOWN의 이유이며 KNOWN이면 null입니다. */
+            unknownReason: ("ACCOUNT_NOT_OPEN" | "PRE_COLLECTION_UNKNOWN" | "NO_SUCCESSFUL_OBSERVATION") | null;
+            /** @description max(-ledgerAvailableBalance, 0)인 미해결 부족액입니다. */
+            unresolvedShortage: components["schemas"]["KrwNonNegative"] | null;
+        } & unknown;
+        /** @description 버킷마다 한 계정의 원자적이고 일관된 이력 투영을 반환합니다. 같은 적용 시각은 account revision, 원장 효과는 application_order로 결정합니다. */
+        HistoricalBalanceBucket: {
+            /** @description 그 시점 내부 활성 위시 배정액의 지식 상태입니다. */
+            allocation: components["schemas"]["HistoricalAllocation"];
+            /** @description 마지막 성공 외부 관측과 그 시점 장부 가용액입니다. */
+            balance: components["schemas"]["HistoricalBalance"];
+            /** @description 경과한 버킷 부분의 실제 수집 범위입니다. */
+            coverage: components["schemas"]["HistoricalCoverage"];
+            /** @description COMPLETED는 자연 종료 instant, PROVISIONAL은 고정 evaluationHorizon입니다. 가짜 마지막 나노초를 만들지 않습니다. */
+            evaluatedAt: components["schemas"]["UtcInstant"];
+            /**
+             * @description BEFORE는 evaluatedAt 미만, THROUGH는 evaluatedAt 이하 체크포인트를 선택합니다.
+             * @enum {string}
+             */
+            evaluationBoundary: "BEFORE" | "THROUGH";
+            /** @description 그 시점까지 알려진 최신 실제 조회 상태입니다. */
+            latestLookup: components["schemas"]["HistoricalLookup"];
+            /** @description 일·월요일 시작 주·월초 시작 달의 자연스러운 제외 종료일입니다. */
+            periodEndExclusive: components["schemas"]["UtcDate"];
+            /** @description Asia/Seoul 달력의 포함 시작일입니다. */
+            periodStart: components["schemas"]["UtcDate"];
+            /**
+             * @description 평가 horizon까지 끝난 기간은 COMPLETED, 현재 열린 기간은 PROVISIONAL입니다.
+             * @enum {string}
+             */
+            periodStatus: "COMPLETED" | "PROVISIONAL";
+            /** @description 계산에 사용한 불변 체크포인트와 실제 관측 identity입니다. */
+            provenance: components["schemas"]["HistoricalBucketProvenance"];
+            /** @description 당시 대표 선택 및 역사 목표로 계산한 달성률입니다. */
+            representative: components["schemas"]["HistoricalRepresentative"];
+        } & (unknown & unknown & unknown & unknown & unknown & unknown & unknown & unknown & unknown & unknown);
+        /** @description 현재 접근 자격을 다시 확인한 뒤 고정 금융 입력과 평가 horizon으로 재현하는 과거 잔액 및 당시 대표 달성률입니다. */
+        HistoricalBalancesResponse: {
+            /** @description 현재 자격을 확인한 계정 학원 identity입니다. */
+            academyId: components["schemas"]["Uuid"];
+            /** @description 불변인 실제 계정 개설 시각입니다. */
+            accountOpenedAt: components["schemas"]["UtcInstant"];
+            /** @description 이력과 재생 토큰이 귀속되는 정확한 계정 identity입니다. */
+            cardBalanceAccountId: components["schemas"]["Uuid"];
+            /** @description 실제 baseline 수집 시작 시각입니다. 개설 시각으로 소급하지 않습니다. */
+            collectionStartedAt: components["schemas"]["UtcInstant"];
+            /** @description 고정 입력과 평가 horizon을 그대로 재생할 불투명 토큰입니다. */
+            dataRevision: components["schemas"]["HistoricalDataRevision"];
+            /** @description 기간 및 현재 버킷을 평가하는 고정 시각입니다. asOfRevision 재생에서도 동일합니다. */
+            evaluationHorizon: components["schemas"]["UtcInstant"];
+            /** @description 정규화된 포함 시작일입니다. */
+            fromDate: components["schemas"]["UtcDate"];
+            /**
+             * @description 요청한 달력 집계 단위입니다.
+             * @enum {string}
+             */
+            granularity: "DAY" | "WEEK" | "MONTH";
+            /** @description x-historical-balance-policy의 canonical 금융 입력 객체 UTF-8 바이트에 대한 SHA-256입니다. 읽기 시각과 현재 접근 자격은 제외합니다. */
+            inputDigest: string;
+            /** @description 요청한 모든 버킷을 periodStart 오름차순으로 반환합니다. 페이지 나눔이 없으며 최대 366개입니다. */
+            items: components["schemas"]["HistoricalBalanceBucket"][];
+            /** @description 이번 repeatable-read 데이터베이스 snapshot 시각입니다. 재생 때 달라질 수 있습니다. */
+            readSnapshotAt: components["schemas"]["UtcInstant"];
+            /** @description 이 응답과 재생에 고정한 baseline 및 선택 revision 경계입니다. */
+            revisionBounds: components["schemas"]["HistoricalRevisionBounds"];
+            /**
+             * @description 불변 역사 잔액 wire schema 버전입니다.
              * @constant
              */
-            status?: "PENDING";
-        } | {
-            /** @description 모든 종결 상태 요청에는 처리 시점이 반드시 있어야 합니다. */
-            processedAt?: components["schemas"]["UtcInstant"];
+            schemaVersion: 1;
+            /** @description 현재 자격을 확인한 계정 소유 학생 identity입니다. */
+            studentId: components["schemas"]["Uuid"];
             /**
-             * @description 처리 완료된 요청 분기를 식별하는 종결 상태입니다.
-             * @enum {unknown}
+             * @description 기간 경계를 해석하는 고정 시간대입니다.
+             * @constant
              */
-            status?: "ACCEPTED" | "REJECTED" | "CANCELED";
-        });
-        FriendRequestPage: {
-            /** @description 인증된 학생이 소유한 PENDING 요청이며 createdAt DESC, friendRequestId DESC 순으로 정렬합니다. */
-            items: components["schemas"]["FriendRequest"][];
-            /** @description 최종 반환된 (createdAt, friendRequestId) 튜플에서 파생된 불투명 커서입니다. 더 이상 항목이 없으면 null입니다. */
-            nextCursor: string | null;
+            timezone: "Asia/Seoul";
+            /** @description 정규화된 제외 종료일입니다. */
+            toDateExclusive: components["schemas"]["UtcDate"];
         };
-        /**
-         * @description 친구 요청의 현재 수명 주기 상태입니다. 처리된 요청은 절대 PENDING으로 돌아가지 않습니다.
-         * @enum {string}
-         */
-        FriendRequestStatus: "PENDING" | "ACCEPTED" | "REJECTED" | "CANCELED";
+        /** @description 개설·수집 전에는 모든 필드가 null입니다. 수집된 버킷은 체크포인트와 원장 적용 순번을 반드시 보존합니다. */
+        HistoricalBucketProvenance: {
+            /** @description 버킷 경계에서 선택한 실제 불변 계정 체크포인트입니다. */
+            checkpointId: components["schemas"]["Uuid"] | null;
+            /** @description 버킷의 실제 계정 revision입니다. 수집 전이면 null입니다. */
+            checkpointRevision: components["schemas"]["HistoricalCounter"] | null;
+            /** @description 실제로 알려진 마지막 성공 관측 identity입니다. */
+            lastSuccessfulObservationId: components["schemas"]["Uuid"] | null;
+            /** @description 실제로 알려진 최신 조회 관측 identity입니다. */
+            latestObservationId: components["schemas"]["Uuid"] | null;
+            /** @description 그 체크포인트의 원장 적용 순번입니다. 알려진 빈 원장 cut은 문자열 0입니다. */
+            ledgerApplicationOrder: components["schemas"]["HistoricalCounter"] | null;
+        };
+        /** @description 부호와 선행 0이 없는 십진 정수 문자열입니다. 데이터베이스 순번과 버전은 클라이언트 정밀도 손실을 막기 위해 문자열로 반환합니다. 값은 9223372036854775807 이하여야 합니다. */
+        HistoricalCounter: string & unknown;
+        /** @description 수집 coverage는 외부 잔액 관측 성공 여부 및 기간 완료 여부와 독립적입니다. */
+        HistoricalCoverage: {
+            /** @description 버킷 평가 경계까지 내부 활성 배정액 지식이 처음 성립한 시각입니다. 배정액 UNKNOWN이면 null입니다. */
+            allocationKnownFrom: components["schemas"]["UtcInstant"] | null;
+            /** @description 버킷 평가 경계까지 잔액 지식이 처음 성립한 시각입니다. 수집 시작 전으로 소급하지 않으며 잔액 UNKNOWN이면 null입니다. */
+            balanceKnownFrom: components["schemas"]["UtcInstant"] | null;
+            /** @description 버킷 안에서 실제 수집 범위가 시작한 시각입니다. NONE이면 null입니다. */
+            coveredFrom: components["schemas"]["UtcInstant"] | null;
+            /** @description 버킷 평가 경계까지 대표 선택 또는 알려진 부재를 처음 기록한 시각입니다. 대표 이력이 불명확하면 null입니다. */
+            representativeKnownFrom: components["schemas"]["UtcInstant"] | null;
+            /**
+             * @description 버킷의 경과한 부분 전체를 수집했으면 FULL, 비어 있지 않은 뒷부분만 수집했으면 PARTIAL, 수집 부분이 없으면 NONE입니다.
+             * @enum {string}
+             */
+            status: "FULL" | "PARTIAL" | "NONE";
+        } & unknown;
+        /** @description 계정 identity, 불변 baseline·선택 체크포인트 identity와 revision 경계, evaluationHorizon을 결속한 버전 1 불투명 재생 토큰입니다. 클라이언트는 해석하거나 만들지 않고 그대로 보관합니다. 계정 자격을 대신하지 않으며 서버는 참조된 저장 경계와 일치하는 canonical 인코딩만 허용합니다. */
+        HistoricalDataRevision: string;
+        /** @description 실패·동일값 성공도 원장 이벤트를 만들지 않고 체크포인트와 관측 provenance를 진전시킬 수 있습니다. */
+        HistoricalLookup: {
+            /** @description FAILED에만 있는 기존 저장 실패 코드입니다. raw provider payload를 포함하지 않습니다. */
+            failureCode: string | null;
+            /** @description 저장된 조회 방식입니다. */
+            lookupMethod: ("USER_REQUESTED" | "PRE_DEPOSIT" | "AUTO_DAILY") | null;
+            /** @description 최신 실제 조회 관측 identity입니다. */
+            observationId: components["schemas"]["Uuid"] | null;
+            /** @description 최신 실제 조회 관측 시각입니다. */
+            observedAt: components["schemas"]["UtcInstant"] | null;
+            /**
+             * @description UNKNOWN은 과거 조회 지식 부재, NOT_LOOKED_UP은 조회가 없었다는 알려진 사실입니다. 성공과 실패는 실제 저장 관측을 뜻합니다.
+             * @enum {string}
+             */
+            status: "UNKNOWN" | "NOT_LOOKED_UP" | "SUCCEEDED" | "FAILED";
+        } & (unknown & unknown & unknown);
+        /** @description AMOUNT_REACHED는 명시적 종결 전까지 활성입니다. 종결 이후 기록된 대체 대표나 KNOWN_NONE을 반환합니다. */
+        HistoricalRepresentative: {
+            /** @description 당시 IN_PROGRESS 또는 AMOUNT_REACHED 상태입니다. 완료·포기·삭제 위시는 선택 대상에서 원자적으로 제거됩니다. */
+            historicalState: ("IN_PROGRESS" | "AMOUNT_REACHED") | null;
+            /** @description 당시 대표 위시에 배정된 금액입니다. 당시 목표 금액을 넘을 수 없습니다. */
+            numeratorAmount: components["schemas"]["KrwNonNegative"] | null;
+            /** @description IN_PROGRESS는 min(99, floor(100 * numeratorAmount / targetAmount)), AMOUNT_REACHED는 100입니다. 정수 계산은 overflow 없이 수행합니다. */
+            progressPercent: number | null;
+            /** @description 당시 선택된 활성 위시 identity입니다. */
+            representativeWishId: components["schemas"]["Uuid"] | null;
+            /**
+             * @description 계정 개설 전, 수집 전 불명, 기록된 대표 부재, 기록된 대표 선택을 구분합니다.
+             * @enum {string}
+             */
+            status: "ACCOUNT_NOT_OPEN" | "PRE_COLLECTION_UNKNOWN" | "KNOWN_NONE" | "KNOWN_SELECTED";
+            /** @description 당시의 양수 목표 금액입니다. 현재 목표나 대표 위시로 과거를 대체하지 않습니다. */
+            targetAmount: components["schemas"]["KrwPositive"] | null;
+        } & (unknown & unknown & unknown);
+        /** @description 재생에 고정되는 baseline 및 선택 체크포인트 경계입니다. 토큰의 경계는 참조한 불변 저장 행과 일치해야 합니다. */
+        HistoricalRevisionBounds: {
+            /** @description 수집 시작 시 생성한 불변 baseline 체크포인트입니다. */
+            baselineCheckpointId: components["schemas"]["Uuid"];
+            /** @description baseline에서 확인된 최대 원장 적용 순번입니다. 0은 원장 행이 없음을 뜻합니다. */
+            baselineLedgerApplicationOrder: components["schemas"]["HistoricalCounter"];
+            /** @description 1 이상 9223372036854775807 이하인 계정 체크포인트 revision입니다. */
+            baselineRevision: components["schemas"]["HistoricalCounter"];
+            /** @description 일관된 조회에서 선택한 최대 불변 계정 체크포인트입니다. */
+            checkpointId: components["schemas"]["Uuid"];
+            /** @description 1 이상 9223372036854775807 이하인 계정 체크포인트 revision입니다. */
+            checkpointRevision: components["schemas"]["HistoricalCounter"];
+            /** @description 선택 체크포인트가 허용하는 최대 원장 적용 순번입니다. 0은 원장 행이 없음을 뜻합니다. */
+            ledgerApplicationOrder: components["schemas"]["HistoricalCounter"];
+            /** @description 선택 체크포인트의 관측 lookup 버전입니다. 명시적으로 연결된 legacy 관측에 버전이 없으면 null입니다. */
+            observationLookupVersion: components["schemas"]["HistoricalCounter"] | null;
+        };
         KnownCardBalanceAccount: {
             /** @description 이 카드 잔액 계정이 속한 학원의 UUID입니다. */
             academyId: components["schemas"]["Uuid"];
@@ -1060,6 +1944,134 @@ export interface components {
         KrwSigned: number;
         /** @enum {string} */
         LedgerEventType: "CARD_BALANCE_CHANGE" | "WISH_DEPOSIT" | "WISH_WITHDRAWAL" | "WISH_TRANSFER" | "WISH_COMPLETION_RETURN" | "WISH_ABANDONMENT_RETURN" | "WISH_DELETION_RETURN";
+        MonthlyRecapGroupComparison: {
+            /** @description achievementPercentileStatus가 ok일 때의 1~99 백분위이며 나머지 상태에서는 null입니다. */
+            achievementPercentile: number | null;
+            /**
+             * @description 목표 달성 비교 결과이며 viewer의 대표 위시 달성값 자체가 없으면 null입니다.
+             * @enum {string|null}
+             */
+            achievementPercentileStatus: "ok" | "no_peers" | "all_tied" | null;
+            /** @description habitPercentileStatus가 ok일 때의 1~99 백분위이며 나머지 상태에서는 null입니다. */
+            habitPercentile: number | null;
+            /**
+             * @description 습관 비교값이 계산되었는지, peer가 없는지, 모두 동점인지 구분합니다.
+             * @enum {string}
+             */
+            habitPercentileStatus: "ok" | "no_peers" | "all_tied";
+            /** @description 목표 달성 백분위 상태 문구이며 viewer의 비교값이 없으면 null입니다. */
+            messageAchievement: string | null;
+            /** @description 습관 백분위 상태에 대응하며 peer identity를 포함하지 않는 문구입니다. */
+            messageHabit: string;
+        } & (unknown & unknown & unknown & unknown);
+        MonthlyRecapObjectivePerformance: {
+            /** @description 완료 월에 종결된 소유 위시 수입니다. */
+            completedWishCount: number;
+            /** @description 대표 위시의 완료 월말 달성률이며 대표 위시가 없으면 null입니다. */
+            currRatePct: number | null;
+            /** @description 완료 월의 위시 완료 수를 설명하는 결정적 문구입니다. */
+            messageCompletedCount: string;
+            /** @description 대표 위시 달성률 변화를 설명하며 대표 위시가 없으면 null입니다. */
+            messageRateChange: string | null;
+            /** @description 완료 월의 총 순저축액을 설명하는 결정적 문구입니다. */
+            messageTotalSavings: string;
+            /** @description 대표 위시의 이전 월말 달성률이며 대표 위시가 없으면 null입니다. */
+            prevRatePct: number | null;
+            /** @description 생성 snapshot의 대표 위시 제목이며 대표 위시가 없으면 null입니다. */
+            representativeWishTitle: string | null;
+            /** @description 완료 월의 유효 입금에서 출금과 반환 효과를 반영한 순저축 원화 금액입니다. */
+            totalSavings: components["schemas"]["KrwSigned"];
+        };
+        MonthlyRecapPacePrediction: {
+            /** @description 완료 월 전체 계정 순저축액을 달력 일수로 나눈 일평균 원화 속도입니다. */
+            dailyPace: number;
+            /**
+             * Format: date
+             * @description 대표 위시의 동결된 속도로 계산한 예상 완료일이며 계산할 수 없으면 null입니다.
+             */
+            expectedCompletionDate: string | null;
+            /** @description 완료 월의 계정 전체 일평균 속도를 설명하는 문구입니다. */
+            messageDailyPace: string;
+            /** @description 예상 완료일 또는 이미 달성한 상태를 설명하며 계산할 수 없으면 null입니다. */
+            messageExpectedDate: string | null;
+            /** @description 목표일까지 필요한 추가 일평균 저축액을 설명하며 계산할 수 없으면 null입니다. */
+            messageRequiredDaily: string | null;
+            /** @description 대표 위시 목표일까지 필요한 일평균 원화 금액이며 계산 대상이나 유효 기한이 없으면 null입니다. */
+            requiredDailyAmount: number | null;
+        };
+        MonthlyRecapPatternAnalysis: {
+            /** @description 완료 월의 1회 평균 저축액을 설명하는 문구입니다. */
+            messageAvgAmount: string;
+            /** @description 입금 날짜 간격으로 계산한 규칙성 안내 문구입니다. */
+            messageRegularity: string;
+            /** @description 최다 저축 주차와 요일 또는 데이터 부족을 설명하는 문구입니다. */
+            messageWeekWeekday: string;
+            /** @description 완료 월에서 유효 입금 합계가 가장 큰 1~5주차이며 입금이 없으면 null입니다. */
+            topWeek: number | null;
+            /**
+             * @description 완료 월에서 유효 입금 빈도가 가장 높은 요일이며 입금이 없으면 null입니다.
+             * @enum {string|null}
+             */
+            topWeekday: "월요일" | "화요일" | "수요일" | "목요일" | "금요일" | "토요일" | "일요일" | null;
+        };
+        MonthlyRecapResponse: {
+            /** @description 생성 행이 결속한 고정 알고리즘 버전이며 생성 이력이 없으면 null입니다. */
+            algorithmVersion: "recap-1" | null;
+            /** @description current 성공 또는 확정 부적격 상태를 영속 저장한 UTC 시점이며 아직 확정되지 않았으면 null입니다. */
+            generatedAt: components["schemas"]["UtcInstant"] | null;
+            /** @description 논리 월간 기간의 단조 증가 생성 버전이며 생성 이력이 없으면 null입니다. */
+            generationVersion: number | null;
+            /**
+             * @description 이 리소스가 완료된 월간 리캡임을 나타내는 고정 판별자입니다.
+             * @constant
+             */
+            kind: "MONTHLY";
+            /** @description 요청에서 선택된 완료 월의 반개구간 Asia/Seoul 날짜 경계입니다. */
+            period: components["schemas"]["RecapPeriod"];
+            /** @description SUCCEEDED일 때만 존재하는 불변 월간 view이며 나머지 공개 상태에서는 null입니다. */
+            result: components["schemas"]["MonthlyRecapResult"] | null;
+            /**
+             * @description 이 공개 응답과 저장 view를 해석하는 고정 스키마 버전입니다.
+             * @constant
+             */
+            schemaVersion: 1;
+            /**
+             * @description 사용 가능한 current 성공을 우선하며 유효 입금 세 건 미만을 NOT_ELIGIBLE로 구분하는 월간 공개 상태입니다.
+             * @enum {string}
+             */
+            status: "NOT_GENERATED" | "GENERATING" | "NOT_ELIGIBLE" | "FAILED" | "SUCCEEDED";
+        } & (unknown & unknown & unknown & unknown);
+        MonthlyRecapResult: {
+            /** @description 식별자를 제거한 peer scalar 배열로 계산한 비교 결과입니다. */
+            groupComparison: components["schemas"]["MonthlyRecapGroupComparison"];
+            /** @description 생성 시점 분류에서 이 월간 view가 활동 기준을 충족했는지 나타냅니다. */
+            isActive: boolean;
+            /** @description 완료 월의 저축액, 완료 위시와 대표 위시 달성률 변화입니다. */
+            objectivePerformance: components["schemas"]["MonthlyRecapObjectivePerformance"];
+            /** @description 동결된 reference date와 대표 위시 snapshot으로 계산한 페이스 예측입니다. */
+            pacePrediction: components["schemas"]["MonthlyRecapPacePrediction"];
+            /** @description 완료 월의 저축 주차·요일·규칙성·평균 금액 문구입니다. */
+            patternAnalysis: components["schemas"]["MonthlyRecapPatternAnalysis"];
+            /** @description 저장된 Python 월간 view가 표시하는 연도와 월입니다. */
+            period: components["schemas"]["MonthlyRecapViewPeriod"];
+            /** @description 동결된 recap-1 분류 우선순위로 선택한 저축 유형입니다. */
+            typeSection: components["schemas"]["MonthlyRecapTypeSection"];
+        };
+        MonthlyRecapTypeSection: {
+            /** @description 선택된 저축 유형과 fallback 여부에 대응하는 결정적 문구입니다. */
+            message: string;
+            /**
+             * @description recap-1의 네 가지 저축 유형 중 우선순위 규칙으로 선택한 제목입니다.
+             * @enum {string}
+             */
+            typeTitle: "불도저형 토끼" | "꾸준형 토끼" | "단기 집중형 토끼" | "탐색형 토끼";
+        };
+        MonthlyRecapViewPeriod: {
+            /** @description Python 월간 view가 표시하는 1부터 12까지의 월입니다. */
+            month: number;
+            /** @description Python 월간 view가 표시하는 달의 네 자리 연도입니다. */
+            year: number;
+        };
         ProgressSharedCard: {
             /** @description 응답 조회 시점에 소유자의 카드 잔액 계정에 OPEN 잔액 조정 건이 있을 때만 true입니다. 잔액 조정 건이 없거나 RESOLVED 이력만 있으면 false입니다. 이 값은 공유 카드에 저장되지 않으며 contentUpdatedAt이나 정렬 순서를 갱신하지 않습니다. */
             balanceAdjustmentInProgress: boolean;
@@ -1070,16 +2082,30 @@ export interface components {
              * @enum {string}
              */
             kind: "PROGRESS";
-            /** @description 소유자의 표시 별명입니다. 소유자 식별자, 학생 식별자, 계정 데이터 또는 실제 카드 데이터가 노출되지 않습니다. */
+            /** @description 작성 학생의 안정적인 UUID입니다. 학생 조회의 studentId와 같으며 sharedCardId 및 비공개 wishId와 구별됩니다. 닉네임 변경이나 완료 카드 교체 후에도 유지됩니다. */
+            ownerId: components["schemas"]["Uuid"];
+            /** @description 소유자의 현재 표시 닉네임이며 식별 키가 아닙니다. 작성자 식별은 ownerId를 사용합니다. 실명, 별도 studentId 속성, 계정 데이터 또는 실제 카드 데이터는 노출하지 않습니다. */
             ownerNickname: string;
+            /** @description 현재 권한 검사 뒤 발급된 5분 비공개 사진 URL 세트이며 첨부 사진이 없으면 null입니다. */
+            photo: components["schemas"]["WishPhoto"] | null;
             /** @description 내림 정수 나눗셈으로 계산합니다. 목표 미도달 진행률은 최대 99이고 목표에 도달했을 때만 100을 반환합니다. */
             progressPercent: number;
             /** @description 게시된 NFC 정규화 위시 목적입니다. */
             purpose: components["schemas"]["Purpose"];
             /** @description 개인정보를 노출하지 않는 이 공유 카드 프로젝션의 안정적인 UUID입니다. 기반 위시 또는 계정 식별자는 노출하지 않습니다. */
             sharedCardId: components["schemas"]["Uuid"];
+            /**
+             * Format: date
+             * @description 저장된 위시 시작 달력 날짜 LocalDate를 YYYY-MM-DD 또는 null로 직접 투영합니다. 필드는 항상 존재하며 미지정은 null입니다. 생성 시각이나 오늘 날짜로 보충하거나 시간대를 변환하지 않습니다.
+             */
+            startDate: string | null;
             /** @description 게시된 양의 정수 KRW 목표 금액입니다. 소유자의 정확한 현재 위시 금액은 노출하지 않습니다. */
             targetAmount: components["schemas"]["KrwPositive"];
+            /**
+             * Format: date
+             * @description 저장된 위시 목표 달력 날짜 LocalDate를 YYYY-MM-DD 또는 null로 직접 투영합니다. 필드는 항상 존재하며 미지정은 null입니다. 생성 시각이나 오늘 날짜로 보충하거나 시간대를 변환하지 않습니다.
+             */
+            targetDate: string | null;
         };
         /** @description NFC로 정규화되고 앞뒤 경계 공백이 없으며 1~200개의 유니코드 코드 포인트를 포함하는 텍스트입니다. Cc, Cf, Zl, Zp 문자는 금지하고 내부 Space_Separator 문자는 유지합니다. */
         Purpose: string;
@@ -1092,20 +2118,32 @@ export interface components {
          *     5. NFC 정규화 후 유니코드 코드 포인트 수를 셉니다. 1~200개이면 저장하고 반환하며, 그 밖의 경우 422 INVALID_PURPOSE를 반환합니다.
          */
         PurposeInput: string;
-        /**
-         * @description 인증된 학생과 같은 학원 검색 결과 학생 사이의 현재 관계이며 응답 조회 시점에 계산합니다.
-         * @enum {string}
-         */
-        RelationshipState: "NONE" | "FRIEND" | "OUTGOING_PENDING" | "INCOMING_PENDING";
+        RecapPeriod: {
+            /**
+             * Format: date
+             * @description 선택한 리캡 기간의 Asia/Seoul 제외 종료일입니다.
+             */
+            endDateExclusive: string;
+            /**
+             * Format: date
+             * @description 선택한 리캡 기간의 Asia/Seoul 포함 시작일입니다.
+             */
+            startDate: string;
+            /**
+             * @description 기간 날짜 경계를 해석하는 고정 IANA 시간대입니다.
+             * @constant
+             */
+            timezone: "Asia/Seoul";
+        };
         RepresentativeWishSelectionRequest: {
             /** @description 이 카드 잔액 계정에서 대표로 선택할, 삭제되지 않은 활성 위시의 UUID입니다. */
             wishId: components["schemas"]["Uuid"];
         };
-        SharedCard: components["schemas"]["ProgressSharedCard"] | components["schemas"]["CompletionSharedCard"];
+        SharedCard: components["schemas"]["ProgressSharedCard"] | components["schemas"]["CompletionSharedCard"] | components["schemas"]["AbandonmentSharedCard"];
         SharedCardPage: {
-            /** @description 현재 조회 가능한 진행 카드와 완료 카드를 임시로 contentUpdatedAt DESC, sharedCardId DESC 순으로 정렬합니다. */
+            /** @description 현재 조회 가능한 진행 카드, 완료 카드, 포기 카드를 임시로 contentUpdatedAt DESC, sharedCardId DESC 순으로 정렬합니다. */
             items: components["schemas"]["SharedCard"][];
-            /** @description 다음 공유 카드 페이지에 대한 불투명 커서. 추가 페이지가 없으면 null입니다. */
+            /** @description 현재 조회 문맥에 바인딩된 HMAC 서명 불투명 커서입니다. 추가로 조회 가능한 행이 있을 때만 최종 반환 행의 contentUpdatedAt/sharedCardId에서 생성하며 빈 결과와 마지막 페이지는 null입니다. */
             nextCursor: string | null;
         };
         StudentBlock: {
@@ -1123,11 +2161,13 @@ export interface components {
             nextCursor: string | null;
         };
         StudentRelationship: {
-            /** @description 결정적인 검색 정렬에 사용하는 현재의 비어 있지 않은 닉네임입니다. */
+            /** @description 선택 학원에서 현재 상대방 → 본인의 유효 팔로우 여부입니다. */
+            isFollowedBy: boolean;
+            /** @description 선택 학원에서 현재 본인 → 상대방의 유효 팔로우 여부입니다. */
+            isFollowing: boolean;
+            /** @description 현재 조회 대상 학생의 비어 있지 않은 닉네임입니다. */
             nickname: string;
-            /** @description 인증된 학생에 대해 정확히 하나의 현재 관계 상태가 계산됩니다. */
-            relationshipState: components["schemas"]["RelationshipState"];
-            /** @description 동일 학원 검색 결과의 안정적인 UUID입니다. */
+            /** @description 조회 대상 학생의 안정적인 UUID입니다. 정확한 자기 ID 조회도 허용합니다. */
             studentId: components["schemas"]["Uuid"];
         };
         StudentRelationshipPage: {
@@ -1135,13 +2175,6 @@ export interface components {
             items: components["schemas"]["StudentRelationship"][];
             /** @description 최종 반환된 (닉네임, studentId) 튜플 및 정규화된 닉네임 필터에서 파생된 불투명 커서입니다. 더 이상 항목이 없으면 null입니다. */
             nextCursor: string | null;
-        };
-        /** @description 실명, 카드 데이터, 위시 데이터, 인증 데이터, 학원 구성원 내부 정보를 제외한 개인정보 최소화 학생 프로젝션입니다. */
-        StudentSummary: {
-            /** @description 현재 학생 닉네임이며 공백 문자열이 아니고 최대 80개의 유니코드 코드 포인트를 포함합니다. */
-            nickname: string;
-            /** @description 프로젝션에 포함된 상대 학생의 안정적인 UUID입니다. */
-            studentId: components["schemas"]["Uuid"];
         };
         UnknownCardBalanceAccount: {
             /** @description 이 카드 잔액 계정이 속한 학원의 UUID입니다. */
@@ -1183,6 +2216,156 @@ export interface components {
         UtcInstant: string;
         /** Format: uuid */
         Uuid: string;
+        WeeklyRecapAcademySuccessStories: {
+            /** @description 현재 노출 가능한 성공 story 수에 맞춘 결정적 요약 문구입니다. */
+            messageSummary: string;
+            /** @description 저장 후보 중 현재 공개 조건을 다시 통과한 최대 다섯 건의 결정적 순서 목록입니다. */
+            stories: components["schemas"]["WeeklyRecapStory"][];
+        };
+        WeeklyRecapAchievement: {
+            /** @description 정해진 알고리즘 문구로 만든 주간 성취 안내입니다. */
+            message: string;
+            /** @description 완료 주의 유효 입금에서 출금을 뺀 순저축 원화 금액입니다. */
+            netSavings: components["schemas"]["KrwSigned"];
+            /** @description 완료 주에 생성된 소유 위시 수입니다. */
+            newWishCount: number;
+            /** @description 완료 주의 유효 입금 횟수입니다. */
+            saveCount: number;
+        };
+        WeeklyRecapGrowthReport: {
+            /** @description 이전 주 방문이 0보다 클 때의 반올림 증감률이며 기준 방문이 0이면 null입니다. */
+            growthPct: number | null;
+            /** @description 이전 주 대비 증감률 안내이며 증감률을 정의할 수 없으면 null입니다. */
+            messageGrowth: string | null;
+            /** @description 완료 주 방문 횟수와 고유 방문자 수를 설명하는 문구입니다. */
+            messageVisits: string;
+            /** @description 완료 주에 받은 유효 프로필 방문 횟수입니다. */
+            totalVisits: number;
+            /** @description 완료 주에 방문한 고유한 유효 학생 수입니다. */
+            uniqueVisitors: number;
+        };
+        WeeklyRecapLastWeekPerformance: {
+            /** @description 완료 주의 유효 저축 횟수, 순저축액과 새 위시 수입니다. */
+            achievement: components["schemas"]["WeeklyRecapAchievement"];
+            /** @description 완료 주에 대표 위시가 통과한 마일스톤 표시 정보입니다. */
+            milestone: components["schemas"]["WeeklyRecapMilestone"];
+            /** @description 완료 주부터 과거로 이어진 연속 저축 주 정보입니다. */
+            streak: components["schemas"]["WeeklyRecapStreak"];
+        };
+        WeeklyRecapMilestone: {
+            /** @description 마일스톤을 통과했을 때의 안내 문구이며 통과하지 않았거나 대표 위시가 없으면 null입니다. */
+            message: string | null;
+            /** @description 완료 주 종료 시점 대표 위시 달성률의 반올림 정수이며 계산 대상이 없으면 null입니다. */
+            rateAfter: number | null;
+            /** @description 완료 주 시작 직전 대표 위시 달성률의 반올림 정수이며 계산 대상이 없으면 null입니다. */
+            rateBefore: number | null;
+            /** @description 완료 주 기준 대표 위시 제목이며 대표 위시가 없으면 null입니다. */
+            wishTitle: string | null;
+        };
+        WeeklyRecapResponse: {
+            /** @description 생성 행이 결속한 고정 알고리즘 버전이며 생성 이력이 없으면 null입니다. */
+            algorithmVersion: "recap-1" | null;
+            /** @description current 성공 결과를 영속 저장한 UTC 시점이며 성공 결과가 없으면 null입니다. */
+            generatedAt: components["schemas"]["UtcInstant"] | null;
+            /** @description 논리 주간 기간의 단조 증가 생성 버전이며 생성 이력이 없으면 null입니다. */
+            generationVersion: number | null;
+            /**
+             * @description 이 리소스가 완료된 주간 리캡임을 나타내는 고정 판별자입니다.
+             * @constant
+             */
+            kind: "WEEKLY";
+            /** @description 요청에서 선택된 완료 주의 반개구간 Asia/Seoul 날짜 경계입니다. */
+            period: components["schemas"]["RecapPeriod"];
+            /** @description SUCCEEDED일 때만 존재하는 불변 주간 view이며 활동 0도 null 대신 이 객체로 표현합니다. */
+            result: components["schemas"]["WeeklyRecapResult"] | null;
+            /**
+             * @description 이 공개 응답과 저장 view를 해석하는 고정 스키마 버전입니다.
+             * @constant
+             */
+            schemaVersion: 1;
+            /**
+             * @description 사용 가능한 current 성공을 우선한 주간 공개 생성 상태입니다. SUPERSEDED는 노출하지 않습니다.
+             * @enum {string}
+             */
+            status: "NOT_GENERATED" | "GENERATING" | "FAILED" | "SUCCEEDED";
+        } & (unknown & unknown & unknown);
+        WeeklyRecapResult: {
+            /** @description 지난주 저축 성과, 대표 위시 마일스톤과 연속 저축 기간입니다. */
+            page1LastWeekPerformance: components["schemas"]["WeeklyRecapLastWeekPerformance"];
+            /** @description 지난주 수신 프로필 방문과 이전 주 대비 변화입니다. */
+            page2GrowthReport: components["schemas"]["WeeklyRecapGrowthReport"];
+            /** @description 현재 읽기 권한을 다시 통과한 학원 성공 story 목록입니다. */
+            page3AcademySuccessStories: components["schemas"]["WeeklyRecapAcademySuccessStories"];
+            /** @description 저장된 Python 주간 view의 포함 시작일과 포함 종료일입니다. */
+            period: components["schemas"]["WeeklyRecapViewPeriod"];
+        };
+        WeeklyRecapStory: {
+            /**
+             * Format: int64
+             * @description max(0, Duration.between(createdAt, completedAt).getSeconds())이며 달력 날짜와 독립적입니다.
+             */
+            actualDurationSeconds: number;
+            /** @description 명시적 위시 완료 시각이며 RFC 3339 UTC Z 형식입니다. */
+            completedAt: components["schemas"]["UtcInstant"];
+            /** @description 현재 완료 카드 내용·공개 변경 시각이며 조회 보강은 이 값이나 story 순서를 바꾸지 않습니다. */
+            contentUpdatedAt: components["schemas"]["UtcInstant"];
+            /** @description 위시 생성 시각이며 RFC 3339 UTC Z 형식입니다. */
+            createdAt: components["schemas"]["UtcInstant"];
+            /**
+             * @description 현재 공개 가능한 명시적 완료 카드입니다.
+             * @constant
+             */
+            kind: "COMPLETION";
+            /** @description CompletionSharedCard.ownerNickname과 같은 현재 소유자 표시 닉네임입니다. */
+            ownerNickname: string;
+            /** @description 현재 조회 시점에 허용된 공유 카드 소유 학생 UUID입니다. */
+            ownerStudentId: components["schemas"]["Uuid"];
+            /** @description 권한 확인 뒤 현재 ATTACHED WishPhoto의 비공개 URL을 새로 발급합니다. ATTACHED 사진이 없을 때만 null이며 런타임·서명 실패는 전체 조회를 실패시킵니다. */
+            photo: components["schemas"]["WishPhoto"] | null;
+            /**
+             * @description 완료 카드 달성률은 항상 100입니다.
+             * @constant
+             */
+            progressPercent: 100;
+            /** @description 현재 공개된 정규화 위시 목적입니다. */
+            purpose: components["schemas"]["Purpose"];
+            /** @description 현재 조회 시점에 허용된 공유 카드 프로젝션 UUID입니다. */
+            sharedCardId: components["schemas"]["Uuid"];
+            /**
+             * Format: date
+             * @description 저장된 LocalDate의 YYYY-MM-DD 또는 null을 추론이나 시간대 변환 없이 보존합니다.
+             */
+            startDate: string | null;
+            /** @description 공개된 양의 정수 원화 목표 금액입니다. */
+            targetAmount: components["schemas"]["KrwPositive"];
+            /**
+             * Format: date
+             * @description 저장된 LocalDate의 YYYY-MM-DD 또는 null을 추론이나 시간대 변환 없이 보존합니다.
+             */
+            targetDate: string | null;
+            /** @description 작성자의 완료 달 이전 달 집계로 계산해 저장한 유형 제목이며 계산할 수 없으면 null입니다. */
+            typeTitle: string | null;
+            /** @description 저장된 성공 story 후보가 가리키는 위시 UUID입니다. */
+            wishId: components["schemas"]["Uuid"];
+        };
+        WeeklyRecapStreak: {
+            /** @description 연속 저축 주 수에 대응하는 결정적 안내 문구입니다. */
+            message: string;
+            /** @description 완료 주부터 연속으로 유효 입금이 있었던 주 수입니다. */
+            streakWeeks: number;
+        };
+        WeeklyRecapViewPeriod: {
+            /**
+             * Format: date
+             * @description Python 주간 view가 표시하는 포함 일요일입니다. wrapper period의 endDateExclusive 하루 전입니다.
+             */
+            weekEnd: string;
+            /**
+             * Format: date
+             * @description Python 주간 view가 표시하는 포함 월요일입니다.
+             */
+            weekStart: string;
+        };
         Wish: {
             /** @description 성공적으로 포기하기 직전에 이 위시에 할당되어 있던 불변의 소유자 전용 금액입니다. ABANDONED에서는 0을 포함해 targetAmount 이하의 정확한 정수 KRW이고, IN_PROGRESS, AMOUNT_REACHED, COMPLETED에서는 명시적인 null입니다. 현재 할당액, 실제 카드 잔액, 반환 합계, targetAmount 또는 삭제 값이 아닙니다. 포기 후 논리 삭제와 멱등 재생에서도 최초 값을 그대로 보존합니다. */
             abandonmentAmount: components["schemas"]["KrwNonNegative"] | null;
@@ -1211,6 +2394,8 @@ export interface components {
             createdAt: components["schemas"]["UtcInstant"];
             /** @description 이 위시의 안정적인 UUID입니다. */
             id: components["schemas"]["Uuid"];
+            /** @description 현재 첨부 사진의 새 5분 비공개 URL 세트이며 사진이 없으면 null입니다. signed URL은 영속 domain snapshot이나 멱등 receipt에 저장하지 않습니다. */
+            photo: components["schemas"]["WishPhoto"] | null;
             /** @description 이 위시에 저장된, NFC로 정규화되고 앞뒤 경계 공백이 없는 목적 텍스트입니다. */
             purpose: components["schemas"]["Purpose"];
             /**
@@ -1231,7 +2416,7 @@ export interface components {
             updatedAt: components["schemas"]["UtcInstant"];
             /** @description 이 스냅샷의 음수 아닌 낙관적 동시성 버전입니다. 상태를 바꾸는 변경이 성공하면 증가하고 멱등 재생은 최초 값을 반환합니다. */
             version: components["schemas"]["WishVersion"];
-            /** @description 요청된 게시 범위 PRIVATE, FRIENDS 또는 ACADEMY; 현재 관계 및 차단 확인으로 인해 공유 카드가 더 숨겨질 수 있습니다. */
+            /** @description 요청된 게시 범위 PRIVATE, FOLLOWERS 또는 ACADEMY; 현재 관계 및 차단 확인으로 인해 공유 카드가 더 숨겨질 수 있습니다. */
             visibility: components["schemas"]["WishVisibility"];
         };
         WishAbandonmentReturnMovement: {
@@ -1374,6 +2559,11 @@ export interface components {
         } & unknown;
         WishMergePatch: {
             expectedVersion: components["schemas"]["WishVersion"];
+            /**
+             * Format: uuid
+             * @description 생략하면 현재 사진을 유지하고, null이면 제거하며, 현재와 같은 UUID이면 no-op, 다른 UUID이면 소유한 unexpired Pending 사진으로 원자 교체합니다.
+             */
+            photoId?: string | null;
             purpose?: components["schemas"]["PurposeInput"];
             /**
              * Format: date
@@ -1384,7 +2574,7 @@ export interface components {
             /** Format: date */
             targetDate?: string | null;
             visibility?: components["schemas"]["WishVisibility"];
-        } | unknown | unknown | unknown | unknown | unknown;
+        } | unknown | unknown | unknown | unknown | unknown | unknown;
         WishMutationResult: {
             /**
              * Format: uuid
@@ -1399,6 +2589,41 @@ export interface components {
             items: components["schemas"]["Wish"][];
             /** @description 다음 위시 페이지에 대한 불투명 커서; 추가 페이지가 없으면 null입니다. */
             nextCursor: string | null;
+        };
+        WishPhoto: {
+            /**
+             * Format: date-time
+             * @description 세 signed URL이 함께 만료되는 RFC 3339 UTC Z 시점이며 발급 시각에서 정확히 5분 뒤입니다.
+             */
+            expiresAt: string;
+            /** @description Opaque 사진 identity입니다. 이를 아는 것만으로 읽기나 첨부 소유권이 생기지 않습니다. */
+            id: components["schemas"]["Uuid"];
+            /** @description 같은 private 사진의 360, 720, 1080 정사각형 JPEG signed URL 세 개입니다. */
+            variants: components["schemas"]["WishPhotoVariants"];
+        };
+        WishPhotoUploadRequest: {
+            /**
+             * Format: binary
+             * @description 정확히 하나만 허용되는 photo multipart 파트입니다. 선언 타입과 실제 decoded 타입이 모두 JPEG여야 하고 바이트 길이는 최대 5 MiB, decoded 크기는 정확히 1080x1080이어야 합니다. 멱등 콘텐츠 digest는 변환 전 수신한 이 파트의 정확한 바이트로 계산하며 multipart framing, boundary, filename은 포함하지 않습니다. filename은 선택 사항이며 타입 판단에 신뢰하지 않습니다.
+             */
+            photo: string;
+        };
+        WishPhotoVariants: {
+            /**
+             * Format: uri
+             * @description 1080x1080 JPEG 비공개 signed URL입니다.
+             */
+            large: string;
+            /**
+             * Format: uri
+             * @description 720x720 JPEG 비공개 signed URL입니다.
+             */
+            medium: string;
+            /**
+             * Format: uri
+             * @description 360x360 JPEG 비공개 signed URL입니다.
+             */
+            small: string;
         };
         /** @enum {string} */
         WishState: "IN_PROGRESS" | "AMOUNT_REACHED" | "COMPLETED" | "ABANDONED";
@@ -1464,8 +2689,11 @@ export interface components {
         WishVersionCommand: {
             expectedVersion: components["schemas"]["WishVersion"];
         };
-        /** @enum {string} */
-        WishVisibility: "PRIVATE" | "FRIENDS" | "ACADEMY";
+        /**
+         * @description 위시 공개 범위입니다. PRIVATE는 비공개, FOLLOWERS는 현재 viewer → owner 팔로우, ACADEMY는 기존 학원 공개 규칙입니다. 제거된 이전 공개 범위 값은 기존 enum 입력 오류인 400 MALFORMED_REQUEST입니다. FOLLOWERS는 선택 학원의 현재 viewer → owner 팔로우가 있어야 비소유자에게 공개됩니다. owner → viewer만으로는 공개되지 않으며 상호 팔로우는 필요하지 않습니다. 진행·완료 공유 카드의 목록·상세에 동일하게 적용합니다. 기존 소유자 예외, PRIVATE·ACADEMY 의미, 현재 학원 소속, 공유 카드의 카드 계정 자격과 종결 상태 필터, 전역 양방향 차단 우선순위를 유지합니다. 언팔로우·차단 후 다음 조회부터 제한된 카드를 숨기며 직접 조회는 SHARED_CARD_NOT_FOUND 경계를 유지합니다.
+         * @enum {string}
+         */
+        WishVisibility: "PRIVATE" | "FOLLOWERS" | "ACADEMY";
         WishWithdrawalMovement: {
             /** @description 잔액 조정 건과 연결된 불변 이벤트 출처 정보이며, 연결된 잔액 조정 건이 없으면 null입니다. */
             balanceAdjustment: components["schemas"]["BalanceAdjustmentEventReference"] | null;
@@ -1520,6 +2748,15 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /** @description BALANCE_SYNC_FAILED 또는 PHOTO_DELIVERY_UNAVAILABLE — 외부 잔액 조회가 실패했거나 기존 사진의 새 5분 비공개 URL을 모두 발급할 수 없습니다. 두 경우 모두 위시 변경은 commit되지 않습니다. */
+        BalanceSyncOrPhotoDeliveryUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
         /** @description CARD_BALANCE_ACCOUNT_NOT_FOUND — 계정이 없거나 종료되었거나, 인증된 학생이 소유하지 않거나, 다른 학원 소속인 경우를 숨깁니다. */
         CardBalanceAccountNotFound: {
             headers: {
@@ -1529,8 +2766,17 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description BALANCE_MISMATCH_LOCKED 또는 IDEMPOTENCY_KEY_REUSED입니다. 일치하는 성공 결과의 멱등 재생을 현재 불일치 방어 조건보다 먼저 처리합니다. */
+        /** @description BALANCE_MISMATCH_LOCKED, IDEMPOTENCY_KEY_REUSED, WISH_PHOTO_EXPIRED 또는 WISH_PHOTO_ALREADY_ATTACHED입니다. 일치하는 성공 결과의 멱등 재생을 현재 불일치 방어 조건보다 먼저 처리합니다. 캡처된 사진 상태가 식별자 없는 PHOTO_REVOKED이면 Wish 성공 본문, photoId, URL, Idempotency-Replayed 없이 WISH_PHOTO_EXPIRED입니다. 사진 첨부 실패는 위시를 생성하지 않습니다. */
         CreateConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description CARD_BALANCE_ACCOUNT_NOT_FOUND 또는 WISH_PHOTO_NOT_FOUND — 계정 부재·비소유·학원 불일치와 사진 부재·다른 소유자를 각각 숨깁니다. */
+        CreateWishResourceNotFound: {
             headers: {
                 [name: string]: unknown;
             };
@@ -1556,7 +2802,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, INSUFFICIENT_AVAILABLE_BALANCE, TARGET_AMOUNT_EXCEEDED 또는 IDEMPOTENCY_KEY_REUSED. */
+        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, INSUFFICIENT_AVAILABLE_BALANCE, TARGET_AMOUNT_EXCEEDED, IDEMPOTENCY_KEY_REUSED 또는 WISH_PHOTO_EXPIRED. 일치하는 성공 receipt의 사진 상태가 PHOTO_REVOKED이면 Wish 성공 본문과 photo capability 없이 WISH_PHOTO_EXPIRED입니다. */
         DepositConflict: {
             headers: {
                 [name: string]: unknown;
@@ -1565,90 +2811,18 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /** @description RECOMMENDATION_CONTEXT_UNAVAILABLE 또는 PHOTO_DELIVERY_UNAVAILABLE — durable feed context 생성·전이를 안전하게 commit할 수 없거나 현재 허용된 카드의 새 비공개 사진 URL 전체를 발급할 수 없습니다. 부분 페이지를 반환하거나 입력 cursor를 소비하지 않으며 latest fallback으로 바꾸지 않습니다. */
+        FeedPageUnavailable: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
         /** @description FORBIDDEN — 인증 주체가 학생이 아닙니다. */
         Forbidden: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorEnvelope"];
-            };
-        };
-        /** @description ACADEMY_NOT_FOUND — 학원이 없거나, 다른 학원이거나, 현재 소속 학원이 아닌 범위를 숨깁니다. */
-        FriendManagementAcademyNotFound: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorEnvelope"];
-            };
-        };
-        /** @description AUTH_REQUIRED — Bearer 토큰이 없거나 유효하지 않습니다. */
-        FriendManagementAuthRequired: {
-            headers: {
-                "WWW-Authenticate": "Bearer";
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorEnvelope"];
-            };
-        };
-        /** @description FORBIDDEN — 인증 주체가 학생이 아닙니다. */
-        FriendManagementForbidden: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorEnvelope"];
-            };
-        };
-        /** @description MALFORMED_REQUEST — JSON, UUID, nickname, limit 또는 불투명 커서의 형식이 잘못되었습니다. */
-        FriendManagementMalformedRequest: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorEnvelope"];
-            };
-        };
-        /** @description 정규 학생 쌍 잠금으로 다시 검증한 뒤 FRIEND_REQUEST_NOT_PENDING, FRIEND_REQUEST_NOT_ACTIONABLE 또는 ALREADY_FRIENDS를 반환합니다. */
-        FriendRequestAcceptanceConflict: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorEnvelope"];
-            };
-        };
-        /** @description SELF_RELATIONSHIP, ALREADY_FRIENDS, FRIEND_REQUEST_ALREADY_PENDING 또는 INCOMING_FRIEND_REQUEST_PENDING. */
-        FriendRequestCreateConflict: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorEnvelope"];
-            };
-        };
-        /** @description FRIEND_REQUEST_NOT_PENDING — 접근 권한이 있는 요청이 존재하지만 이미 처리되었습니다. */
-        FriendRequestNotPending: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorEnvelope"];
-            };
-        };
-        /** @description ACADEMY_NOT_FOUND 또는 FRIEND_REQUEST_NOT_FOUND — 다른 학원, 발신자·수신자 역할 불일치, 그 밖의 권한 없는 요청 식별자를 숨깁니다. */
-        FriendRequestOrAcademyNotFound: {
-            headers: {
-                [name: string]: unknown;
-            };
-            content: {
-                "application/json": components["schemas"]["ErrorEnvelope"];
-            };
-        };
-        /** @description ACADEMY_NOT_FOUND 또는 FRIENDSHIP_NOT_FOUND — 관계 부재, 종료 상태, 학원 비소속, 비소유를 숨깁니다. */
-        FriendshipOrAcademyNotFound: {
             headers: {
                 [name: string]: unknown;
             };
@@ -1701,6 +2875,15 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /** @description INVALID_PHOTO 또는 PHOTO_CONTENT_NOT_ALLOWED — JPEG 디코딩·정확한 1080x1080 크기가 유효하지 않거나 필수 콘텐츠 안전성 정책이 canonical 이미지의 사용을 거부했습니다. 안전성 category, likelihood, provider 결과는 반환하거나 product data로 보존하지 않습니다. */
+        InvalidOrRejectedPhoto: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
         /** @description INVALID_AMOUNT 또는 INVALID_VERSION — 독립적으로 디코딩된 금액 또는 소스/대상 버전이 제약 조건을 위반합니다. */
         InvalidTransferAmountOrVersion: {
             headers: {
@@ -1746,7 +2929,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION 또는 BALANCE_MISMATCH_LOCKED. */
+        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, BALANCE_MISMATCH_LOCKED, WISH_PHOTO_EXPIRED 또는 WISH_PHOTO_ALREADY_ATTACHED. 사진 교체 실패는 기존 attachment와 후보 Pending 사진을 바꾸지 않습니다. */
         PatchConflict: {
             headers: {
                 [name: string]: unknown;
@@ -1755,8 +2938,74 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /** @description PHOTO_DELIVERY_UNAVAILABLE — 기존 사진 또는 일치하는 Wish mutation 재생의 유효한 ACTIVE_PHOTO에 필요한 새 5분 비공개 URL을 모두 발급할 수 없습니다. 이 오류는 retryable true이고 receipt의 ACTIVE_PHOTO 또는 NO_PHOTO 상태를 바꾸지 않으며, 부분 Wish·transfer representation, 현재 사진 대체, 거짓 null, photoId, URL 또는 Idempotency-Replayed를 반환하지 않습니다. */
+        PhotoDeliveryUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description PHOTO_TOO_LARGE — photo 파트가 5 MiB를 초과하여 디코딩 전에 중단했습니다. */
+        PhotoTooLarge: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description PHOTO_UPLOAD_RATE_LIMITED — rolling 처리 시도 또는 미첨부 Pending quota가 소진되었습니다. */
+        PhotoUploadRateLimited: {
+            headers: {
+                "Retry-After": components["headers"]["RetryAfter"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description PHOTO_PROCESSING_UNAVAILABLE — 새 업로드의 필수 변환, 안전성 검사, 비공개 저장 또는 영속화 의존성을 일시적으로 사용할 수 없습니다. attachable identity 없이 부분 레코드와 객체를 보상 정리하며 terminal receipt를 생성하지 않아 같은 key와 콘텐츠를 재시도할 수 있습니다. PHOTO_DELIVERY_UNAVAILABLE — 보존 중인 유효한 ACTIVE_SUCCESS 재생에 필요한 새 5분 비공개 URL을 모두 발급할 수 없습니다. 부분 representation을 반환하거나 receipt를 변경·삭제하지 않습니다. 두 오류 모두 retryable true이며 사진 바이트, digest, photoId, receipt, URL, path, 안전성·provider 정보를 노출하지 않습니다. */
+        PhotoUploadUnavailable: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description RECAP_QUERY_UNAVAILABLE — 저장된 리캡 상태를 일시적으로 읽을 수 없습니다. 생성 부재나 진행·부적격·실패 상태를 이 오류로 대체하지 않습니다. */
+        RecapQueryUnavailable: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description RECOMMENDATION_CURSOR_EXPIRED — 올바르게 인증된 v2 feed cursor가 원래 5분 expiry에 도달했거나 필수 durable context를 잃었습니다. 부분 페이지, 자동 restart 또는 rerank 없이 새 cursor 없는 요청이 필요합니다. */
+        RecommendationCursorExpired: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
         /** @description INVALID_STATE_TRANSITION — 지정한 동일 계정 위시가 COMPLETED 또는 ABANDONED 상태이므로 대표 위시로 선택할 수 없습니다. */
         RepresentativeWishSelectionConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description SELF_RELATIONSHIP — 자기 자신을 팔로우하거나 언팔로우할 수 없습니다. */
+        SelfRelationshipConflict: {
             headers: {
                 [name: string]: unknown;
             };
@@ -1773,7 +3022,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION 또는 IDEMPOTENCY_KEY_REUSED. OPEN 잔액 불일치는 완료 또는 포기를 차단하지 않습니다. */
+        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, IDEMPOTENCY_KEY_REUSED 또는 WISH_PHOTO_EXPIRED. 일치하는 완료·포기 성공 receipt의 사진 상태가 PHOTO_REVOKED이면 Wish 성공 본문과 photo capability 없이 WISH_PHOTO_EXPIRED입니다. OPEN 잔액 불일치는 완료 또는 포기를 차단하지 않습니다. */
         StateMutationConflict: {
             headers: {
                 [name: string]: unknown;
@@ -1809,16 +3058,58 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description ACADEMY_NOT_FOUND 또는 STUDENT_NOT_FOUND — 학원 범위 검증 실패와 숨겨진 직접 대상의 세부 정보를 공개하지 않습니다. */
+        /** @description ACADEMY_NOT_FOUND 또는 STUDENT_NOT_FOUND — 학원 범위 검증 실패와 부재·탈퇴·다른 학원·조회자와의 양방향 차단으로 접근할 수 없는 직접 대상 또는 목록 소유자의 세부 정보와 차단 방향을 공개하지 않습니다. */
         StudentOrAcademyNotFound: {
             headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
                 [name: string]: unknown;
             };
             content: {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, CROSS_ACCOUNT_TRANSFER_FORBIDDEN, INSUFFICIENT_WISH_AMOUNT, TARGET_AMOUNT_EXCEEDED, BALANCE_MISMATCH_LOCKED 또는 IDEMPOTENCY_KEY_REUSED. */
+        /** @description ACADEMY_NOT_FOUND — 학원이 없거나, 다른 학원이거나, 현재 소속 학원이 아닌 범위를 숨깁니다. */
+        StudentRelationshipAcademyNotFound: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description AUTH_REQUIRED — Bearer 토큰이 없거나 유효하지 않습니다. */
+        StudentRelationshipAuthRequired: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                "WWW-Authenticate": "Bearer";
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description FORBIDDEN — 인증 주체가 학생이 아닙니다. */
+        StudentRelationshipForbidden: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description MALFORMED_REQUEST — JSON, UUID, nickname, limit 또는 불투명 커서의 형식이 잘못되었습니다. */
+        StudentRelationshipMalformedRequest: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, CROSS_ACCOUNT_TRANSFER_FORBIDDEN, INSUFFICIENT_WISH_AMOUNT, TARGET_AMOUNT_EXCEEDED, BALANCE_MISMATCH_LOCKED, IDEMPOTENCY_KEY_REUSED 또는 WISH_PHOTO_EXPIRED. 일치하는 이체 성공 receipt의 출발 또는 도착 사진 상태 중 하나라도 PHOTO_REVOKED이면 양쪽 URL을 발급하기 전에 전체 재생을 WISH_PHOTO_EXPIRED로 실패시키고 부분 본문을 반환하지 않습니다. */
         TransferConflict: {
             headers: {
                 [name: string]: unknown;
@@ -1836,6 +3127,34 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
+        /** @description UNSUPPORTED_PHOTO_TYPE — multipart/form-data가 아니거나 photo 파트 선언 타입·실제 디코딩 타입이 JPEG가 아니거나 서로 다릅니다. */
+        UnsupportedPhotoType: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description RECAP_QUERY_UNAVAILABLE는 저장 조회·트랜잭션 실패, PHOTO_DELIVERY_UNAVAILABLE는 현재 첨부 사진 URL·variant·서명 실패, PHOTO_PROCESSING_UNAVAILABLE는 첨부 사진 런타임 비활성입니다. 모두 retryable 503이며 전체 주간 조회가 실패합니다. 사진 오류를 photo null, story 생략 또는 부분 200으로 변환하지 않습니다. */
+        WeeklyRecapQueryUnavailable: {
+            headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description CARD_BALANCE_ACCOUNT_NOT_FOUND, WISH_NOT_FOUND 또는 WISH_PHOTO_NOT_FOUND — 계정·위시·후보 사진의 부재나 비소유 상태를 리소스별 not-found로 숨깁니다. */
+        WishAccountOrPhotoNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
         /** @description CARD_BALANCE_ACCOUNT_NOT_FOUND 또는 WISH_NOT_FOUND — 계정이 없거나 인증된 학생이 소유하지 않은 경우, 또는 위시가 없거나 다른 소유자의 것이거나 해당 계정에 속하지 않은 경우입니다. 소유자가 논리 삭제한 위시는 이력 전용 응답에서 의도적으로 숨기지 않으며 200을 반환합니다. */
         WishHistoryOrAccountNotFound: {
             headers: {
@@ -1845,9 +3164,10 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description 위시 변경이 완료되었습니다. 동일 요청을 재생하면 최초 응답의 상태와 본문을 그대로 반환합니다. */
+        /** @description 위시 변경이 완료되었습니다. 동일 요청 재생은 최초 domain snapshot identity·상태·event identity·occurrence time·version을 유지합니다. 최초 사진 상태가 NO_PHOTO이면 이후 현재 attachment를 조회하거나 대체하지 않고 photo null을 반환합니다. ACTIVE_PHOTO이면 인증 학생 소유이고 최초 snapshot의 정확한 위시에 ATTACHED인 같은 photoId를 재검증한 뒤 새 5분 URL만 발급합니다. PHOTO_REVOKED이면 이 성공 응답 대신 409 WISH_PHOTO_EXPIRED를 반환하고, 유효한 ACTIVE_PHOTO의 URL 발급만 실패하면 이 성공 응답 대신 503 PHOTO_DELIVERY_UNAVAILABLE을 반환합니다. Idempotency-Replayed는 성공 재생에만 true이고, 사진 응답 capability는 state-changing command가 commit하기 전에 발급되어야 합니다. */
         WishMutationSuccess: {
             headers: {
+                "Cache-Control": components["headers"]["CacheControlNoStore"];
                 "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
                 [name: string]: unknown;
             };
@@ -1864,7 +3184,34 @@ export interface components {
                 "application/json": components["schemas"]["ErrorEnvelope"];
             };
         };
-        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, INSUFFICIENT_WISH_AMOUNT 또는 IDEMPOTENCY_KEY_REUSED. */
+        /** @description WISH_PHOTO_ALREADY_ATTACHED — 사진이 이미 어떤 위시에 첨부되어 Pending 취소 또는 다른 위시 첨부에 사용할 수 없습니다. */
+        WishPhotoAlreadyAttached: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description WISH_PHOTO_NOT_FOUND — 사진이 없거나 인증된 학생과 다른 소유자임을 구분하지 않습니다. */
+        WishPhotoNotFound: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description IDEMPOTENCY_KEY_REUSED — 보존 중인 같은 소유자·Idempotency-Key receipt의 콘텐츠 digest가 다르며 변환·안전성 검사·quota 소비·객체 쓰기 전에 실패합니다. WISH_PHOTO_EXPIRED — 보존 중인 receipt의 digest는 같지만 성공 사진이 Pending 취소·만료, 교체·명시적 제거, Wish 삭제, DELETE_PENDING 전환 또는 hard cleanup으로 재생 불가능합니다. 두 응답 모두 retryable false이며 사진, photoId, URL, object path, digest, receipt outcome, retainUntil을 노출하지 않습니다. */
+        WishPhotoUploadConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["ErrorEnvelope"];
+            };
+        };
+        /** @description VERSION_CONFLICT, INVALID_STATE_TRANSITION, INSUFFICIENT_WISH_AMOUNT, IDEMPOTENCY_KEY_REUSED 또는 WISH_PHOTO_EXPIRED. 일치하는 성공 receipt의 사진 상태가 PHOTO_REVOKED이면 Wish 성공 본문과 photo capability 없이 WISH_PHOTO_EXPIRED입니다. */
         WithdrawalConflict: {
             headers: {
                 [name: string]: unknown;
@@ -1879,8 +3226,8 @@ export interface components {
         CardBalanceAccountId: components["schemas"]["Uuid"];
         /** @description 이 API 작업의 고정 정렬 순서에 바인딩된 불투명 커서입니다. */
         Cursor: components["schemas"]["Cursor"];
-        /** @description 친구 요청의 UUID입니다. 승인되지 않았거나 잘못된 역할 식별자는 FRIEND_REQUEST_NOT_FOUND로 정규화됩니다. */
-        FriendRequestId: components["schemas"]["Uuid"];
+        /** @description 이력과 재생 토큰이 귀속되는 정확한 카드 잔액 계정 UUID입니다. */
+        HistoricalAccountId: components["schemas"]["Uuid"];
         /** @description 학생별 영구 네임스페이스입니다. 동일한 작업, 대상, 정규화된 요청에만 키를 재사용할 수 있습니다. */
         IdempotencyKey: string;
         /** @description 본문 없는 DELETE의 동시성 검사를 위한 정확한 음수 아닌 정수 위시 버전입니다. 값이 없거나 정수가 아니면 400, 디코딩된 값이 음수이면 422 INVALID_VERSION, 음수가 아니지만 최신 버전과 다르면 409 VERSION_CONFLICT를 반환합니다. */
@@ -1888,21 +3235,305 @@ export interface components {
         Limit: number;
         /** @description 앞뒤의 유니코드 Space_Separator 코드 포인트를 반복해서 제거하고 NFC로 정규화한 뒤, Cc, Cf, Zl, Zp를 거부하며 1~80개의 유니코드 코드 포인트를 요구합니다. 저장된 NFC 정규화 닉네임에서 대소문자를 구분하는 연속 유니코드 코드 포인트 부분 문자열로 일치 여부를 판단합니다. */
         NicknameSearch: string;
+        /** @description 생략하면 닉네임 필터를 적용하지 않습니다. 제공하면 앞뒤의 유니코드 Space_Separator 코드 포인트를 반복해서 제거하고 NFC로 정규화한 뒤, Cc, Cf, Zl, Zp를 거부하며 1~80개의 유니코드 코드 포인트를 요구합니다. 저장된 NFC 정규화 닉네임에서 대소문자를 구분하는 연속 유니코드 코드 포인트 부분 문자열로 일치 여부를 판단합니다. 빈 값 또는 공백만 있는 값은 400 MALFORMED_REQUEST입니다. 요청한 팔로잉·팔로워 목록 안에서만 검색합니다. */
+        OptionalRelationshipNickname: string;
         SharedCardId: components["schemas"]["Uuid"];
+        /** @description 공개 카드 작성 학생의 안정적인 UUID입니다. 생략하면 본인 카드를 제외하고 명시하면 해당 작성자로 제한하며 자기 ID도 허용합니다. 빈 문자열, null 문자열, 잘못된 UUID는 400 MALFORMED_REQUEST입니다. */
+        SharedCardOwnerId: components["schemas"]["Uuid"];
         /** @description 관계 상대방의 UUID입니다. 인증된 소유자 정보는 항상 현재 인증 주체에서 가져오며 이 매개변수로 받지 않습니다. */
         StudentId: components["schemas"]["Uuid"];
         WishId: components["schemas"]["Uuid"];
+        /** @description Opaque 위시 사진 UUID입니다. 식별자 knowledge만으로 읽기, 취소 또는 첨부 권한이 생기지 않습니다. */
+        WishPhotoId: components["schemas"]["Uuid"];
     };
     requestBodies: never;
     headers: {
-        /** @description 동일한 요청에 대해 원래 상태와 본문이 재생되는 경우에만 true입니다. */
+        /** @description 짧은 수명의 비공개 signed URL이 포함될 수 있으므로 JSON 응답을 저장하지 않습니다. */
+        CacheControlNoStore: "no-store";
+        /** @description 동일한 요청의 종결 성공 domain 결과가 재생되는 경우에만 true입니다. ACTIVE_PHOTO는 최초 결과의 정확한 photoId만 유지하고 ephemeral signed URL을 새로 발급하며, NO_PHOTO는 이후 현재 attachment와 무관하게 null을 유지합니다. PHOTO_REVOKED의 409 WISH_PHOTO_EXPIRED 또는 URL 발급 실패의 503 PHOTO_DELIVERY_UNAVAILABLE에는 이 header를 보내지 않습니다. */
         IdempotencyReplayed: boolean;
+        /** @description 가장 이른 적용 quota 해제까지 기다릴 양의 정수 초입니다. */
+        RetryAfter: number;
     };
     pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-    sendFriendRequest: {
+    getFeedBehaviorMetrics: {
+        parameters: {
+            query: {
+                /** @description 서울 기준 포함 시작일입니다. */
+                fromDate: components["schemas"]["UtcDate"];
+                /** @description 서울 기준 제외 종료일입니다. 최대 90일의 양의 기간이며 서울 기준 내일까지 허용합니다. */
+                toDate: components["schemas"]["UtcDate"];
+            };
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 수집 범위를 명시한 관측 집계입니다. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BehaviorFeedMetrics"];
+                };
+            };
+            /** @description 날짜·기간 또는 요청 구조가 잘못되었습니다. */
+            400: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 머신 Bearer 인증이 필요합니다. */
+            401: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description Bearer 인증을 요구합니다. */
+                    "WWW-Authenticate": "Bearer";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 현재 조회 가능한 학원 또는 학생이 없습니다. */
+            404: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    getOutgoingAuthorInterestMetrics: {
+        parameters: {
+            query: {
+                /** @description 서울 기준 포함 시작일입니다. */
+                fromDate: components["schemas"]["UtcDate"];
+                /** @description 서울 기준 제외 종료일입니다. 최대 90일의 양의 기간이며 서울 기준 내일까지 허용합니다. */
+                toDate: components["schemas"]["UtcDate"];
+            };
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description 방문 대상 작성자 UUID입니다. */
+                authorStudentId: components["schemas"]["Uuid"];
+                /** @description 집계 기준 학생 UUID입니다. */
+                studentId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 수집 범위를 명시한 관측 집계입니다. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BehaviorAuthorInterestMetrics"];
+                };
+            };
+            /** @description 날짜·기간 또는 요청 구조가 잘못되었습니다. */
+            400: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 머신 Bearer 인증이 필요합니다. */
+            401: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description Bearer 인증을 요구합니다. */
+                    "WWW-Authenticate": "Bearer";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 현재 조회 가능한 학원 또는 학생이 없습니다. */
+            404: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    getIncomingProfileVisitMetrics: {
+        parameters: {
+            query: {
+                /** @description 서울 기준 포함 시작일입니다. */
+                fromDate: components["schemas"]["UtcDate"];
+                /** @description 서울 기준 제외 종료일입니다. 최대 90일의 양의 기간이며 서울 기준 내일까지 허용합니다. */
+                toDate: components["schemas"]["UtcDate"];
+            };
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description 집계 기준 학생 UUID입니다. */
+                studentId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 수집 범위를 명시한 관측 집계입니다. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BehaviorProfileVisitMetrics"];
+                };
+            };
+            /** @description 날짜·기간 또는 요청 구조가 잘못되었습니다. */
+            400: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 머신 Bearer 인증이 필요합니다. */
+            401: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description Bearer 인증을 요구합니다. */
+                    "WWW-Authenticate": "Bearer";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 현재 조회 가능한 학원 또는 학생이 없습니다. */
+            404: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    getHistoricalBalances: {
+        parameters: {
+            query: {
+                /** @description 이 계정의 이전 응답 dataRevision을 그대로 재생합니다. 생략하면 최신 일관된 snapshot을 선택합니다. */
+                asOfRevision?: components["schemas"]["HistoricalDataRevision"];
+                /** @description 서울 달력의 포함 시작일입니다. YYYY-MM-DD를 엄격히 파싱합니다. WEEK는 월요일, MONTH는 1일이어야 합니다. */
+                fromDate: components["schemas"]["UtcDate"];
+                /** @description 대소문자를 구분하는 서울 달력 단위입니다. */
+                granularity: "DAY" | "WEEK" | "MONTH";
+                /** @description 서울 달력의 제외 종료일입니다. 시작보다 크며 최대 366일입니다. WEEK는 월요일, MONTH는 1일이어야 합니다. */
+                toDateExclusive: components["schemas"]["UtcDate"];
+            };
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description 이력과 재생 토큰이 귀속되는 정확한 카드 잔액 계정 UUID입니다. */
+                accountId: components["parameters"]["HistoricalAccountId"];
+                /** @description 계정 소유 학생의 정확한 UUID입니다. */
+                studentId: components["schemas"]["Uuid"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description UNKNOWN을 포함하여 요청한 모든 버킷을 일관되게 반환합니다. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HistoricalBalancesResponse"];
+                };
+            };
+            /** @description 날짜·기간·본문·쿼리 또는 재생 revision이 잘못되었습니다. */
+            400: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 머신 Bearer 인증이 필요합니다. */
+            401: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description Bearer 인증을 요구합니다. */
+                    "WWW-Authenticate": "Bearer";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 현재 조회 자격을 충족하는 정확한 계정이 없습니다. */
+            404: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 수집된 필수 이력의 무결성을 확인할 수 없습니다. */
+            500: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 현재 데이터베이스 이력 조회를 완료할 수 없습니다. */
+            503: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    createFeedEvent: {
         parameters: {
             query?: never;
             header?: never;
@@ -1913,119 +3544,195 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["CreateFriendRequestRequest"];
+                "application/json": components["schemas"]["BehaviorFeedEventRequest"];
             };
         };
         responses: {
-            /** @description PENDING 상태에서 친구 요청이 생성되었습니다. */
+            /** @description 현재 접근을 확인한 보존 이벤트의 동일 재생입니다. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description 현재 접근을 확인한 동일 이벤트 재생에만 true입니다. */
+                    "Idempotency-Replayed": true;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BehaviorEventAccepted"];
+                };
+            };
+            /** @description 새 요청을 저장한 결과입니다. */
             201: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FriendRequest"];
+                    "application/json": components["schemas"]["BehaviorEventAccepted"];
                 };
             };
-            400: components["responses"]["FriendManagementMalformedRequest"];
-            401: components["responses"]["FriendManagementAuthRequired"];
-            403: components["responses"]["FriendManagementForbidden"];
-            404: components["responses"]["StudentOrAcademyNotFound"];
-            409: components["responses"]["FriendRequestCreateConflict"];
+            /** @description 요청 실패: MALFORMED_REQUEST, EVENT_TIME_OUT_OF_RANGE */
+            400: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 요청 실패: AUTH_REQUIRED */
+            401: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description Bearer 인증을 요구합니다. */
+                    "WWW-Authenticate": "Bearer";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 요청 실패: FORBIDDEN */
+            403: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 요청 실패: ACADEMY_NOT_FOUND, FEED_CONTEXT_NOT_FOUND, SHARED_CARD_NOT_FOUND */
+            404: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 요청 실패: EVENT_ID_CONFLICT, IMPRESSION_CONFLICT, IMPRESSION_ALREADY_EXPOSED */
+            409: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 요청 실패: FEED_CONTEXT_EXPIRED */
+            410: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 요청 실패: UNSUPPORTED_MEDIA_TYPE */
+            415: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
         };
     };
-    cancelFriendRequest: {
+    createFeedResult: {
         parameters: {
             query?: never;
             header?: never;
             path: {
                 academyId: components["parameters"]["AcademyId"];
-                /** @description 친구 요청의 UUID입니다. 승인되지 않았거나 잘못된 역할 식별자는 FRIEND_REQUEST_NOT_FOUND로 정규화됩니다. */
-                friendRequestId: components["parameters"]["FriendRequestId"];
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedResultRequest"];
+            };
+        };
         responses: {
-            /** @description 요청이 CANCELED 상태로 취소되고 processedAt에는 null이 아닌 값이 기록됩니다. */
-            200: {
+            /** @description 새 요청을 저장한 결과입니다. */
+            201: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FriendRequest"];
+                    "application/json": components["schemas"]["FeedResultResponse"];
                 };
             };
-            400: components["responses"]["FriendManagementMalformedRequest"];
-            401: components["responses"]["FriendManagementAuthRequired"];
-            403: components["responses"]["FriendManagementForbidden"];
-            404: components["responses"]["FriendRequestOrAcademyNotFound"];
-            409: components["responses"]["FriendRequestNotPending"];
-        };
-    };
-    acceptFriendRequest: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                academyId: components["parameters"]["AcademyId"];
-                /** @description 친구 요청의 UUID입니다. 승인되지 않았거나 잘못된 역할 식별자는 FRIEND_REQUEST_NOT_FOUND로 정규화됩니다. */
-                friendRequestId: components["parameters"]["FriendRequestId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 요청이 수락되고 현재 친구 관계 하나가 맺어졌습니다. */
-            200: {
+            /** @description 요청 실패: MALFORMED_REQUEST */
+            400: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Friend"];
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            400: components["responses"]["FriendManagementMalformedRequest"];
-            401: components["responses"]["FriendManagementAuthRequired"];
-            403: components["responses"]["FriendManagementForbidden"];
-            404: components["responses"]["FriendRequestOrAcademyNotFound"];
-            409: components["responses"]["FriendRequestAcceptanceConflict"];
-        };
-    };
-    rejectFriendRequest: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                academyId: components["parameters"]["AcademyId"];
-                /** @description 친구 요청의 UUID입니다. 승인되지 않았거나 잘못된 역할 식별자는 FRIEND_REQUEST_NOT_FOUND로 정규화됩니다. */
-                friendRequestId: components["parameters"]["FriendRequestId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 요청이 REJECTED 상태로 거절되고 processedAt에는 null이 아닌 값이 기록됩니다. */
-            200: {
+            /** @description 요청 실패: AUTH_REQUIRED */
+            401: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description Bearer 인증을 요구합니다. */
+                    "WWW-Authenticate": "Bearer";
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FriendRequest"];
+                    "application/json": components["schemas"]["ErrorEnvelope"];
                 };
             };
-            400: components["responses"]["FriendManagementMalformedRequest"];
-            401: components["responses"]["FriendManagementAuthRequired"];
-            403: components["responses"]["FriendManagementForbidden"];
-            404: components["responses"]["FriendRequestOrAcademyNotFound"];
-            409: components["responses"]["FriendRequestNotPending"];
+            /** @description 요청 실패: FORBIDDEN */
+            403: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 요청 실패: ACADEMY_NOT_FOUND */
+            404: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            410: components["responses"]["RecommendationCursorExpired"];
+            /** @description 요청 실패: UNSUPPORTED_MEDIA_TYPE */
+            415: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            503: components["responses"]["FeedPageUnavailable"];
         };
     };
-    listReceivedFriendRequests: {
+    listAcademyFollowers: {
         parameters: {
             query?: {
                 /** @description 이 API 작업의 고정 정렬 순서에 바인딩된 불투명 커서입니다. */
                 cursor?: components["parameters"]["Cursor"];
                 limit?: components["parameters"]["Limit"];
+                /** @description 생략하면 닉네임 필터를 적용하지 않습니다. 제공하면 앞뒤의 유니코드 Space_Separator 코드 포인트를 반복해서 제거하고 NFC로 정규화한 뒤, Cc, Cf, Zl, Zp를 거부하며 1~80개의 유니코드 코드 포인트를 요구합니다. 저장된 NFC 정규화 닉네임에서 대소문자를 구분하는 연속 유니코드 코드 포인트 부분 문자열로 일치 여부를 판단합니다. 빈 값 또는 공백만 있는 값은 400 MALFORMED_REQUEST입니다. 요청한 팔로잉·팔로워 목록 안에서만 검색합니다. */
+                nickname?: components["parameters"]["OptionalRelationshipNickname"];
             };
             header?: never;
             path: {
@@ -2035,27 +3742,29 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 인증된 학생이 수신자로 소유한 PENDING 요청입니다. */
+            /** @description 현재 학원의 팔로워 검색 결과와 전체 관계 수입니다. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FriendRequestPage"];
+                    "application/json": components["schemas"]["FollowPage"];
                 };
             };
-            400: components["responses"]["FriendManagementMalformedRequest"];
-            401: components["responses"]["FriendManagementAuthRequired"];
-            403: components["responses"]["FriendManagementForbidden"];
-            404: components["responses"]["FriendManagementAcademyNotFound"];
+            400: components["responses"]["StudentRelationshipMalformedRequest"];
+            401: components["responses"]["StudentRelationshipAuthRequired"];
+            403: components["responses"]["StudentRelationshipForbidden"];
+            404: components["responses"]["StudentRelationshipAcademyNotFound"];
         };
     };
-    listSentFriendRequests: {
+    listAcademyFollowing: {
         parameters: {
             query?: {
                 /** @description 이 API 작업의 고정 정렬 순서에 바인딩된 불투명 커서입니다. */
                 cursor?: components["parameters"]["Cursor"];
                 limit?: components["parameters"]["Limit"];
+                /** @description 생략하면 닉네임 필터를 적용하지 않습니다. 제공하면 앞뒤의 유니코드 Space_Separator 코드 포인트를 반복해서 제거하고 NFC로 정규화한 뒤, Cc, Cf, Zl, Zp를 거부하며 1~80개의 유니코드 코드 포인트를 요구합니다. 저장된 NFC 정규화 닉네임에서 대소문자를 구분하는 연속 유니코드 코드 포인트 부분 문자열로 일치 여부를 판단합니다. 빈 값 또는 공백만 있는 값은 400 MALFORMED_REQUEST입니다. 요청한 팔로잉·팔로워 목록 안에서만 검색합니다. */
+                nickname?: components["parameters"]["OptionalRelationshipNickname"];
             };
             header?: never;
             path: {
@@ -2065,52 +3774,22 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 인증된 학생이 발신자로 소유한 PENDING 요청입니다. */
+            /** @description 현재 학원의 팔로잉 검색 결과와 전체 관계 수입니다. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["FriendRequestPage"];
+                    "application/json": components["schemas"]["FollowPage"];
                 };
             };
-            400: components["responses"]["FriendManagementMalformedRequest"];
-            401: components["responses"]["FriendManagementAuthRequired"];
-            403: components["responses"]["FriendManagementForbidden"];
-            404: components["responses"]["FriendManagementAcademyNotFound"];
+            400: components["responses"]["StudentRelationshipMalformedRequest"];
+            401: components["responses"]["StudentRelationshipAuthRequired"];
+            403: components["responses"]["StudentRelationshipForbidden"];
+            404: components["responses"]["StudentRelationshipAcademyNotFound"];
         };
     };
-    listAcademyFriends: {
-        parameters: {
-            query?: {
-                /** @description 이 API 작업의 고정 정렬 순서에 바인딩된 불투명 커서입니다. */
-                cursor?: components["parameters"]["Cursor"];
-                limit?: components["parameters"]["Limit"];
-            };
-            header?: never;
-            path: {
-                academyId: components["parameters"]["AcademyId"];
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description 현재 같은 학원에 속한 친구 관계입니다. */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["FriendPage"];
-                };
-            };
-            400: components["responses"]["FriendManagementMalformedRequest"];
-            401: components["responses"]["FriendManagementAuthRequired"];
-            403: components["responses"]["FriendManagementForbidden"];
-            404: components["responses"]["FriendManagementAcademyNotFound"];
-        };
-    };
-    unfriendAcademyStudent: {
+    followAcademyStudent: {
         parameters: {
             query?: never;
             header?: never;
@@ -2123,17 +3802,146 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 친구 관계가 종료되었습니다. 응답 본문은 없습니다. */
+            /** @description 요청한 현재 상태입니다. 응답 본문이 없습니다. */
             204: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content?: never;
             };
-            400: components["responses"]["FriendManagementMalformedRequest"];
-            401: components["responses"]["FriendManagementAuthRequired"];
-            403: components["responses"]["FriendManagementForbidden"];
-            404: components["responses"]["FriendshipOrAcademyNotFound"];
+            400: components["responses"]["StudentRelationshipMalformedRequest"];
+            401: components["responses"]["StudentRelationshipAuthRequired"];
+            403: components["responses"]["StudentRelationshipForbidden"];
+            404: components["responses"]["StudentOrAcademyNotFound"];
+            409: components["responses"]["SelfRelationshipConflict"];
+        };
+    };
+    unfollowAcademyStudent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description 관계 상대방의 UUID입니다. 인증된 소유자 정보는 항상 현재 인증 주체에서 가져오며 이 매개변수로 받지 않습니다. */
+                studentId: components["parameters"]["StudentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 요청한 현재 상태입니다. 응답 본문이 없습니다. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["StudentRelationshipMalformedRequest"];
+            401: components["responses"]["StudentRelationshipAuthRequired"];
+            403: components["responses"]["StudentRelationshipForbidden"];
+            404: components["responses"]["StudentOrAcademyNotFound"];
+            409: components["responses"]["SelfRelationshipConflict"];
+        };
+    };
+    createProfileVisit: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BehaviorProfileVisitRequest"];
+            };
+        };
+        responses: {
+            /** @description 현재 접근을 확인한 보존 이벤트의 동일 재생입니다. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description 현재 접근을 확인한 동일 이벤트 재생에만 true입니다. */
+                    "Idempotency-Replayed": true;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BehaviorEventAccepted"];
+                };
+            };
+            /** @description 새 요청을 저장한 결과입니다. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BehaviorEventAccepted"];
+                };
+            };
+            /** @description 요청 실패: MALFORMED_REQUEST, SELF_PROFILE_VISIT, EVENT_TIME_OUT_OF_RANGE */
+            400: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 요청 실패: AUTH_REQUIRED */
+            401: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    /** @description Bearer 인증을 요구합니다. */
+                    "WWW-Authenticate": "Bearer";
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 요청 실패: FORBIDDEN */
+            403: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 요청 실패: ACADEMY_NOT_FOUND, PROFILE_NOT_FOUND */
+            404: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 요청 실패: EVENT_ID_CONFLICT */
+            409: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+            /** @description 요청 실패: UNSUPPORTED_MEDIA_TYPE */
+            415: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
         };
     };
     listAcademySharedCards: {
@@ -2142,6 +3950,8 @@ export interface operations {
                 /** @description 이 API 작업의 고정 정렬 순서에 바인딩된 불투명 커서입니다. */
                 cursor?: components["parameters"]["Cursor"];
                 limit?: components["parameters"]["Limit"];
+                /** @description 공개 카드 작성 학생의 안정적인 UUID입니다. 생략하면 본인 카드를 제외하고 명시하면 해당 작성자로 제한하며 자기 ID도 허용합니다. 빈 문자열, null 문자열, 잘못된 UUID는 400 MALFORMED_REQUEST입니다. */
+                ownerId?: components["parameters"]["SharedCardOwnerId"];
             };
             header?: never;
             path: {
@@ -2151,9 +3961,10 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 현재 조회 가능한 진행 카드와 완료 카드입니다. */
+            /** @description 현재 조회 가능한 진행 카드, 완료 카드, 포기 카드입니다. */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -2164,6 +3975,8 @@ export interface operations {
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["AcademyNotFound"];
+            410: components["responses"]["RecommendationCursorExpired"];
+            503: components["responses"]["FeedPageUnavailable"];
         };
     };
     getAcademySharedCard: {
@@ -2178,9 +3991,10 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 현재 조회 가능한 공유 카드 한 건입니다. */
+            /** @description 현재 조회 가능한 진행 카드, 완료 카드 또는 포기 카드 한 건입니다. */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -2190,6 +4004,7 @@ export interface operations {
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["SharedCardOrAcademyNotFound"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     searchAcademyStudents: {
@@ -2218,10 +4033,109 @@ export interface operations {
                     "application/json": components["schemas"]["StudentRelationshipPage"];
                 };
             };
-            400: components["responses"]["FriendManagementMalformedRequest"];
-            401: components["responses"]["FriendManagementAuthRequired"];
-            403: components["responses"]["FriendManagementForbidden"];
-            404: components["responses"]["FriendManagementAcademyNotFound"];
+            400: components["responses"]["StudentRelationshipMalformedRequest"];
+            401: components["responses"]["StudentRelationshipAuthRequired"];
+            403: components["responses"]["StudentRelationshipForbidden"];
+            404: components["responses"]["StudentRelationshipAcademyNotFound"];
+        };
+    };
+    getAcademyStudent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description 관계 상대방의 UUID입니다. 인증된 소유자 정보는 항상 현재 인증 주체에서 가져오며 이 매개변수로 받지 않습니다. */
+                studentId: components["parameters"]["StudentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 조회 대상 학생의 안정적인 신원과 현재 양방향 팔로우 상태입니다. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudentRelationship"];
+                };
+            };
+            400: components["responses"]["StudentRelationshipMalformedRequest"];
+            401: components["responses"]["StudentRelationshipAuthRequired"];
+            403: components["responses"]["StudentRelationshipForbidden"];
+            404: components["responses"]["StudentOrAcademyNotFound"];
+        };
+    };
+    listAcademyStudentFollowers: {
+        parameters: {
+            query?: {
+                /** @description 이 API 작업의 고정 정렬 순서에 바인딩된 불투명 커서입니다. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description 생략하면 닉네임 필터를 적용하지 않습니다. 제공하면 앞뒤의 유니코드 Space_Separator 코드 포인트를 반복해서 제거하고 NFC로 정규화한 뒤, Cc, Cf, Zl, Zp를 거부하며 1~80개의 유니코드 코드 포인트를 요구합니다. 저장된 NFC 정규화 닉네임에서 대소문자를 구분하는 연속 유니코드 코드 포인트 부분 문자열로 일치 여부를 판단합니다. 빈 값 또는 공백만 있는 값은 400 MALFORMED_REQUEST입니다. 요청한 팔로잉·팔로워 목록 안에서만 검색합니다. */
+                nickname?: components["parameters"]["OptionalRelationshipNickname"];
+            };
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description 관계 상대방의 UUID입니다. 인증된 소유자 정보는 항상 현재 인증 주체에서 가져오며 이 매개변수로 받지 않습니다. */
+                studentId: components["parameters"]["StudentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 접근 가능한 목록 소유자의 현재 팔로워 페이지와 소유자의 전체 관계 수입니다. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowPage"];
+                };
+            };
+            400: components["responses"]["StudentRelationshipMalformedRequest"];
+            401: components["responses"]["StudentRelationshipAuthRequired"];
+            403: components["responses"]["StudentRelationshipForbidden"];
+            404: components["responses"]["StudentOrAcademyNotFound"];
+        };
+    };
+    listAcademyStudentFollowing: {
+        parameters: {
+            query?: {
+                /** @description 이 API 작업의 고정 정렬 순서에 바인딩된 불투명 커서입니다. */
+                cursor?: components["parameters"]["Cursor"];
+                limit?: components["parameters"]["Limit"];
+                /** @description 생략하면 닉네임 필터를 적용하지 않습니다. 제공하면 앞뒤의 유니코드 Space_Separator 코드 포인트를 반복해서 제거하고 NFC로 정규화한 뒤, Cc, Cf, Zl, Zp를 거부하며 1~80개의 유니코드 코드 포인트를 요구합니다. 저장된 NFC 정규화 닉네임에서 대소문자를 구분하는 연속 유니코드 코드 포인트 부분 문자열로 일치 여부를 판단합니다. 빈 값 또는 공백만 있는 값은 400 MALFORMED_REQUEST입니다. 요청한 팔로잉·팔로워 목록 안에서만 검색합니다. */
+                nickname?: components["parameters"]["OptionalRelationshipNickname"];
+            };
+            header?: never;
+            path: {
+                academyId: components["parameters"]["AcademyId"];
+                /** @description 관계 상대방의 UUID입니다. 인증된 소유자 정보는 항상 현재 인증 주체에서 가져오며 이 매개변수로 받지 않습니다. */
+                studentId: components["parameters"]["StudentId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 접근 가능한 목록 소유자의 현재 팔로잉 페이지와 소유자의 전체 관계 수입니다. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowPage"];
+                };
+            };
+            400: components["responses"]["StudentRelationshipMalformedRequest"];
+            401: components["responses"]["StudentRelationshipAuthRequired"];
+            403: components["responses"]["StudentRelationshipForbidden"];
+            404: components["responses"]["StudentOrAcademyNotFound"];
         };
     };
     getCardBalanceAccount: {
@@ -2335,6 +4249,68 @@ export interface operations {
             404: components["responses"]["CardBalanceAccountNotFound"];
         };
     };
+    getMonthlyRecap: {
+        parameters: {
+            query?: {
+                /** @description 조회할 완료 월의 Asia/Seoul YYYY-MM 값입니다. 생략하면 가장 최근 완료 월을 선택합니다. */
+                month?: string;
+            };
+            header?: never;
+            path: {
+                cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 선택한 완료 월의 현재 공개 리캡 상태와 불변 결과입니다. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MonthlyRecapResponse"];
+                };
+            };
+            400: components["responses"]["MalformedRequest"];
+            401: components["responses"]["AuthRequired"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CardBalanceAccountNotFound"];
+            503: components["responses"]["RecapQueryUnavailable"];
+        };
+    };
+    getWeeklyRecap: {
+        parameters: {
+            query?: {
+                /** @description 조회할 완료 주의 Asia/Seoul 월요일 시작일입니다. 생략하면 가장 최근 완료 주를 선택합니다. */
+                weekStart?: string;
+            };
+            header?: never;
+            path: {
+                cardBalanceAccountId: components["parameters"]["CardBalanceAccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 선택한 완료 주의 공개 상태와 저장된 결과이며 성공 story만 현재 공개 가능한 완료 카드 상세로 보강합니다. */
+            200: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyRecapResponse"];
+                };
+            };
+            400: components["responses"]["MalformedRequest"];
+            401: components["responses"]["AuthRequired"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["CardBalanceAccountNotFound"];
+            503: components["responses"]["WeeklyRecapQueryUnavailable"];
+        };
+    };
     getRepresentativeWish: {
         parameters: {
             query?: never;
@@ -2349,6 +4325,7 @@ export interface operations {
             /** @description 현재 대표 위시입니다. */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -2366,6 +4343,7 @@ export interface operations {
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["CardBalanceAccountNotFound"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     selectRepresentativeWish: {
@@ -2386,6 +4364,7 @@ export interface operations {
             /** @description 선택된 대표 위시는 변경 결과 래퍼나 eventId 없이 직접 반환됩니다. */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -2398,6 +4377,7 @@ export interface operations {
             404: components["responses"]["WishOrAccountNotFound"];
             409: components["responses"]["RepresentativeWishSelectionConflict"];
             415: components["responses"]["JsonUnsupportedMediaType"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     transferWishFunds: {
@@ -2418,9 +4398,10 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 원자적 이체가 완료되었습니다. 동일 요청을 재생하면 최초 응답의 상태와 본문을 그대로 반환합니다. */
+            /** @description 원자적 이체가 완료되었습니다. 동일 요청 재생은 출발·도착의 최초 domain 결과와 각 ACTIVE_PHOTO의 정확한 photoId 또는 NO_PHOTO의 null을 유지하고, 양쪽을 모두 검증한 뒤 ephemeral photo URL만 새로 발급합니다. */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
                     [name: string]: unknown;
                 };
@@ -2434,6 +4415,7 @@ export interface operations {
             404: components["responses"]["WishOrAccountNotFound"];
             409: components["responses"]["TransferConflict"];
             422: components["responses"]["InvalidTransferAmountOrVersion"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     listWishes: {
@@ -2455,6 +4437,7 @@ export interface operations {
             /** @description 삭제되지 않은 위시 페이지입니다. */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -2465,6 +4448,7 @@ export interface operations {
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["CardBalanceAccountNotFound"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     createWish: {
@@ -2485,9 +4469,10 @@ export interface operations {
             };
         };
         responses: {
-            /** @description 위시가 생성되었습니다. 동일 요청을 재생하면 최초 응답의 상태와 본문을 그대로 반환합니다. */
+            /** @description 위시가 생성되었습니다. 동일 요청 재생은 최초 domain 결과와 ACTIVE_PHOTO의 정확한 photoId 또는 NO_PHOTO의 null을 유지하고, 유효한 ACTIVE_PHOTO의 ephemeral URL만 새로 발급합니다. */
             201: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
                     [name: string]: unknown;
                 };
@@ -2498,7 +4483,7 @@ export interface operations {
             400: components["responses"]["MalformedOrIdempotencyRequired"];
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
-            404: components["responses"]["CardBalanceAccountNotFound"];
+            404: components["responses"]["CreateWishResourceNotFound"];
             409: components["responses"]["CreateConflict"];
             /** @description UNSUPPORTED_MEDIA_TYPE — Content-Type이 application/json이 아닙니다. */
             415: {
@@ -2510,6 +4495,7 @@ export interface operations {
                 };
             };
             422: components["responses"]["InvalidAmountOrPurpose"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     getWish: {
@@ -2527,6 +4513,7 @@ export interface operations {
             /** @description 위시입니다. */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -2537,6 +4524,7 @@ export interface operations {
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["WishOrAccountNotFound"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     deleteWish: {
@@ -2563,6 +4551,7 @@ export interface operations {
             404: components["responses"]["WishOrAccountNotFound"];
             409: components["responses"]["DeleteConflict"];
             422: components["responses"]["InvalidIfMatchVersion"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     patchWish: {
@@ -2584,6 +4573,7 @@ export interface operations {
             /** @description 원자적으로 갱신된 위시입니다. */
             200: {
                 headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
                     [name: string]: unknown;
                 };
                 content: {
@@ -2593,10 +4583,11 @@ export interface operations {
             400: components["responses"]["MalformedRequest"];
             401: components["responses"]["AuthRequired"];
             403: components["responses"]["Forbidden"];
-            404: components["responses"]["WishOrAccountNotFound"];
+            404: components["responses"]["WishAccountOrPhotoNotFound"];
             409: components["responses"]["PatchConflict"];
             415: components["responses"]["UnsupportedMediaType"];
             422: components["responses"]["InvalidAmountPurposeOrVersion"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     abandonWish: {
@@ -2634,6 +4625,7 @@ export interface operations {
                 };
             };
             422: components["responses"]["InvalidVersion"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     completeWish: {
@@ -2671,6 +4663,7 @@ export interface operations {
                 };
             };
             422: components["responses"]["InvalidVersion"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     depositToWish: {
@@ -2699,7 +4692,7 @@ export interface operations {
             404: components["responses"]["WishOrAccountNotFound"];
             409: components["responses"]["DepositConflict"];
             422: components["responses"]["InvalidAmountOrVersion"];
-            503: components["responses"]["BalanceSyncFailed"];
+            503: components["responses"]["BalanceSyncOrPhotoDeliveryUnavailable"];
         };
     };
     listWishFundMovements: {
@@ -2759,6 +4752,7 @@ export interface operations {
             404: components["responses"]["WishOrAccountNotFound"];
             409: components["responses"]["WithdrawalConflict"];
             422: components["responses"]["InvalidAmountOrVersion"];
+            503: components["responses"]["PhotoDeliveryUnavailable"];
         };
     };
     listMyCardBalanceAccounts: {
@@ -2805,9 +4799,9 @@ export interface operations {
                     "application/json": components["schemas"]["StudentBlockPage"];
                 };
             };
-            400: components["responses"]["FriendManagementMalformedRequest"];
-            401: components["responses"]["FriendManagementAuthRequired"];
-            403: components["responses"]["FriendManagementForbidden"];
+            400: components["responses"]["StudentRelationshipMalformedRequest"];
+            401: components["responses"]["StudentRelationshipAuthRequired"];
+            403: components["responses"]["StudentRelationshipForbidden"];
         };
     };
     blockStudent: {
@@ -2832,9 +4826,9 @@ export interface operations {
                     "application/json": components["schemas"]["StudentBlock"];
                 };
             };
-            400: components["responses"]["FriendManagementMalformedRequest"];
-            401: components["responses"]["FriendManagementAuthRequired"];
-            403: components["responses"]["FriendManagementForbidden"];
+            400: components["responses"]["StudentRelationshipMalformedRequest"];
+            401: components["responses"]["StudentRelationshipAuthRequired"];
+            403: components["responses"]["StudentRelationshipForbidden"];
             404: components["responses"]["StudentNotFound"];
             409: components["responses"]["StudentBlockConflict"];
         };
@@ -2858,10 +4852,74 @@ export interface operations {
                 };
                 content?: never;
             };
-            400: components["responses"]["FriendManagementMalformedRequest"];
-            401: components["responses"]["FriendManagementAuthRequired"];
-            403: components["responses"]["FriendManagementForbidden"];
+            400: components["responses"]["StudentRelationshipMalformedRequest"];
+            401: components["responses"]["StudentRelationshipAuthRequired"];
+            403: components["responses"]["StudentRelationshipForbidden"];
             404: components["responses"]["StudentBlockNotFound"];
+        };
+    };
+    uploadWishPhoto: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 학생별 영구 네임스페이스입니다. 동일한 작업, 대상, 정규화된 요청에만 키를 재사용할 수 있습니다. */
+                "Idempotency-Key": components["parameters"]["IdempotencyKey"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["WishPhotoUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description 검증·안전성 검사·비공개 변형 저장이 완료된 미첨부 Pending 사진입니다. 멱등 재생은 같은 사진 identity에 새 5분 signed URL을 발급합니다. */
+            201: {
+                headers: {
+                    "Cache-Control": components["headers"]["CacheControlNoStore"];
+                    "Idempotency-Replayed": components["headers"]["IdempotencyReplayed"];
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WishPhoto"];
+                };
+            };
+            400: components["responses"]["MalformedOrIdempotencyRequired"];
+            401: components["responses"]["AuthRequired"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["WishPhotoUploadConflict"];
+            413: components["responses"]["PhotoTooLarge"];
+            415: components["responses"]["UnsupportedPhotoType"];
+            422: components["responses"]["InvalidOrRejectedPhoto"];
+            429: components["responses"]["PhotoUploadRateLimited"];
+            503: components["responses"]["PhotoUploadUnavailable"];
+        };
+    };
+    deletePendingWishPhoto: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Opaque 위시 사진 UUID입니다. 식별자 knowledge만으로 읽기, 취소 또는 첨부 권한이 생기지 않습니다. */
+                photoId: components["parameters"]["WishPhotoId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 사진이 즉시 첨부 불가능해졌거나 이미 같은 소유자의 DELETE_PENDING 상태입니다. 응답 본문은 없습니다. */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["MalformedRequest"];
+            401: components["responses"]["AuthRequired"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["WishPhotoNotFound"];
+            409: components["responses"]["WishPhotoAlreadyAttached"];
         };
     };
 }

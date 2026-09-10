@@ -32,17 +32,17 @@ describe("frontend HTTP error normalization", () => {
 
   it.each([
     "STUDENT_NOT_FOUND",
-    "FRIENDSHIP_NOT_FOUND",
-    "FRIEND_REQUEST_NOT_FOUND",
+    "SELF_PROFILE_VISIT",
+    "EVENT_TIME_OUT_OF_RANGE",
     "STUDENT_BLOCK_NOT_FOUND",
     "SELF_RELATIONSHIP",
-    "ALREADY_FRIENDS",
-    "FRIEND_REQUEST_ALREADY_PENDING",
-    "INCOMING_FRIEND_REQUEST_PENDING",
-    "FRIEND_REQUEST_NOT_PENDING",
-    "FRIEND_REQUEST_NOT_ACTIONABLE",
+    "PROFILE_NOT_FOUND",
+    "FEED_CONTEXT_NOT_FOUND",
+    "FEED_CONTEXT_EXPIRED",
+    "EVENT_ID_CONFLICT",
+    "IMPRESSION_CONFLICT",
     "STUDENT_BLOCK_ALREADY_ACTIVE",
-  ] as const)("recognizes the generated Friend Management code %s", async (code) => {
+  ] as const)("recognizes the generated behavior and relationship code %s", async (code) => {
     const response = jsonResponse(409, {
       error: {
         code,
@@ -74,6 +74,27 @@ describe("frontend HTTP error normalization", () => {
       message: "BFF route is not found",
     });
   });
+
+  it.each([
+    [408, "BFF_REQUEST_TIMEOUT", true],
+    [413, "BFF_PAYLOAD_TOO_LARGE", false],
+  ] as const)(
+    "normalizes the bounded upload BFF response %s %s with retryability",
+    async (status, code, retryable) => {
+      const response = jsonResponse(status, {
+        code,
+        message: `${code} message`,
+      });
+
+      await expect(normalizeErrorResponse(response)).resolves.toEqual({
+        kind: "bff",
+        status,
+        code,
+        message: `${code} message`,
+        retryable,
+      });
+    },
+  );
 
   it.each([
     "application/json; charset=utf-8",

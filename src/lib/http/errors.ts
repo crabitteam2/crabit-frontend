@@ -32,6 +32,14 @@ export interface FrontendHttpError {
 }
 
 const BACKEND_ERROR_CODES = new Set<BackendErrorCode>([
+  "SELF_PROFILE_VISIT",
+  "EVENT_TIME_OUT_OF_RANGE",
+  "PROFILE_NOT_FOUND",
+  "FEED_CONTEXT_NOT_FOUND",
+  "FEED_CONTEXT_EXPIRED",
+  "EVENT_ID_CONFLICT",
+  "IMPRESSION_CONFLICT",
+  "IMPRESSION_ALREADY_EXPOSED",
   "MALFORMED_REQUEST",
   "EXPECTED_VERSION_REQUIRED",
   "IDEMPOTENCY_KEY_REQUIRED",
@@ -52,19 +60,24 @@ const BACKEND_ERROR_CODES = new Set<BackendErrorCode>([
   "UNSUPPORTED_MEDIA_TYPE",
   "INVALID_AMOUNT",
   "INVALID_PURPOSE",
+  "INVALID_DATE_RANGE",
   "INVALID_VERSION",
   "BALANCE_SYNC_FAILED",
+  "RECAP_QUERY_UNAVAILABLE",
   "STUDENT_NOT_FOUND",
-  "FRIENDSHIP_NOT_FOUND",
-  "FRIEND_REQUEST_NOT_FOUND",
   "STUDENT_BLOCK_NOT_FOUND",
   "SELF_RELATIONSHIP",
-  "ALREADY_FRIENDS",
-  "FRIEND_REQUEST_ALREADY_PENDING",
-  "INCOMING_FRIEND_REQUEST_PENDING",
-  "FRIEND_REQUEST_NOT_PENDING",
-  "FRIEND_REQUEST_NOT_ACTIONABLE",
   "STUDENT_BLOCK_ALREADY_ACTIVE",
+  "WISH_PHOTO_NOT_FOUND",
+  "WISH_PHOTO_EXPIRED",
+  "WISH_PHOTO_ALREADY_ATTACHED",
+  "PHOTO_TOO_LARGE",
+  "UNSUPPORTED_PHOTO_TYPE",
+  "INVALID_PHOTO",
+  "PHOTO_CONTENT_NOT_ALLOWED",
+  "PHOTO_UPLOAD_RATE_LIMITED",
+  "PHOTO_PROCESSING_UNAVAILABLE",
+  "PHOTO_DELIVERY_UNAVAILABLE",
 ]);
 
 const BFF_ERROR_CODES = [
@@ -73,6 +86,8 @@ const BFF_ERROR_CODES = [
   "BFF_CONFIGURATION_ERROR",
   "BFF_UPSTREAM_UNAVAILABLE",
   "BFF_NOT_FOUND",
+  "BFF_REQUEST_TIMEOUT",
+  "BFF_PAYLOAD_TOO_LARGE",
   "PERSONA_INVALID",
   "PERSONA_UNAVAILABLE",
   "PERSONA_METHOD_NOT_ALLOWED",
@@ -181,7 +196,21 @@ function normalizeBffEnvelope(
     status,
     code: value.code as BffErrorCode,
     message: value.message,
+    ...bffRetryability(value.code as BffErrorCode),
   };
+}
+
+function bffRetryability(
+  code: BffErrorCode,
+): Pick<FrontendHttpError, "retryable"> | Record<string, never> {
+  switch (code) {
+    case "BFF_REQUEST_TIMEOUT":
+      return { retryable: true };
+    case "BFF_PAYLOAD_TOO_LARGE":
+      return { retryable: false };
+    default:
+      return {};
+  }
 }
 
 function malformedError(status?: number): FrontendHttpError {

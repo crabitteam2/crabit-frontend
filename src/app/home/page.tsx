@@ -1,6 +1,8 @@
 import noticeBookIcon from "@/../public/images/home/notice-book.svg";
 import transitCardIcon from "@/../public/images/home/transit-card.svg";
-import { ACADEMY_NAME, homeCard } from "@/lib/mock/home";
+import { ACADEMY_NAME, MY_NAME } from "@/lib/mock/home";
+import { refreshCardBalanceAction } from "@/app/wishes/wish-actions";
+import { loadAccountContext } from "@/app/wishes/load-account";
 import { HomeToast } from "../_components/home-toast";
 import { PullToRefresh } from "../_components/pull-to-refresh";
 import { TabBar } from "../_components/tab-bar";
@@ -17,6 +19,7 @@ export default async function HomeTabPage({
   const query = await searchParams;
   const rawToast = query.toast;
   const toastKey = (Array.isArray(rawToast) ? rawToast[0] : rawToast) ?? null;
+  const { account } = await loadAccountContext();
 
   return (
     <div className="bg-layer-basement flex min-h-svh flex-col">
@@ -24,16 +27,16 @@ export default async function HomeTabPage({
 
       <HomeTabHeader academyName={ACADEMY_NAME} />
 
-      <PullToRefresh>
+      <PullToRefresh onRefresh={refreshCardBalanceAction}>
         <main className="flex flex-col pb-[calc(96px+env(safe-area-inset-bottom))]">
           <h2 className="text-t2 text-fg-neutral px-4 pb-2 font-semibold">
             나의 카드
           </h2>
           <div className="px-4 pb-5">
             <MyCard
-              ownerName={homeCard.ownerName}
-              balance={homeCard.balance}
-              wishAvailableBalance={homeCard.wishAvailableBalance}
+              ownerName={MY_NAME}
+              balance={account.actualCardBalance}
+              wishAvailableBalance={account.displayAvailableBalance}
             />
           </div>
           <div className="px-4 pb-10">

@@ -11,6 +11,7 @@ const meta = {
     period: "26.08.24 ~ 26.08.25",
     depositHref: "/wishes/w1/deposit/amount",
     closeHref: "/",
+    photoUrl: null,
   },
 } satisfies Meta<typeof WishCreatedScreen>;
 
@@ -18,5 +19,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const 사진없음: Story = {};
+
+export const 사진있음: Story = {
+  args: { photoUrl: "/images/wishes/deposit-hero.png" },
+};
 
 export const 기간없음: Story = { args: { period: null } };

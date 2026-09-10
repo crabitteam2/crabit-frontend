@@ -71,7 +71,7 @@ The BFF validates the target before examining the E2E boundary. If the first val
 
 `openapi/crabit-backend.yaml` is an exact byte snapshot of `crabit-backend/api/openapi.yaml`. `openapi/provenance.json` records the backend repository SHA, source path, and SHA-256 digest. Normal install, test, build, and drift verification use only these committed frontend files and do not require a sibling backend checkout.
 
-The current snapshot pins backend revision `a3d01715dc075d8714b7ef973516944d92c7de33` and source digest `sha256:46441e7968fee579251868fe544d7e7375ceee44c5aeb110dcec1ef29238fe6b`. It contains 27 paths and 32 operations, including the twelve Friend Management operations and the representative-Wish read and selection operations described below.
+The committed [OpenAPI provenance](../../openapi/provenance.json) records the current snapshot's backend revision and source SHA-256 digest. It includes directional academy follows, independent following/follower lists, global blocks, and the canonical Wish photo contract.
 
 Generate and check types:
 
@@ -103,11 +103,20 @@ Wish helpers in `src/lib/http/wishes.ts` hide raw paths and methods and expose g
 
 `getRepresentativeWish()` returns the selected `Wish`, or successful `undefined` for the backend's bodyless `204`. `selectRepresentativeWish()` accepts only a generated `{ wishId }` body and returns the selected `Wish` directly. It does not expose an idempotency key, concurrency header, `WishMutationResult`, or event ID. Selecting the current representative is a successful no-op according to the backend contract; same-account `IN_PROGRESS` and `AMOUNT_REACHED` Wishes are eligible, while `COMPLETED` and `ABANDONED` Wishes return `INVALID_STATE_TRANSITION`.
 
-`src/lib/http/friends.ts` provides generated-type-backed helpers for all Friend Management operations:
+`src/lib/http/follows.ts` provides generated-type-backed Student Relationships helpers:
 
-- same-academy student search, current-friend listing, and unfriend;
-- send, list sent, list received, cancel, accept, and reject friend requests;
+- `searchAcademyStudents`: whole-academy nickname discovery;
+- `listAcademyFollowing` and `listAcademyFollowers`: optional nickname filtering inside the selected relation list, preserving the backend's independent `isFollowing` and `isFollowedBy` flags and total `followingCount` and `followerCount`;
+- bodyless `followAcademyStudent` (`PUT`) and `unfollowAcademyStudent` (`DELETE`), both returning success for duplicate valid current-state requests;
 - list, create, and release global student blocks.
+
+The old friend and friend-request helpers and endpoints have been removed without a compatibility layer. The two counts are totals for the selected academy, never derived from search results or loaded row counts. Cursors remain bound to actor, academy, direction, and normalized search; discard the cursor and start again when any context changes.
+
+Relationship mutations on the same client and target student are queued in call order across academies, including block and unblock. Reuse one client per authenticated context, and retain this same-target sequencing when wiring future screens. Different clients or devices are ordered only by the server. Do not automatically retry a stale follow after an unfollow: a later processed follow can create a new relationship. A failed request releases the local queue; it is never automatically retried.
+
+The existing student search and profile screens remain mock-backed. No new following/follower screen or real relationship API wiring is included. Mock profiles carry independent directional flags and explicit Wish visibility; a block terminates both flags, and unblock restores neither. `FOLLOWERS` requires viewer-to-owner following. The opposite student's block still denies all shared visibility; `ACADEMY` visibility can return after both blocks are absent. Profile-local state is keyed by student identity to avoid leaking another student's visibility on navigation. This mock state remains local to the mounted profile; backend authorization remains authoritative for future API wiring.
+
+The existing share form sends `FOLLOWERS` for “팔로워 공개”; `FRIENDS` is no longer a contract value. Existing persona keys (`friend`, `nonfriend`) and secret variable names are unchanged backend fixture identifiers; they do not mean a mutual friendship. The fixture's `friend` persona follows the owner.
 
 Search and list helpers preserve opaque cursors without decoding them. Bodyless action and delete helpers send no fabricated request body, idempotency key, or concurrency header, and bodyless `204` success maps to `ApiResult<undefined>`. Callers supply an already constructed `CrabitApiClient`; no helper accepts a raw method, path, origin, token, cookie, or `Authorization` value.
 
@@ -115,7 +124,7 @@ Search and list helpers preserve opaque cursors without decoding them. Bodyless 
 
 `ApiResult` returns either exact generated success data or a normalized `FrontendHttpError`. `unwrapResult()` returns success data unchanged and throws only `FrontendRequestError` with that normalized error as its programmatic payload. Raw response bodies, fetch exceptions, credentials, cookies, headers, and parser internals do not cross this boundary. React Query policy, hooks, cache keys, and UI states remain a separate feature concern.
 
-`normalizeErrorResponse()` recognizes only the exact generated nested backend envelope or documented flat BFF/persona envelope. Its backend allowlist includes the Friend Management codes `STUDENT_NOT_FOUND`, `FRIENDSHIP_NOT_FOUND`, `FRIEND_REQUEST_NOT_FOUND`, `STUDENT_BLOCK_NOT_FOUND`, `SELF_RELATIONSHIP`, `ALREADY_FRIENDS`, `FRIEND_REQUEST_ALREADY_PENDING`, `INCOMING_FRIEND_REQUEST_PENDING`, `FRIEND_REQUEST_NOT_PENDING`, `FRIEND_REQUEST_NOT_ACTIONABLE`, and `STUDENT_BLOCK_ALREADY_ACTIVE`. Unknown codes still map to `MALFORMED_RESPONSE`. Network and malformed responses map to fixed safe frontend errors. Arbitrary upstream fields, exception text, URLs, headers, cookies, tokens, and stack traces are discarded.
+`normalizeErrorResponse()` recognizes only the exact generated nested backend envelope or documented flat BFF/persona envelope. Its backend allowlist matches the pinned canonical `ErrorCode` values, including Student Relationships and Wish photo failures. Removed friend/request codes and the obsolete `FOLLOWERSHIP_NOT_FOUND` and `ALREADY_FOLLOWERS` codes are rejected. The approved snapshot excludes these unused follow error codes: duplicate valid follow/unfollow requests succeed with 204, and hidden targets use `STUDENT_NOT_FOUND`. Unknown codes still map to `MALFORMED_RESPONSE`. Network and malformed responses map to fixed safe frontend errors. Arbitrary upstream fields, exception text, URLs, headers, cookies, tokens, and stack traces are discarded.
 
 ## Validation and troubleshooting
 

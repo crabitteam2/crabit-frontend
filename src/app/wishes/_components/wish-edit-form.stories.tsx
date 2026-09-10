@@ -8,6 +8,9 @@ const meta = {
   args: {
     backHref: "/wishes/w3/info",
     donePath: "/wishes/w3/info/done",
+    cardBalanceAccountId: "11111111-1111-4111-8111-111111111111",
+    wishId: "22222222-2222-4222-8222-222222222222",
+    version: 3,
   },
 } satisfies Meta<typeof WishEditForm>;
 

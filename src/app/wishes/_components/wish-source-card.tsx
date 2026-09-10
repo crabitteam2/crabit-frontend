@@ -1,10 +1,10 @@
 import { toProgressPercent } from "@/app/_components/progress-stage";
-import type { Wish } from "@/lib/mock/wishes";
 import { WishProgressBar } from "./wish-progress-bar";
+import type { WishItem } from "./wish-item";
 import { sourceWishTheme } from "./wish-theme";
 
 interface WishSourceCardProps {
-  wish: Wish;
+  wish: WishItem;
   isSelected?: boolean;
 }
 

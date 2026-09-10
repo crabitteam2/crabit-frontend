@@ -16,7 +16,7 @@ export function useKeyboardViewport(): KeyboardViewport | null {
 
   useEffect(() => {
     const viewport = window.visualViewport;
-    if (viewport === null) return;
+    if (viewport == null) return;
 
     const sync = () => {
       tallest.current = Math.max(tallest.current, viewport.height);

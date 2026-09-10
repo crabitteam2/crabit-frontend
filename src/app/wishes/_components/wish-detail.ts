@@ -2,7 +2,7 @@ import type { OwnedWishItem, WishItemState } from "./wish-item";
 
 /** 상세 화면이 그리는 데 필요한 위시 정보입니다. */
 export interface WishDetail extends OwnedWishItem {
-  /** 저축을 시작한 날짜이며 `26.08.16` 형태입니다. */
+  /** 저축을 시작한 날짜이며 `26.08.16` 형태이고, 정하지 않았으면 빈 문자열입니다. */
   readonly startDate: string;
   /** 목표 날짜이며 없으면 빈 문자열입니다. */
   readonly targetDate: string;

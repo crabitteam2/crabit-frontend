@@ -23,7 +23,7 @@ describe("/api/e2e/persona", () => {
       expect(text).toBe("");
       expect(response.headers.get("content-type")).toBeNull();
       expect(response.headers.get("cache-control")).toBe("no-store");
-      expect(response.headers.get("set-cookie")).toBe(
+      expect(response.headers.getSetCookie()[0]).toBe(
         `crabit-e2e-persona=${persona}; Path=/; HttpOnly; SameSite=Lax`,
       );
       for (const token of tokens) {
@@ -100,7 +100,7 @@ describe("/api/e2e/persona", () => {
       );
 
       expect(response.status).toBe(204);
-      expect(response.headers.get("set-cookie")).toBe(
+      expect(response.headers.getSetCookie()[0]).toBe(
         "crabit-e2e-persona=owner; Path=/; HttpOnly; SameSite=Lax",
       );
     },
@@ -117,7 +117,7 @@ describe("/api/e2e/persona", () => {
     );
 
     expect(response.status).toBe(204);
-    expect(response.headers.get("set-cookie")).toBe(
+    expect(response.headers.getSetCookie()[0]).toBe(
       "crabit-e2e-persona=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0; Secure",
     );
     expect(response.headers.get("set-cookie")).not.toContain(

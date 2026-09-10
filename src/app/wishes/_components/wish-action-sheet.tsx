@@ -114,7 +114,7 @@ export function WishActionSheet({ wish, onClose }: WishActionSheetProps) {
         onPrimary={() =>
           void confirm(
             (target) => selectRepresentativeWishAction(target.id),
-            (target) => `/?representative=${target.id}&toast=representative`,
+            () => "/?toast=representative",
           )
         }
         onSecondary={dismiss}

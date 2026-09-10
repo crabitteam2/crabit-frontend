@@ -35,4 +35,18 @@ describe("종료 위시 목록 카드", () => {
       "0",
     );
   });
+
+  it("사진이 있어도 목록 카드에는 그리지 않는다", () => {
+    const { container } = render(
+      <WishCard
+        wish={{
+          ...abandonedWish,
+          imageUrl: "https://storage.test/signed/medium",
+        }}
+        tone="pink"
+      />,
+    );
+
+    expect(container.querySelector("img")).toBeNull();
+  });
 });

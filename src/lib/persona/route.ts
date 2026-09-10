@@ -1,4 +1,6 @@
 import "server-only";
+import { randomUUID } from "node:crypto";
+import { behaviorCookie, contextCookieNames } from "../behavior/context-server";
 
 import { readBffEnvironment, type BffEnvironment } from "../../config/env";
 import {
@@ -82,6 +84,7 @@ export async function handlePersonaRoute(
         environment.appEnv,
         request.url,
       ),
+      namespace, environment, request.url, true,
     );
   }
 
@@ -107,6 +110,7 @@ export async function handlePersonaRoute(
       environment.appEnv,
       request.url,
     ),
+    namespace, environment, request.url, false,
   );
 }
 
@@ -124,13 +128,14 @@ function isPersonaSelection(
   return Object.keys(record).length === 1 && isPersona(record.persona);
 }
 
-function personaSuccess(setCookie: string) {
+function personaSuccess(setCookie: string, namespace: PersonaNamespace, environment: BffEnvironment, url: string, deleting: boolean) {
+  const headers = new Headers({ "Cache-Control": "no-store", "Set-Cookie": setCookie });
+  const names = contextCookieNames(namespace);
+  headers.append("Set-Cookie", behaviorCookie(names.persona, deleting ? "" : randomUUID(), environment, url));
+  headers.append("Set-Cookie", behaviorCookie(names.academy, "", environment, url));
   return new Response(null, {
     status: 204,
-    headers: {
-      "Cache-Control": "no-store",
-      "Set-Cookie": setCookie,
-    },
+    headers,
   });
 }
 

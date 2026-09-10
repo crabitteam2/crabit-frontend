@@ -1,6 +1,13 @@
+import { readAmountQuery, queryValue } from "@/lib/forms/wish-form-query";
+import { FormQueryError } from "@/app/wishes/_components/form-query-error";
 import { notFound } from "next/navigation";
-import { findWish } from "@/lib/mock/wishes";
-import { LoadingScreen } from "../../../_components/loading-screen";
+import type { FundCounterpartRef } from "../../../_components/fund-counterpart";
+import { WithdrawLoadingScreen } from "../../../_components/withdraw-loading-screen";
+import {
+  CARD_COUNTERPART_ID,
+  findCounterpart,
+  loadFundFlow,
+} from "../../fund-flow";
 
 export default async function WithdrawLoadingPage({
   params,
@@ -10,17 +17,37 @@ export default async function WithdrawLoadingPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { wishId } = await params;
-  if (findWish(wishId) === null) notFound();
+  const view = await loadFundFlow(wishId);
+  if (view === null) notFound();
 
-  const raw = (await searchParams).amount;
-  const value = Array.isArray(raw) ? raw[0] : raw;
-  const parsed = Number(value ?? 0);
-  const amount = Number.isFinite(parsed) ? parsed : 0;
+  const selectPath = `/wishes/${wishId}/withdraw`;
+  const query = await searchParams;
+  const destination = findCounterpart(view, queryValue(query, "to"));
+  if (destination === null) return <FormQueryError backHref={selectPath} />;
+
+  const amount = readAmountQuery(query, Number.MAX_SAFE_INTEGER);
+  if (amount === null) return <FormQueryError backHref={selectPath} />;
+
+  const destinationId =
+    destination.kind === "card" ? CARD_COUNTERPART_ID : destination.wish.id;
+  const destinationRef: FundCounterpartRef =
+    destination.kind === "card"
+      ? { kind: "card" }
+      : {
+          kind: "wish",
+          wishId: destination.wish.id,
+          version: destination.wish.version,
+          purpose: destination.wish.purpose,
+        };
 
   return (
-    <LoadingScreen
-      label="돈 꺼내는 중"
-      donePath={`/wishes/${wishId}/withdraw/done?amount=${amount}`}
+    <WithdrawLoadingScreen
+      wishId={wishId}
+      amount={amount}
+      expectedVersion={view.wish.version}
+      destination={destinationRef}
+      amountHref={`/wishes/${wishId}/withdraw/amount?to=${destinationId}`}
+      doneHref={`/wishes/${wishId}/withdraw/done?to=${destinationId}&amount=${amount}`}
     />
   );
 }

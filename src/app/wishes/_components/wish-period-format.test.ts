@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  fromIsoDate,
   fromPeriodLabel,
   toFullDate,
+  toIsoDate,
   toPeriodLabel,
   toPeriodParams,
   toSavingPeriodLabel,
@@ -101,7 +103,7 @@ describe("toPeriodParams", () => {
   it("시작일만 고르면 startDate만 담는다", () => {
     expect(
       toPeriodParams({ start: "2026.08.21", end: null }).get("startDate"),
-    ).toBe("2026.08.21");
+    ).toBe("2026-08-21");
     expect(
       toPeriodParams({ start: "2026.08.21", end: null }).has("targetDate"),
     ).toBe(false);
@@ -109,7 +111,32 @@ describe("toPeriodParams", () => {
 
   it("범위를 고르면 둘 다 담는다", () => {
     const params = toPeriodParams({ start: "2026.08.21", end: "2026.08.27" });
-    expect(params.get("startDate")).toBe("2026.08.21");
-    expect(params.get("targetDate")).toBe("2026.08.27");
+    expect(params.get("startDate")).toBe("2026-08-21");
+    expect(params.get("targetDate")).toBe("2026-08-27");
+  });
+});
+
+describe("toIsoDate", () => {
+  it("달력 키를 ISO 날짜로 바꾼다", () => {
+    expect(toIsoDate("2026.09.05")).toBe("2026-09-05");
+  });
+
+  it("형식이 다르거나 값이 없으면 null이다", () => {
+    expect(toIsoDate("26.09.05")).toBeNull();
+    expect(toIsoDate("2026-09-05")).toBeNull();
+    expect(toIsoDate(null)).toBeNull();
+    expect(toIsoDate(undefined)).toBeNull();
+  });
+});
+
+describe("fromIsoDate", () => {
+  it("ISO 날짜를 달력 키로 바꾼다", () => {
+    expect(fromIsoDate("2026-09-05")).toBe("2026.09.05");
+  });
+
+  it("형식이 다르거나 값이 없으면 null이다", () => {
+    expect(fromIsoDate("2026.09.05")).toBeNull();
+    expect(fromIsoDate(null)).toBeNull();
+    expect(fromIsoDate(undefined)).toBeNull();
   });
 });

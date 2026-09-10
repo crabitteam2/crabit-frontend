@@ -1,14 +1,20 @@
-import { cardAccounts } from "@/lib/mock/accounts";
+import { getCardBalanceAccount } from "@/lib/http/card-balance-accounts";
+import { unwrapResult } from "@/lib/http/result";
+import { loadAccountContext } from "../load-account";
 import { WishGoalForm } from "./_components/wish-goal-form";
 
-export default function NewWishPage() {
-  const account = cardAccounts[0];
+export default async function NewWishPage() {
+  const { client, cardBalanceAccountId } = await loadAccountContext();
+  const account = unwrapResult(
+    await getCardBalanceAccount(client, { cardBalanceAccountId }),
+  );
 
   return (
     <WishGoalForm
       backHref="/wishes"
       nextPath="/wishes/new/period"
-      available={account?.balance ?? 0}
+      available={account.displayAvailableBalance}
+      cardBalanceAccountId={cardBalanceAccountId}
     />
   );
 }

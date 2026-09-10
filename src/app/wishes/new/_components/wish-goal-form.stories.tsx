@@ -9,6 +9,7 @@ const meta = {
     backHref: "/wishes",
     nextPath: "/wishes/new/period",
     available: 20_000,
+    cardBalanceAccountId: "11111111-1111-4111-8111-111111111111",
   },
 } satisfies Meta<typeof WishGoalForm>;
 

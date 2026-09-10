@@ -5,7 +5,10 @@ const meta = {
   title: "Wishes/WishInfoScreen",
   component: WishInfoScreen,
   parameters: { layout: "fullscreen" },
-  args: { backHref: "/wishes/w3", editHref: "/wishes/w3/info/edit" },
+  args: {
+    backHref: "/wishes/w3",
+    editHref: "/wishes/w3/info/edit",
+  },
 } satisfies Meta<typeof WishInfoScreen>;
 
 export default meta;

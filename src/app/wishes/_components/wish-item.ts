@@ -20,6 +20,8 @@ export interface WishItem {
   readonly targetAmount: number;
   /** 위시의 진행 단계입니다. */
   readonly state: WishItemState;
+  /** 현재 권한으로 발급된 짧은 사진 URL이며 사진이 없으면 생략합니다. */
+  readonly imageUrl?: string;
 }
 
 /** 쓰기 요청에 필요한 낙관적 동시성 버전까지 담은 내 위시입니다. */
@@ -39,6 +41,7 @@ export function toWishItem(wish: components["schemas"]["Wish"]): WishItem {
     abandonmentAmount: wish.abandonmentAmount,
     targetAmount: wish.targetAmount,
     state: wish.state,
+    ...(wish.photo == null ? {} : { imageUrl: wish.photo.variants.medium }),
   };
 }
 

@@ -4,16 +4,21 @@ import dividerImage from "@/../public/images/wishes/receipt-divider.svg";
 import receiptImage from "@/../public/images/wishes/receipt.svg";
 import successImage from "@/../public/images/wishes/success.svg";
 
+const DEFAULT_TITLE = "크래빗 카드로 돌아간 금액";
+
 interface WithdrawDoneScreenProps {
   purpose: string;
   amount: number;
   balanceAfter: number;
+  /** 돈이 도착한 곳을 알리는 문구이며, 없으면 카드로 돌아간 것으로 봅니다. */
+  title?: string;
 }
 
 export function WithdrawDoneScreen({
   purpose,
   amount,
   balanceAfter,
+  title = DEFAULT_TITLE,
 }: WithdrawDoneScreenProps) {
   return (
     <div className="bg-gray-1 relative flex min-h-svh flex-col">
@@ -25,7 +30,7 @@ export function WithdrawDoneScreen({
 
       <div className="relative flex flex-col items-center px-4 pt-3 pb-10">
         <p className="text-t2 text-fg-neutral pb-[10px] font-semibold">
-          크래빗 카드로 돌아간 금액
+          {title}
         </p>
         <p className="text-h1 text-fg-neutral font-bold">
           {amount.toLocaleString("ko-KR")}원

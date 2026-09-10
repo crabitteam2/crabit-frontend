@@ -19,7 +19,7 @@
     "src/lib/http/browser.ts",
     "src/lib/http/card-balance-accounts.ts",
     "src/lib/http/errors.ts",
-    "src/lib/http/friends.ts",
+    "src/lib/http/follows.ts",
     "src/lib/http/media-type.ts",
     "src/lib/http/result.ts",
     "src/lib/http/server.ts",

@@ -9,6 +9,7 @@ const meta = {
     backHref: "/wishes/new/period",
     nextPath: "/wishes/new/done",
     query: "purpose=시나모롤 키링&targetAmount=50000",
+    cardBalanceAccountId: "11111111-1111-4111-8111-111111111111",
   },
 } satisfies Meta<typeof WishPhotoForm>;
 

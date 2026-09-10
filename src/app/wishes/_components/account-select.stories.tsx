@@ -10,17 +10,18 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
+const card = {
+  id: "card",
+  name: "크래빗 카드 사용가능 금액",
+  cardNumber: "0000-0000-0000-0000",
+  balance: 20_000,
+};
+
 export const Default: Story = {
   args: {
     nextPath: "/wishes/w3/deposit/amount",
-    accounts: [
-      {
-        id: "a1",
-        name: "크래빗 카드 사용가능 금액",
-        balance: 20_000,
-        cardNumber: "0000-0000-0000-0000",
-      },
-    ],
+    paramName: "from",
+    card,
     wishes: [
       {
         id: "w1",
@@ -28,13 +29,24 @@ export const Default: Story = {
         amount: 12_000,
         targetAmount: 30_000,
         state: "IN_PROGRESS",
-        startDate: "26.06.01",
-        targetDate: "26.10.31",
       },
     ],
   },
 };
 
+export const 잔액을모름: Story = {
+  args: {
+    ...Default.args,
+    card: { ...card, balance: null },
+    canSelectCard: false,
+  },
+};
+
 export const 빈목록: Story = {
-  args: { nextPath: "/wishes/w3/deposit/amount", accounts: [], wishes: [] },
+  args: {
+    nextPath: "/wishes/w3/deposit/amount",
+    paramName: "from",
+    card,
+    wishes: [],
+  },
 };

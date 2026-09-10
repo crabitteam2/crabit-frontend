@@ -1,6 +1,8 @@
+import { readAmountQuery, queryValue } from "@/lib/forms/wish-form-query";
+import { FormQueryError } from "@/app/wishes/_components/form-query-error";
 import { notFound } from "next/navigation";
-import { findWish } from "@/lib/mock/wishes";
 import { DepositDoneScreen } from "../../../_components/deposit-done-screen";
+import { loadFundFlow, findCounterpart } from "../../fund-flow";
 
 export default async function DepositDonePage({
   params,
@@ -10,11 +12,13 @@ export default async function DepositDonePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { wishId } = await params;
-  if (findWish(wishId) === null) notFound();
+  const view = await loadFundFlow(wishId);
+  if (view === null) notFound();
+  const query = await searchParams;
+  const source = findCounterpart(view, queryValue(query, "from"));
+  const amount = readAmountQuery(query, Number.MAX_SAFE_INTEGER);
+  if (source === null || amount === null)
+    return <FormQueryError backHref={`/wishes/${wishId}/deposit`} />;
 
-  const raw = (await searchParams).amount;
-  const value = Array.isArray(raw) ? raw[0] : raw;
-  const amount = Number(value ?? 0);
-
-  return <DepositDoneScreen amount={Number.isFinite(amount) ? amount : 0} />;
+  return <DepositDoneScreen amount={amount} />;
 }

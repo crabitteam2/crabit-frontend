@@ -82,7 +82,7 @@ describe("typed HTTP clients", () => {
     expect(captured?.headers.get("authorization")).toBeNull();
   });
 
-  it("resolves request context through only the active cookie namespace", async () => {
+  it("요청 문맥은 쿠키와 무관하게 owner 자격을 쓴다", async () => {
     const tokens = tokenConfiguration("demo");
     let captured: Request | undefined;
     const client = createServerApiClient(
@@ -106,7 +106,7 @@ describe("typed HTTP clients", () => {
     await client.GET("/v1/me/card-balance-accounts");
 
     expect(captured?.headers.get("authorization")).toBe(
-      `Bearer ${tokens.active?.staff}`,
+      `Bearer ${tokens.active?.owner}`,
     );
     expect(captured?.headers.get("cookie")).toBeNull();
   });

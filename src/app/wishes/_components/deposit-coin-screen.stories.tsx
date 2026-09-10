@@ -10,4 +10,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-export const Default: Story = { args: { wishId: "w3", amount: 5_000 } };
+export const Default: Story = {
+  args: {
+    wishId: "w3",
+    amount: 5_000,
+    expectedVersion: 1,
+    source: { kind: "card" },
+  },
+};

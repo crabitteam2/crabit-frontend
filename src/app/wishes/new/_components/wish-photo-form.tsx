@@ -6,6 +6,13 @@ import { useEffect, useRef, useState, type PointerEvent } from "react";
 import placeholderIcon from "@/../public/images/wishes/image-placeholder.svg";
 import { ScreenHeader } from "@/app/wishes/_components/screen-header";
 import { Button } from "@/components/ui/button";
+import { createBrowserApiClient } from "@/lib/http/browser";
+import type { components } from "@/lib/http/generated/crabit-backend";
+import {
+  deletePendingWishPhoto,
+  uploadWishPhoto,
+} from "@/lib/http/wish-photos";
+import { createWish } from "@/lib/http/wishes";
 import {
   clampTransform,
   displayedSize,
@@ -16,15 +23,25 @@ import {
   type CropTransform,
   type PhotoSize,
 } from "./photo-crop";
-import { clearNewWishPhoto, saveNewWishPhoto } from "./photo-storage";
+import { digestWishPhotoFile, renderWishPhotoJpeg } from "./photo-jpeg";
+import { wishPhotoErrorMessage } from "./wish-photo-error";
+import {
+  clearPendingWishPhoto,
+  clearWishPhotoUploadState,
+  readWishPhotoUploadState,
+  savePendingWishPhoto,
+  stableWishPhotoKey,
+} from "./photo-storage";
+
+import { useWishForm } from "@/lib/forms/use-wish-form";
+import { readWishQuery, isoDate } from "@/lib/forms/wish-form-query";
 
 const TAP_SLOP = 8;
-const MAX_EXPORT_SIZE = 1080;
-
 interface WishPhotoFormProps {
   backHref: string;
   nextPath: string;
   query: string;
+  cardBalanceAccountId: string;
 }
 
 interface Point {
@@ -49,8 +66,15 @@ export function WishPhotoForm({
   backHref,
   nextPath,
   query,
+  cardBalanceAccountId,
 }: WishPhotoFormProps) {
   const router = useRouter();
+  const [client] = useState(() => createBrowserApiClient());
+  const { setValue, handleSubmit } = useWishForm<{ photo: File | null }>({
+    defaultValues: { photo: null },
+  });
+  const busy = useRef(false);
+  const scope = `new:${cardBalanceAccountId}`;
   const inputRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
@@ -59,6 +83,9 @@ export function WishPhotoForm({
   const drift = useRef(0);
 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [pendingPhoto, setPendingPhoto] = useState<
+    components["schemas"]["WishPhoto"] | null
+  >(null);
   const [photo, setPhoto] = useState<PhotoSize | null>(null);
   const [box, setBox] = useState(0);
   const [transform, setTransform] = useState<CropTransform>({
@@ -66,6 +93,12 @@ export function WishPhotoForm({
     x: 0,
     y: 0,
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setPendingPhoto(readWishPhotoUploadState(scope).pendingPhoto);
+  }, [scope]);
 
   useEffect(() => {
     if (previewUrl === null) return;
@@ -88,10 +121,15 @@ export function WishPhotoForm({
     setTransform(initialTransform(box, photo));
   }, [photo, box]);
 
-  const openPicker = () => inputRef.current?.click();
+  const openPicker = () => {
+    if (!busy.current) inputRef.current?.click();
+  };
 
-  const pick = (file: File | undefined) => {
-    if (file === undefined) return;
+  const pick = async (file: File | undefined) => {
+    if (file === undefined || busy.current) return;
+    if (!(await cancelPendingPhoto())) return;
+    setError(null);
+    setValue("photo", file, { shouldDirty: true });
     setPhoto(null);
     setPreviewUrl(URL.createObjectURL(file));
   };
@@ -162,43 +200,98 @@ export function WishPhotoForm({
     if (drift.current <= TAP_SLOP) openPicker();
   };
 
-  const submit = () => {
-    const image = imageRef.current;
-    if (image === null || photo === null || box === 0) {
-      clearNewWishPhoto();
-    } else {
-      const rect = toCropRect(transform, box, photo);
-      const output = Math.min(Math.round(rect.size), MAX_EXPORT_SIZE);
-      const canvas = document.createElement("canvas");
-      canvas.width = output;
-      canvas.height = output;
-      const context = canvas.getContext("2d");
-      if (context === null) {
-        clearNewWishPhoto();
-      } else {
-        context.drawImage(
-          image,
-          rect.sx,
-          rect.sy,
-          rect.size,
-          rect.size,
-          0,
-          0,
-          output,
-          output,
-        );
-        saveNewWishPhoto(canvas.toDataURL("image/jpeg", 0.9));
-      }
+  const cancelPendingPhoto = async () => {
+    if (pendingPhoto === null) return true;
+    const result = await deletePendingWishPhoto(client, {
+      photoId: pendingPhoto.id,
+    });
+    if (!result.ok && result.error.status !== 404) {
+      setError("업로드한 사진을 정리하지 못했어요. 잠시 후 다시 시도해주세요.");
+      return false;
     }
-    router.push(`${nextPath}?${query}`);
+    clearPendingWishPhoto(scope);
+    setPendingPhoto(null);
+    return true;
   };
+
+  const submit = handleSubmit(async () => {
+    if (busy.current) return;
+    busy.current = true;
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      let uploaded = pendingPhoto;
+      const image = imageRef.current;
+      if (previewUrl !== null) {
+        if (image === null || photo === null || box === 0) {
+          setError("사진을 불러오는 중이에요. 잠시 후 다시 눌러주세요.");
+          return;
+        }
+        const jpeg = await renderWishPhotoJpeg(
+          image,
+          toCropRect(transform, box, photo),
+        );
+        const signature = await digestWishPhotoFile(jpeg);
+        const upload = await uploadWishPhoto(client, {
+          idempotencyKey: stableWishPhotoKey(scope, "upload", signature),
+          photo: jpeg,
+        });
+        if (!upload.ok) {
+          setError(wishPhotoErrorMessage(upload.error.code));
+          return;
+        }
+        uploaded = upload.data;
+        savePendingWishPhoto(scope, upload.data);
+        setPendingPhoto(upload.data);
+      }
+
+      const values = readWishQuery(
+        Object.fromEntries(new URLSearchParams(query)),
+      );
+      if (!values) {
+        setError("위시 정보를 다시 확인해주세요.");
+        return;
+      }
+      const body = {
+        purpose: values.purpose,
+        targetAmount: values.targetAmount,
+        startDate:
+          values.range.start === null ? null : isoDate(values.range.start),
+        targetDate:
+          values.range.end === null ? null : isoDate(values.range.end),
+        photoId: uploaded?.id ?? null,
+      };
+      const created = await createWish(client, {
+        cardBalanceAccountId,
+        idempotencyKey: stableWishPhotoKey(
+          scope,
+          "mutation",
+          JSON.stringify(body),
+        ),
+        body,
+      });
+      if (!created.ok) {
+        setError(wishPhotoErrorMessage(created.error.code));
+        return;
+      }
+
+      clearWishPhotoUploadState(scope);
+      router.push(`${nextPath}?wishId=${created.data.wish.id}`);
+    } catch {
+      setError("사진을 처리하지 못했어요. 잠시 후 다시 시도해주세요.");
+    } finally {
+      busy.current = false;
+      setIsSubmitting(false);
+    }
+  });
 
   const size = photo === null ? null : displayedSize(transform, box, photo);
   const safeTransform =
     photo === null ? transform : clampTransform(transform, box, photo);
 
   return (
-    <div className="flex min-h-svh flex-col">
+    <form onSubmit={submit} className="flex min-h-svh flex-col">
       <ScreenHeader
         title="사진을 업로드 할까요?"
         backHref={backHref}
@@ -206,7 +299,7 @@ export function WishPhotoForm({
       />
 
       <div className="px-4">
-        {previewUrl === null ? (
+        {previewUrl === null && pendingPhoto === null ? (
           <button
             type="button"
             onClick={openPicker}
@@ -224,6 +317,21 @@ export function WishPhotoForm({
               위시 사진을 추가해보세요.
             </span>
           </button>
+        ) : previewUrl === null ? (
+          <button
+            type="button"
+            onClick={openPicker}
+            aria-label="업로드한 위시 사진 변경"
+            className="bg-pink-1 relative aspect-square w-full overflow-hidden rounded-full"
+          >
+            <Image
+              src={pendingPhoto?.variants.large ?? ""}
+              alt="업로드한 위시 사진"
+              fill
+              unoptimized
+              className="object-cover"
+            />
+          </button>
         ) : (
           <div
             ref={boxRef}
@@ -235,9 +343,12 @@ export function WishPhotoForm({
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
             onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") openPicker();
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                openPicker();
+              }
             }}
-            className="bg-pink-1 relative aspect-square w-full touch-none overflow-hidden rounded-[20px] select-none"
+            className="bg-pink-1 relative aspect-square w-full touch-none overflow-hidden rounded-full select-none"
           >
             <Image
               ref={imageRef}
@@ -273,21 +384,35 @@ export function WishPhotoForm({
         type="file"
         accept="image/*"
         className="hidden"
-        onChange={(event) => pick(event.target.files?.[0])}
+        onChange={(event) => void pick(event.target.files?.[0])}
       />
+
+      {error === null ? null : (
+        <p role="alert" className="text-fg-error px-4 pt-4 text-sm">
+          {error}
+        </p>
+      )}
 
       <div className="flex-1" />
 
       <div className="px-4 pb-[calc(55px+env(safe-area-inset-bottom))]">
         <Button
-          variant={previewUrl === null ? "weak" : "fill"}
+          variant={
+            previewUrl === null && pendingPhoto === null ? "weak" : "fill"
+          }
           size="xlarge"
           className="w-full"
-          onClick={submit}
+          disabled={isSubmitting}
+          type="submit"
+          isLoading={isSubmitting}
         >
-          {previewUrl === null ? "넘어가기" : "다음"}
+          {isSubmitting
+            ? "처리 중..."
+            : previewUrl === null && pendingPhoto === null
+              ? "넘어가기"
+              : "다음"}
         </Button>
       </div>
-    </div>
+    </form>
   );
 }
