@@ -22,7 +22,7 @@ export default async function HomeTabPage({
   const { account } = await loadAccountContext();
 
   return (
-    <div className="bg-layer-basement flex min-h-svh flex-col">
+    <div className="bg-layer-basement flex min-h-dvh flex-col">
       <HomeToast toastKey={toastKey} closeHref="/home" />
 
       <HomeTabHeader academyName={ACADEMY_NAME} />

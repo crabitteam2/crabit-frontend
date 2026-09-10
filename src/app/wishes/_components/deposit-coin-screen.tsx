@@ -69,7 +69,7 @@ export function DepositCoinScreen({
 
   return (
     <div
-      className="bg-pink-1 relative min-h-svh overflow-hidden"
+      className="bg-pink-1 relative min-h-dvh overflow-hidden"
       style={{
         backgroundImage: DOT_PATTERN,
         backgroundSize: "90.43px 109.91px",

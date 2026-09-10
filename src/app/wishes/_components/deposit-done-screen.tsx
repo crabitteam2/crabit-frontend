@@ -12,7 +12,7 @@ interface DepositDoneScreenProps {
 export function DepositDoneScreen({ amount }: DepositDoneScreenProps) {
   return (
     <div
-      className="bg-pink-1 relative flex min-h-svh flex-col overflow-hidden"
+      className="bg-pink-1 relative flex min-h-dvh flex-col overflow-hidden"
       style={{
         backgroundImage: DOT_PATTERN,
         backgroundSize: "90.43px 109.91px",

@@ -64,7 +64,7 @@ export function AmountForm({
       className={
         isKeyboardOpen
           ? "max-w-app fixed inset-x-0 z-10 mx-auto flex w-full flex-col overflow-hidden bg-white [&>header]:shrink-0"
-          : "flex min-h-svh flex-col"
+          : "flex min-h-dvh flex-col"
       }
       style={
         isKeyboardOpen && box !== null

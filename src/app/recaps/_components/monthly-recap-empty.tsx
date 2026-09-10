@@ -21,7 +21,7 @@ export function MonthlyRecapEmpty({
   message,
 }: MonthlyRecapEmptyProps) {
   return (
-    <div className="flex min-h-svh flex-col">
+    <div className="flex min-h-dvh flex-col">
       <header className="border-gray-3 flex items-center justify-between border-b px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-4">
         <Link
           href={backHref}

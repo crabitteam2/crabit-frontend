@@ -53,7 +53,7 @@ export function WishPeriodForm({
   });
 
   return (
-    <form onSubmit={submit} className="flex min-h-svh flex-col">
+    <form onSubmit={submit} className="flex min-h-dvh flex-col">
       <ScreenHeader
         title="기간을 설정할까요?"
         backHref={backHref}

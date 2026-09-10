@@ -36,7 +36,7 @@ export function WeeklyRecapFrame({
   children,
 }: WeeklyRecapFrameProps) {
   return (
-    <div className="flex min-h-svh flex-col">
+    <div className="flex min-h-dvh flex-col">
       <div className="flex items-center gap-1 px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-4">
         {Array.from({ length: stepCount }, (_, index) => {
           const isCurrent = index === step - 1;

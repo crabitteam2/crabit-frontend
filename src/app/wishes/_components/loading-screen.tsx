@@ -70,7 +70,7 @@ export function LoadingScreen({
     STAGES[Math.min(STAGES.length - 1, Math.floor(ratio * STAGES.length))];
 
   return (
-    <div className="bg-gray-1 relative min-h-svh overflow-hidden">
+    <div className="bg-gray-1 relative min-h-dvh overflow-hidden">
       <div className="absolute inset-x-0 top-[125px] flex justify-center">
         <Image
           src={stage.image}
