@@ -17,14 +17,6 @@ type WeeklyRecap = components["schemas"]["WeeklyRecapResponse"];
 type WeeklyRecapResult = NonNullable<WeeklyRecap["result"]>;
 type SharedCard = components["schemas"]["SharedCard"];
 
-const GROWTH_HEADLINE = "내 위시리스트 조회수가 성장 가능성이 있어요.";
-
-const GROWTH_ADVICE =
-  "효과적인 성장을 원한다면 매주 새로운 위시를 피드에 공유하는 것 부터 시작해보세요.";
-
-const STORY_HEADLINE = `지난주 우리학원의 위시를 달성한
-친구들이 있어요.`;
-
 /** 주간 리캡 세 장이 그리는 데 필요한 값입니다. */
 export interface WeeklyRecapView {
   savings: {
@@ -66,7 +58,7 @@ export async function loadWeeklyRecapView(
     savings: toSavings(recap.result),
     growth: toGrowth(recap.result),
     stories: {
-      headline: STORY_HEADLINE,
+      headline: recap.result.page3AcademySuccessStories.messageSummary,
       description: toStoryDescription(recap.result, cards),
       cards,
     },
@@ -74,10 +66,11 @@ export async function loadWeeklyRecapView(
 }
 
 function toSavings(result: WeeklyRecapResult) {
-  const { achievement, streak } = result.page1LastWeekPerformance;
+  const { achievement, milestone, streak } = result.page1LastWeekPerformance;
+  const lines = [achievement.message, streak.message, milestone.message];
 
   return {
-    headline: `${achievement.message}\n${streak.message}`,
+    headline: lines.filter((line) => line !== null).join("\n"),
     netSavings: achievement.netSavings,
     newWishCount: achievement.newWishCount,
   };
@@ -87,8 +80,8 @@ function toGrowth(result: WeeklyRecapResult) {
   const report = result.page2GrowthReport;
 
   return {
-    headline: GROWTH_HEADLINE,
-    description: `${report.messageVisits} ${GROWTH_ADVICE}`,
+    headline: report.messageGrowth ?? report.messageVisits,
+    description: report.messageGrowth === null ? "" : report.messageVisits,
     nickname: NICKNAME,
     totalVisits: report.totalVisits,
     growthPct: report.growthPct,
@@ -135,14 +128,21 @@ function toStoryCard(card: SharedCard): WeeklyRecapStoryCard | null {
   };
 }
 
+/**
+ * 누가 무엇을 완주했는지 한 줄로 만듭니다.
+ *
+ * 계약이 이 문장은 주지 않아 story의 유형과 공유 카드의 이름을 이어 붙입니다.
+ * 카드가 여러 장이면 한 명만 말하는 문장이 되어 비웁니다. 이름은 카드가 대신 보여줍니다.
+ */
 function toStoryDescription(
   result: WeeklyRecapResult,
   cards: readonly WeeklyRecapStoryCard[],
 ) {
+  if (cards.length !== 1) return "";
+
   const [story] = result.page3AcademySuccessStories.stories;
   const [card] = cards;
-  if (story === undefined || card === undefined)
-    return result.page3AcademySuccessStories.messageSummary;
+  if (story === undefined || card === undefined) return "";
 
   const type = story.typeTitle === null ? "" : `${story.typeTitle} `;
   return `${type}${card.nickname}이가 '${card.purpose}' 위시를 완주했어요!`;

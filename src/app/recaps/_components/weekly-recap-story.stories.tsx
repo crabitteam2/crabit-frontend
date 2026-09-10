@@ -9,23 +9,22 @@ const meta = {
     closeHref: "/",
     feedHref: "/feed",
     savings: {
-      headline: `지난주에 총 5번 저축했어요.
-3주 연속 저축 유지 중! 🔥🔥🔥`,
-      netSavings: 32_000,
-      newWishCount: 0,
+      headline: `지난주에 3번 저축 · 새 위시 1개 등록했어요!
+4주 연속 저축 스트릭 유지 중이에요!
+대표 위시가 50% 지점을 돌파했어요!`,
+      netSavings: 42_000,
+      newWishCount: 1,
     },
     growth: {
-      headline: "내 위시리스트 조회수가 성장 가능성이 있어요.",
-      description:
-        "내 피드를 42명의 친구가 구경했어요! 효과적인 성장을 원한다면 매주 새로운 위시를 피드에 공유하는 것 부터 시작해보세요.",
+      headline: "지난주보다 방문이 60% 늘었어요.",
+      description: "지난주 3명이 8번 방문했어요.",
       nickname: "아라",
-      totalVisits: 56,
-      growthPct: 15,
+      totalVisits: 8,
+      growthPct: 60,
     },
     stories: {
-      headline: `지난주 우리학원의 위시를 달성한
-친구들이 있어요.`,
-      description: "불도저형 토끼 지원이가 '포켓몬 카드' 위시를 완주했어요!",
+      headline: "현재 볼 수 있는 학원 친구 1명이 목표를 이뤘어요!",
+      description: "꾸준형 토끼 지원이가 '포켓몬 카드' 위시를 완주했어요!",
       cards: [
         {
           id: "00000000-0000-0000-0000-000000000901",
@@ -43,13 +42,11 @@ type Story = StoryObj<typeof meta>;
 
 export const 기본: Story = {};
 
-export const 구경한_친구_없음: Story = {
+export const 성장_문구_없음: Story = {
   args: {
     growth: {
-      headline: "내 위시리스트 조회수가 성장 가능성이 있어요.",
-      description: `아직 내 위시리스트를 구경한 친구가 없어요 👀
-효과적인 성장을 원한다면 매주 새로운 위시를 피드에
-공유하는 것 부터 시작해보세요.`,
+      headline: "아직 내 위시리스트를 구경한 친구가 없어요.",
+      description: "",
       nickname: "아라",
       totalVisits: 0,
       growthPct: null,
@@ -60,9 +57,8 @@ export const 구경한_친구_없음: Story = {
 export const 완주한_친구_여럿: Story = {
   args: {
     stories: {
-      headline: `지난주 우리학원의 위시를 달성한
-친구들이 있어요.`,
-      description: "불도저형 토끼 지원이가 '포켓몬 카드' 위시를 완주했어요!",
+      headline: "현재 볼 수 있는 학원 친구 2명이 목표를 이뤘어요!",
+      description: "꾸준형 토끼 지원이가 '포켓몬 카드' 위시를 완주했어요!",
       cards: [
         {
           id: "00000000-0000-0000-0000-000000000901",
@@ -74,7 +70,7 @@ export const 완주한_친구_여럿: Story = {
           id: "00000000-0000-0000-0000-000000000902",
           nickname: "선형",
           purpose: "무선 이어폰",
-          period: "26.08.10 ~26.08.23",
+          period: "26.08.10 ~ 26.08.23",
         },
       ],
     },

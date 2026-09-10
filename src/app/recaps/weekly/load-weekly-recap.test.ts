@@ -109,24 +109,46 @@ beforeEach(() => {
 });
 
 describe("주간 리캡 화면 값", () => {
-  it("첫 장은 저축 문구와 연속 주차 문구를 줄바꿈으로 잇는다", async () => {
+  it("첫 장은 받은 문구를 줄바꿈으로 잇는다", async () => {
     const view = await loadWeeklyRecapView();
 
     expect(view?.savings).toEqual({
-      headline: "지난주에 3번 저축했어요.\n4주 연속 저축 중이에요!",
+      headline:
+        "지난주에 3번 저축했어요.\n4주 연속 저축 중이에요!\n대표 위시가 50% 지점을 돌파했어요!",
       netSavings: 42_000,
       newWishCount: 1,
     });
   });
 
-  it("둘째 장은 방문 문구 뒤에 안내를 붙인다", async () => {
+  it("둘째 장은 성장 문구를 제목, 방문 문구를 설명으로 쓴다", async () => {
     const view = await loadWeeklyRecapView();
 
-    expect(view?.growth.description).toBe(
-      "지난주 3명이 8번 방문했어요. 효과적인 성장을 원한다면 매주 새로운 위시를 피드에 공유하는 것 부터 시작해보세요.",
-    );
+    expect(view?.growth.headline).toBe("지난주보다 방문이 60% 늘었어요.");
+    expect(view?.growth.description).toBe("지난주 3명이 8번 방문했어요.");
     expect(view?.growth.totalVisits).toBe(8);
     expect(view?.growth.growthPct).toBe(60);
+  });
+
+  it("성장 문구가 없으면 방문 문구를 제목으로 올린다", async () => {
+    getWeeklyRecap.mockResolvedValue({
+      ok: true,
+      data: {
+        ...recap("SUCCEEDED").data,
+        result: {
+          ...result,
+          page2GrowthReport: {
+            ...result.page2GrowthReport,
+            growthPct: null,
+            messageGrowth: null,
+          },
+        },
+      },
+    });
+
+    const view = await loadWeeklyRecapView();
+
+    expect(view?.growth.headline).toBe("지난주 3명이 8번 방문했어요.");
+    expect(view?.growth.description).toBe("");
   });
 
   it("셋째 장은 공유 카드에서 이름과 기간을 채운다", async () => {
@@ -140,9 +162,37 @@ describe("주간 리캡 화면 값", () => {
         period: "26.08.24 ~ 26.08.25",
       },
     ]);
+    expect(view?.stories.headline).toBe("학원 친구 1명이 목표를 이뤘어요!");
     expect(view?.stories.description).toBe(
       "꾸준형 토끼 지원이가 '포켓몬 카드' 위시를 완주했어요!",
     );
+  });
+
+  it("완주한 친구가 여럿이면 설명을 비운다", async () => {
+    getWeeklyRecap.mockResolvedValue({
+      ok: true,
+      data: {
+        ...recap("SUCCEEDED").data,
+        result: {
+          ...result,
+          page3AcademySuccessStories: {
+            messageSummary: "학원 친구 2명이 목표를 이뤘어요!",
+            stories: [
+              result.page3AcademySuccessStories.stories[0],
+              {
+                ...result.page3AcademySuccessStories.stories[0],
+                sharedCardId: "44444444-4444-4444-8444-444444444444",
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const view = await loadWeeklyRecapView();
+
+    expect(view?.stories.cards).toHaveLength(2);
+    expect(view?.stories.description).toBe("");
   });
 
   it("내려간 공유 카드는 빼고 그린다", async () => {
@@ -154,7 +204,8 @@ describe("주간 리캡 화면 값", () => {
     const view = await loadWeeklyRecapView();
 
     expect(view?.stories.cards).toEqual([]);
-    expect(view?.stories.description).toBe("학원 친구 1명이 목표를 이뤘어요!");
+    expect(view?.stories.headline).toBe("학원 친구 1명이 목표를 이뤘어요!");
+    expect(view?.stories.description).toBe("");
   });
 
   it("리캡이 아직 없으면 null이다", async () => {
