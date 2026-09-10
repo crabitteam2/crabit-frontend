@@ -212,3 +212,13 @@
     100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom)
   );
 }
+
+@keyframes recap-step-progress {
+  from {
+    width: 0%;
+  }
+
+  to {
+    width: 100%;
+  }
+}

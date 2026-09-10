@@ -1,5 +1,6 @@
-import { RecapPageShell, WeeklyRecapDetail } from "../_components/recap-detail";
-import { loadWeeklyRecap } from "../load-recap";
+import { WeeklyRecapEmpty } from "../_components/weekly-recap-empty";
+import { WeeklyRecapStory } from "../_components/weekly-recap-story";
+import { loadWeeklyRecapView } from "./load-weekly-recap";
 
 export default async function WeeklyRecapPage({
   searchParams,
@@ -7,15 +8,13 @@ export default async function WeeklyRecapPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
-  const weekStart = first(query.weekStart);
-  const recap = await loadWeeklyRecap(weekStart);
-  return (
-    <RecapPageShell title="주간 리플레이">
-      <WeeklyRecapDetail recap={recap} />
-    </RecapPageShell>
-  );
+  const view = await loadWeeklyRecapView(firstQueryValue(query.weekStart));
+
+  if (view === null) return <WeeklyRecapEmpty closeHref="/" />;
+
+  return <WeeklyRecapStory closeHref="/" feedHref="/feed" {...view} />;
 }
 
-function first(value: string | string[] | undefined) {
+function firstQueryValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
 }
