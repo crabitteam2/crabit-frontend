@@ -207,12 +207,6 @@
   }
 }
 
-@utility min-h-screen-safe {
-  min-height: calc(
-    100svh - env(safe-area-inset-top) - env(safe-area-inset-bottom)
-  );
-}
-
 @keyframes recap-step-progress {
   from {
     width: 0%;

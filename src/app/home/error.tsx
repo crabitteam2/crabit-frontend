@@ -10,7 +10,7 @@ export default function HomeTabError({ reset }: { reset: () => void }) {
   const router = useRouter();
 
   return (
-    <div className="bg-layer-basement flex min-h-[calc(100svh-env(safe-area-inset-bottom))] flex-col">
+    <div className="bg-layer-basement flex min-h-dvh flex-col">
       <HomeTabHeader academyName={ACADEMY_NAME} />
 
       <div className="flex flex-1 flex-col items-center justify-center px-4">

@@ -8,7 +8,7 @@ export default function WishDetailError({ reset }: { reset: () => void }) {
   const router = useRouter();
 
   return (
-    <div className="flex min-h-[calc(100svh-env(safe-area-inset-bottom))] flex-col">
+    <div className="flex min-h-dvh flex-col">
       <ScreenHeader title="모은 돈 기록" backHref="/wishes" spacing="tight" />
       <div className="flex flex-1 flex-col items-center justify-center px-4">
         <p className="text-fg-neutral-muted text-center text-[20px] leading-7 font-medium tracking-[-0.3px]">

@@ -14,7 +14,7 @@ export function FundFlowError({ title, reset }: FundFlowErrorProps) {
   const params = useParams<{ wishId: string }>();
 
   return (
-    <div className="flex min-h-[calc(100svh-env(safe-area-inset-bottom))] flex-col">
+    <div className="flex min-h-dvh flex-col">
       <ScreenHeader title={title} backHref={`/wishes/${params.wishId}`} />
       <div className="flex flex-1 flex-col items-center justify-center px-4">
         <p className="text-fg-neutral-muted text-center text-[20px] leading-7 font-medium tracking-[-0.3px]">

@@ -9,7 +9,7 @@ export default async function AdjustPage() {
   if (view === null) redirect("/");
 
   return (
-    <div className="flex h-[calc(100svh-env(safe-area-inset-bottom))] flex-col">
+    <div className="flex h-dvh flex-col">
       <ScreenHeader title="잔액 조정이 필요해요." backHref="/" />
       <AdjustWishList card={view.card} wishes={view.wishes} />
     </div>

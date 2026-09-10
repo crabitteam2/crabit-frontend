@@ -11,7 +11,7 @@ export default function WishlistTabError({ reset }: { reset: () => void }) {
   const router = useRouter();
 
   return (
-    <div className="flex min-h-[calc(100svh-env(safe-area-inset-bottom))] flex-col">
+    <div className="flex min-h-dvh flex-col">
       <CharacterArea stage={null}>
         <HomeHeader nickname={NICKNAME} wishPurpose={null} />
       </CharacterArea>
