@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import chevronLeftIcon from "@/../public/images/wishes/arrow-left.svg";
-import emptyImage from "@/../public/images/recaps/empty.png";
+import emptyCharacter from "@/../public/images/recaps/empty-character.png";
 import type { RecapMonthTab } from "./monthly-recap-screen";
 import { RecapYearSelect } from "./recap-year-select";
 
@@ -58,14 +58,17 @@ export function MonthlyRecapEmpty({
         )}
       </nav>
 
-      <Image
-        src={emptyImage}
-        alt=""
-        width={390}
-        height={370}
-        className="w-full"
-        priority
-      />
+      <div className="flex justify-center px-10 pt-[60px]">
+        <Image
+          src={emptyCharacter}
+          alt=""
+          width={310}
+          height={310}
+          sizes="310px"
+          className="size-[310px]"
+          priority
+        />
+      </div>
 
       <p className="text-fg-neutral-muted px-4 py-5 text-center text-[20px] leading-7 font-medium tracking-[-0.3px] whitespace-pre-line">
         {message}

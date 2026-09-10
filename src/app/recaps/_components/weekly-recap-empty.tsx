@@ -21,6 +21,7 @@ export function WeeklyRecapEmpty({ closeHref }: WeeklyRecapEmptyProps) {
           alt=""
           width={310}
           height={310}
+          sizes="310px"
           className="size-[310px]"
           priority
         />
