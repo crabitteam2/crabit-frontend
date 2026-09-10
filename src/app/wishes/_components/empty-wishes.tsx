@@ -5,7 +5,7 @@ import emptyImage from "@/../public/images/wishes/empty.png";
 
 export function EmptyWishes() {
   return (
-    <div className="flex min-h-[calc(100svh-env(safe-area-inset-bottom))] flex-col px-4 pt-[calc(env(safe-area-inset-top)+12px)]">
+    <div className="flex min-h-dvh flex-col px-4 pt-[calc(env(safe-area-inset-top)+12px)]">
       <div className="flex justify-end">
         <Link href="/" aria-label="닫기" className="relative block size-8">
           <Image src={closeIcon} alt="" fill sizes="32px" />
