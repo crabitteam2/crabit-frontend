@@ -52,7 +52,7 @@ export function MonthlyRecapScreen({
 
   return (
     <div
-      className="relative flex min-h-svh flex-col overflow-hidden"
+      className="relative flex min-h-dvh flex-col overflow-hidden"
       style={{
         backgroundImage: `linear-gradient(to bottom, ${theme.gradient[0]}, ${theme.gradient[1]})`,
       }}

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 export default function RecapError({ reset }: { reset: () => void }) {
   const router = useRouter();
   return (
-    <main className="flex min-h-[100svh] flex-col items-center justify-center gap-8 px-4">
+    <main className="flex min-h-dvh flex-col items-center justify-center gap-8 px-4">
       <p className="text-fg-neutral-muted text-center text-[20px] leading-7 font-medium">
         리플레이를 불러오지 못했어요
         <br />

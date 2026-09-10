@@ -21,7 +21,7 @@ export function WithdrawDoneScreen({
   title = DEFAULT_TITLE,
 }: WithdrawDoneScreenProps) {
   return (
-    <div className="bg-gray-1 relative flex min-h-svh flex-col">
+    <div className="bg-gray-1 relative flex min-h-dvh flex-col">
       <div className="bg-pink-1 absolute inset-x-0 top-0 h-[389px]" />
 
       <div className="relative flex justify-center pt-[50px]">
