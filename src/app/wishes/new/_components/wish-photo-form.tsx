@@ -291,7 +291,7 @@ export function WishPhotoForm({
     photo === null ? transform : clampTransform(transform, box, photo);
 
   return (
-    <form onSubmit={submit} className="flex min-h-svh flex-col">
+    <form onSubmit={submit} className="flex min-h-dvh flex-col">
       <ScreenHeader
         title="사진을 업로드 할까요?"
         backHref={backHref}

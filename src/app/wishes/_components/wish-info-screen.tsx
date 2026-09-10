@@ -18,7 +18,7 @@ export function WishInfoScreen({
   period,
 }: WishInfoScreenProps) {
   return (
-    <div className="flex min-h-svh flex-col">
+    <div className="flex min-h-dvh flex-col">
       <ScreenHeader title="기본 정보" backHref={backHref} spacing="loose" />
 
       <div className="px-4 pt-5 pb-[76px]">

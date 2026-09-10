@@ -146,7 +146,7 @@ export function WishHeroScreen({
   ...content
 }: WishHeroScreenProps) {
   return (
-    <div className="bg-pink-1 flex min-h-svh flex-col">
+    <div className="bg-pink-1 flex min-h-dvh flex-col">
       <header className="flex justify-end px-4 pt-[calc(env(safe-area-inset-top)+10px)]">
         <Link
           href={closeHref}

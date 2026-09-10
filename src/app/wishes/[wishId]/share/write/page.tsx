@@ -25,7 +25,7 @@ export default async function WishShareWritePage({
   });
 
   return (
-    <div className="flex min-h-svh flex-col">
+    <div className="flex min-h-dvh flex-col">
       <ScreenHeader
         title="새로 글 작성하기"
         backHref={`/wishes/${wishId}/share`}

@@ -16,7 +16,7 @@ export function WishEditDoneScreen({
   period,
 }: WishEditDoneScreenProps) {
   return (
-    <div className="flex min-h-svh flex-col">
+    <div className="flex min-h-dvh flex-col">
       <ScreenHeader title="기본 정보 수정" spacing="loose" />
 
       <div className="flex justify-center">
