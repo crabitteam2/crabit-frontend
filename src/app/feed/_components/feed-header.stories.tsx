@@ -9,7 +9,6 @@ const meta = {
     academyName: "크래빗 영어학원",
     backHref: "/",
     sortLabel: "추천순",
-    sortHref: "/feed?sort=latest",
   },
 } satisfies Meta<typeof FeedHeader>;
 
