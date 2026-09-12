@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { getWish } from "@/lib/http/wishes";
 import { unwrapResult } from "@/lib/http/result";
 import { loadAccountContext } from "../../../load-account";
+import { FlowMarkGuard } from "../../../_components/flow-mark-guard";
 import { isFinishedState } from "../../../_components/wish-detail";
 import { WishEditDoneScreen } from "../../../_components/wish-edit-done-screen";
 import {
@@ -22,15 +23,20 @@ export default async function WishEditDonePage({
   if (isFinishedState(wish.state)) redirect(`/wishes/${wishId}`);
 
   return (
-    <WishEditDoneScreen
-      purpose={wish.purpose}
-      targetAmount={wish.targetAmount}
-      period={
-        toPeriodLabel({
-          start: fromIsoDate(wish.startDate),
-          end: fromIsoDate(wish.targetDate),
-        }) || null
-      }
-    />
+    <FlowMarkGuard
+      name={`info-done:${wishId}`}
+      fallbackHref={`/wishes/${wishId}/info`}
+    >
+      <WishEditDoneScreen
+        purpose={wish.purpose}
+        targetAmount={wish.targetAmount}
+        period={
+          toPeriodLabel({
+            start: fromIsoDate(wish.startDate),
+            end: fromIsoDate(wish.targetDate),
+          }) || null
+        }
+      />
+    </FlowMarkGuard>
   );
 }

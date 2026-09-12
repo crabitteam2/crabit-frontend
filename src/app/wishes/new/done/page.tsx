@@ -7,6 +7,7 @@ import { getWish } from "@/lib/http/wishes";
 import { unwrapResult } from "@/lib/http/result";
 import { loadAccountContext } from "../../load-account";
 import { isFinishedState } from "@/app/wishes/_components/wish-detail";
+import { FlowMarkGuard } from "@/app/wishes/_components/flow-mark-guard";
 import { WishCreatedScreen } from "../_components/wish-created-screen";
 
 export default async function NewWishDonePage({
@@ -31,13 +32,15 @@ export default async function NewWishDonePage({
         });
 
   return (
-    <WishCreatedScreen
-      purpose={wish.purpose}
-      targetAmount={wish.targetAmount}
-      period={period}
-      photoUrl={wish.photo?.variants.large ?? null}
-      depositHref={`/wishes/${wish.id}/deposit/amount`}
-      closeHref="/"
-    />
+    <FlowMarkGuard name={`new-done:${wishId}`} fallbackHref="/wishes/new">
+      <WishCreatedScreen
+        purpose={wish.purpose}
+        targetAmount={wish.targetAmount}
+        period={period}
+        photoUrl={wish.photo?.variants.large ?? null}
+        depositHref={`/wishes/${wish.id}/deposit/amount`}
+        closeHref="/"
+      />
+    </FlowMarkGuard>
   );
 }

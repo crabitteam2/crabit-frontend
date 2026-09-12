@@ -38,19 +38,23 @@ it("sends missing or invalid deposit sources back to the card step", async () =>
     await expect(
       CoinPage({
         params: Promise.resolve({ wishId: "w4" }),
-        searchParams: Promise.resolve({ amount: "1000", from }),
+        searchParams: Promise.resolve({ from }),
       }),
       `from=${JSON.stringify(from)}`,
     ).rejects.toThrow("NEXT_REDIRECT:/wishes/w4/deposit");
   }
 });
 
-it("accepts the preserved source at the coin boundary", async () => {
+it("hands the preserved source and its ticket to the coin screen", async () => {
   const page = await CoinPage({
     params: Promise.resolve({ wishId: "w4" }),
-    searchParams: Promise.resolve({ amount: "1500", from: "w2" }),
+    searchParams: Promise.resolve({ from: "w2" }),
   });
-  expect(page.props.amount).toBe(1500);
+  expect(page.props).toMatchObject({
+    source: { kind: "wish", wishId: "w2", version: 1 },
+    ticketName: "deposit:w4:w2",
+    amountHref: "/wishes/w4/deposit/amount?from=w2",
+  });
 });
 
 it("keeps the default card for direct entry into the amount step", async () => {
@@ -59,20 +63,11 @@ it("keeps the default card for direct entry into the amount step", async () => {
     searchParams: Promise.resolve({}),
   });
   expect(page.type).toBe(AmountForm);
-  expect(page.props.nextParams).toEqual({ from: "card" });
+  expect(page.props).toMatchObject({
+    nextParams: { from: "card" },
+    ticketName: "deposit:w4:card",
+  });
 });
-
-it.each(["1e3", "-100", "0", "1.5", ["100", "200"]])(
-  "sends invalid deposit amounts back to the amount step: %s",
-  async (amount) => {
-    await expect(
-      CoinPage({
-        params: Promise.resolve({ wishId: "w4" }),
-        searchParams: Promise.resolve({ from: "w2", amount }),
-      }),
-    ).rejects.toThrow("NEXT_REDIRECT:/wishes/w4/deposit/amount?from=w2");
-  },
-);
 
 it("shows the recorded movement on the completion screen", async () => {
   const page = await DonePage({

@@ -1,4 +1,4 @@
-import { readAmountQuery, queryValue } from "@/lib/forms/wish-form-query";
+import { queryValue } from "@/lib/forms/wish-form-query";
 import { notFound, redirect } from "next/navigation";
 import { isFinishedState } from "../../../_components/wish-detail";
 import { DepositCoinScreen } from "../../../_components/deposit-coin-screen";
@@ -28,8 +28,6 @@ export default async function DepositCoinPage({
 
   const sourceId =
     source.kind === "card" ? CARD_COUNTERPART_ID : source.wish.id;
-  const amount = readAmountQuery(query, Number.MAX_SAFE_INTEGER);
-  if (amount === null) redirect(`${selectPath}/amount?from=${sourceId}`);
 
   const sourceRef: FundCounterpartRef =
     source.kind === "card"
@@ -44,9 +42,10 @@ export default async function DepositCoinPage({
   return (
     <DepositCoinScreen
       wishId={wishId}
-      amount={amount}
       expectedVersion={view.wish.version}
       source={sourceRef}
+      ticketName={`deposit:${wishId}:${sourceId}`}
+      amountHref={`${selectPath}/amount?from=${sourceId}`}
     />
   );
 }

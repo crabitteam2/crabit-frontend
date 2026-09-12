@@ -43,6 +43,7 @@ export default async function DepositAmountPage({
       nextParams={{ from: sourceId }}
       available={available}
       availableLabel="현재 사용 가능한 금액"
+      ticketName={`deposit:${wishId}:${sourceId}`}
       max={remaining}
       overMessage="목표 금액까지 남은 만큼만 넣을 수 있어요."
     />

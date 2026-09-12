@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { putFlowMark } from "@/app/wishes/_components/fund-ticket";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import placeholderIcon from "@/../public/images/wishes/image-placeholder.svg";
 import { ScreenHeader } from "@/app/wishes/_components/screen-header";
@@ -277,6 +278,7 @@ export function WishPhotoForm({
       }
 
       clearWishPhotoUploadState(scope);
+      putFlowMark(`new-done:${created.data.wish.id}`);
       router.push(`${nextPath}?wishId=${created.data.wish.id}`);
     } catch {
       setError("사진을 처리하지 못했어요. 잠시 후 다시 시도해주세요.");
