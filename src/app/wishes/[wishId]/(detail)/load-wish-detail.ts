@@ -56,6 +56,7 @@ function isNotFound(result: ApiResult<unknown>) {
 function toWishDetail(wish: components["schemas"]["Wish"]): WishDetail {
   return {
     ...toOwnedWishItem(wish),
+    visibility: wish.visibility,
     startDate: wish.startDate === null ? "" : toShortDate(wish.startDate),
     targetDate: wish.targetDate === null ? "" : toShortDate(wish.targetDate),
     ...(wish.photo == null ? {} : { imageUrl: wish.photo.variants.large }),
