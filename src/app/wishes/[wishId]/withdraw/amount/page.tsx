@@ -3,10 +3,6 @@ import { notFound, redirect } from "next/navigation";
 import { AmountForm } from "../../../_components/amount-form";
 import { isFinishedState } from "../../../_components/wish-detail";
 import {
-  transferWishFundsAction,
-  withdrawFromWishAction,
-} from "../../../wish-actions";
-import {
   CARD_COUNTERPART_ID,
   findCounterpart,
   loadFundFlow,
@@ -41,34 +37,6 @@ export default async function WithdrawAmountPage({
           overMessage: "보낼 위시의 목표 금액까지만 보낼 수 있어요.",
         };
 
-  const expectedVersion = view.wish.version;
-  const destinationWishId =
-    destination.kind === "card" ? null : destination.wish.id;
-  const destinationVersion =
-    destination.kind === "card" ? 0 : destination.wish.version;
-
-  async function move(amount: number, idempotencyKey: string) {
-    "use server";
-
-    if (destinationWishId === null) {
-      return withdrawFromWishAction({
-        wishId,
-        expectedVersion,
-        amount,
-        idempotencyKey,
-      });
-    }
-
-    return transferWishFundsAction({
-      sourceWishId: wishId,
-      destinationWishId,
-      amount,
-      sourceExpectedVersion: expectedVersion,
-      destinationExpectedVersion: destinationVersion,
-      idempotencyKey,
-    });
-  }
-
   return (
     <AmountForm
       title="얼마를 꺼내볼까요?"
@@ -77,7 +45,7 @@ export default async function WithdrawAmountPage({
       nextParams={{ to: destinationId }}
       available={view.wish.amount}
       availableLabel="현재 사용 가능한 금액"
-      action={move}
+      ticketName={`withdraw:${wishId}:${destinationId}`}
       {...limit}
     />
   );

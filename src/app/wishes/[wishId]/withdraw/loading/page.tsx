@@ -1,8 +1,8 @@
 import { queryValue } from "@/lib/forms/wish-form-query";
 import { notFound, redirect } from "next/navigation";
-import { LoadingScreen } from "../../../_components/loading-screen";
-import { loadFundReceipt } from "../../../fund-receipt";
+import type { FundCounterpartRef } from "../../../_components/fund-counterpart";
 import { isFinishedState } from "../../../_components/wish-detail";
+import { WithdrawLoadingScreen } from "../../../_components/withdraw-loading-screen";
 import {
   CARD_COUNTERPART_ID,
   findCounterpart,
@@ -22,21 +22,32 @@ export default async function WithdrawLoadingPage({
   if (isFinishedState(view.wish.state)) redirect(`/wishes/${wishId}`);
 
   const selectPath = `/wishes/${wishId}/withdraw`;
-  const query = await searchParams;
-  const destination = findCounterpart(view, queryValue(query, "to"));
+  const destination = findCounterpart(
+    view,
+    queryValue(await searchParams, "to"),
+  );
   if (destination === null) redirect(selectPath);
 
   const destinationId =
     destination.kind === "card" ? CARD_COUNTERPART_ID : destination.wish.id;
-
-  const eventId = queryValue(query, "event");
-  if ((await loadFundReceipt(wishId, eventId, "WITHDRAWAL")) === null)
-    redirect(`${selectPath}/amount?to=${destinationId}`);
+  const destinationRef: FundCounterpartRef =
+    destination.kind === "card"
+      ? { kind: "card" }
+      : {
+          kind: "wish",
+          wishId: destination.wish.id,
+          version: destination.wish.version,
+          purpose: destination.wish.purpose,
+        };
 
   return (
-    <LoadingScreen
-      label="돈 꺼내는 중"
-      donePath={`/wishes/${wishId}/withdraw/done?to=${destinationId}&event=${eventId}`}
+    <WithdrawLoadingScreen
+      wishId={wishId}
+      expectedVersion={view.wish.version}
+      destination={destinationRef}
+      ticketName={`withdraw:${wishId}:${destinationId}`}
+      amountHref={`${selectPath}/amount?to=${destinationId}`}
+      doneHref={`${selectPath}/done?to=${destinationId}`}
     />
   );
 }

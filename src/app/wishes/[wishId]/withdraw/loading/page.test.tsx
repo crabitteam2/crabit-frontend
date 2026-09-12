@@ -1,7 +1,7 @@
 import { expect, it, vi } from "vitest";
 import Page from "./page";
 import DonePage from "../done/page";
-import { LoadingScreen } from "@/app/wishes/_components/loading-screen";
+import { WithdrawLoadingScreen } from "@/app/wishes/_components/withdraw-loading-screen";
 vi.mock("server-only", () => ({}));
 const { redirect } = vi.hoisted(() => ({
   redirect: vi.fn((path: string) => {
@@ -39,30 +39,32 @@ vi.mock("../../fund-flow", async (importOriginal) => {
     }),
   };
 });
-it.each<[Record<string, string | string[] | undefined>, string]>([
-  [{ to: ["card", "w2"], event: "e1" }, "/wishes/w1/withdraw"],
-  [{ to: "w1", event: "e1" }, "/wishes/w1/withdraw"],
-  [{ to: "missing", event: "e1" }, "/wishes/w1/withdraw"],
-  [{ event: "e1" }, "/wishes/w1/withdraw"],
-  [{ to: "card" }, "/wishes/w1/withdraw/amount?to=card"],
-])(
-  "sends a loading screen that no completed movement backs to the step before: %j",
-  async (query, back) => {
-    await expect(
-      Page({
-        params: Promise.resolve({ wishId: "w1" }),
-        searchParams: Promise.resolve(query),
-      }),
-    ).rejects.toThrow(`NEXT_REDIRECT:${back}`);
-  },
-);
-it("carries the movement to the completion screen", async () => {
+it.each<Record<string, string | string[] | undefined>>([
+  { to: ["card", "w2"] },
+  { to: "w1" },
+  { to: "missing" },
+  {},
+])("sends an unknown destination back to the card step: %j", async (query) => {
+  await expect(
+    Page({
+      params: Promise.resolve({ wishId: "w1" }),
+      searchParams: Promise.resolve(query),
+    }),
+  ).rejects.toThrow("NEXT_REDIRECT:/wishes/w1/withdraw");
+});
+it("hands the transfer and its ticket to the loading screen", async () => {
   const page = await Page({
     params: Promise.resolve({ wishId: "w1" }),
-    searchParams: Promise.resolve({ to: "w2", event: "e1" }),
+    searchParams: Promise.resolve({ to: "w2" }),
   });
-  expect(page.type).toBe(LoadingScreen);
-  expect(page.props.donePath).toBe("/wishes/w1/withdraw/done?to=w2&event=e1");
+  expect(page.type).toBe(WithdrawLoadingScreen);
+  expect(page.props).toMatchObject({
+    expectedVersion: 3,
+    destination: { kind: "wish", wishId: "w2", version: 4 },
+    ticketName: "withdraw:w1:w2",
+    amountHref: "/wishes/w1/withdraw/amount?to=w2",
+    doneHref: "/wishes/w1/withdraw/done?to=w2",
+  });
 });
 it("shows the recorded movement instead of the address amount", async () => {
   const page = await DonePage({
