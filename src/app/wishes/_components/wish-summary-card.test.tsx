@@ -10,6 +10,7 @@ const abandonedWish: WishDetail = {
   abandonmentAmount: 12_000,
   targetAmount: 30_000,
   state: "ABANDONED",
+  visibility: "PRIVATE",
   version: 3,
   startDate: "26.08.01",
   targetDate: "26.10.31",
@@ -34,6 +35,7 @@ describe("위시 상세 요약 카드", () => {
           amount: 4_500,
           abandonmentAmount: null,
           state: "IN_PROGRESS",
+          visibility: "PRIVATE",
         }}
       />,
     );
@@ -53,6 +55,7 @@ describe("위시 상세 요약 카드", () => {
           amount: 10_000,
           abandonmentAmount: null,
           state: "IN_PROGRESS",
+          visibility: "PRIVATE",
           imageUrl: "https://storage.test/signed/large",
         }}
       />,
