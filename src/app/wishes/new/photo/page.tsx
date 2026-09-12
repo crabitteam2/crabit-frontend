@@ -4,6 +4,7 @@ import {
   readWishQuery,
   serializeWish,
 } from "@/lib/forms/wish-form-query";
+import { hasUnresolvedShortage } from "../../load-account";
 import { WishPhotoForm } from "../_components/wish-photo-form";
 
 export default async function NewWishPhotoPage({

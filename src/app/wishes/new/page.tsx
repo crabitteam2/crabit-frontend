@@ -1,6 +1,7 @@
 import { getCardBalanceAccount } from "@/lib/http/card-balance-accounts";
 import { unwrapResult } from "@/lib/http/result";
-import { loadAccountContext } from "../load-account";
+import { redirect } from "next/navigation";
+import { hasUnresolvedShortage, loadAccountContext } from "../load-account";
 import { WishGoalForm } from "./_components/wish-goal-form";
 
 export default async function NewWishPage() {

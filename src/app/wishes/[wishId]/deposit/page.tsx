@@ -15,9 +15,6 @@ export default async function DepositAccountPage({
   const view = await loadFundFlow(wishId);
   if (view === null) notFound();
   if (isFinishedState(view.wish.state)) redirect(`/wishes/${wishId}`);
-  if (view.unresolvedShortage !== null && view.unresolvedShortage > 0) {
-    redirect("/adjust");
-  }
 
   const sources = view.others.filter((wish) => wish.amount > 0);
 

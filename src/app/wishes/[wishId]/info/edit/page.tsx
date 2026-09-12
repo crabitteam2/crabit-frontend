@@ -1,7 +1,10 @@
 import { notFound, redirect } from "next/navigation";
 import { getWish } from "@/lib/http/wishes";
 import { unwrapResult } from "@/lib/http/result";
-import { loadAccountContext } from "../../../load-account";
+import {
+  hasUnresolvedShortage,
+  loadAccountContext,
+} from "../../../load-account";
 import { isFinishedState } from "../../../_components/wish-detail";
 import { WishEditForm } from "../../../_components/wish-edit-form";
 import {

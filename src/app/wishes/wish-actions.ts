@@ -19,12 +19,21 @@ import { loadAccountContext } from "./load-account";
 
 /** 위시 쓰기 요청의 결과이며, 실패하면 화면에 그대로 보여줄 문구를 담습니다. */
 export type WishActionResult =
-  { readonly ok: true } | { readonly ok: false; readonly message: string };
+  | { readonly ok: true }
+  | {
+      readonly ok: false;
+      readonly message: string;
+      readonly code: FrontendHttpError["code"];
+    };
 
 /** 자금을 옮기는 요청의 결과이며, 성공하면 만들어진 원장 이벤트 식별자를 담습니다. */
 export type FundActionResult =
   | { readonly ok: true; readonly eventId: string | null }
-  | { readonly ok: false; readonly message: string };
+  | {
+      readonly ok: false;
+      readonly message: string;
+      readonly code: FrontendHttpError["code"];
+    };
 
 const MESSAGES: Partial<Record<FrontendHttpError["code"], string>> = {
   VERSION_CONFLICT: "위시 정보가 바뀌었어요. 새로고침한 뒤 다시 시도해주세요.",
@@ -131,6 +140,7 @@ function settleFund(
     return {
       ok: false,
       message: MESSAGES[result.error.code] ?? FALLBACK_MESSAGE,
+      code: result.error.code,
     };
   }
 
@@ -146,6 +156,7 @@ function settle(
     return {
       ok: false,
       message: MESSAGES[result.error.code] ?? FALLBACK_MESSAGE,
+      code: result.error.code,
     };
   }
 
