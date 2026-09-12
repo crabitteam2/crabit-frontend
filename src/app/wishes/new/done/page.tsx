@@ -38,7 +38,7 @@ export default async function NewWishDonePage({
         targetAmount={wish.targetAmount}
         period={period}
         photoUrl={wish.photo?.variants.large ?? null}
-        depositHref={`/wishes/${wish.id}/deposit/amount`}
+        depositHref={`/wishes/${wish.id}/deposit/amount?from=card&back=created`}
         closeHref="/"
       />
     </FlowMarkGuard>

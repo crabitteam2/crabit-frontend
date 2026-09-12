@@ -33,12 +33,17 @@ export default async function DepositAmountPage({
 
   const sourceId =
     source.kind === "card" ? CARD_COUNTERPART_ID : source.wish.id;
+  // 새 위시 완료 화면에서 바로 들어왔으면 그 화면으로 되돌아간다.
+  const backHref =
+    queryValue(query, "back") === "created"
+      ? `/wishes/new/done?wishId=${wishId}`
+      : selectPath;
   const remaining = view.wish.targetAmount - view.wish.amount;
 
   return (
     <AmountForm
       title="얼마를 모아볼까요?"
-      backHref={selectPath}
+      backHref={backHref}
       nextPath={`/wishes/${wishId}/deposit/coin`}
       nextParams={{ from: sourceId }}
       available={available}

@@ -1,6 +1,5 @@
 import { notFound, redirect } from "next/navigation";
 import { toProgressPercent } from "@/app/_components/progress-stage";
-import { hasUnresolvedShortage } from "../../../load-account";
 import { loadWishDetail } from "../../(detail)/load-wish-detail";
 import { ScreenHeader } from "../../../_components/screen-header";
 import { WishHeroContent } from "../../../_components/wish-hero-screen";

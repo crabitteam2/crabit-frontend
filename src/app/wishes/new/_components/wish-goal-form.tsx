@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { ScreenHeader } from "@/app/wishes/_components/screen-header";
 import { PullToRefresh } from "@/app/_components/pull-to-refresh";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,12 @@ import { useKeyboardViewport } from "@/hooks/use-keyboard-viewport";
 import { useWishForm } from "@/lib/forms/use-wish-form";
 import { formEnter } from "@/lib/forms/form-keyboard";
 import {
+  clearFlowMark,
+  CREATED_MARK,
+} from "@/app/wishes/_components/fund-ticket";
+import { toPeriodParams } from "@/app/wishes/_components/wish-period-format";
+import type { Period } from "@/lib/forms/wish-validation";
+import {
   purposeError,
   amountError,
   normalizePurpose,
@@ -16,13 +23,19 @@ import {
   formatKrw,
 } from "@/lib/forms/wish-validation";
 
-const PURPOSE_FIELD_HEIGHT = 161;
+const PURPOSE_FIELD_MIN_HEIGHT = 161;
 
 interface WishGoalFormProps {
   backHref: string;
   nextPath: string;
   available: number | null;
   cardBalanceAccountId: string;
+  /** 이전 단계에서 돌아왔을 때 되살릴 위시 이름입니다. */
+  initialPurpose?: string;
+  /** 이전 단계에서 돌아왔을 때 되살릴 목표 금액입니다. */
+  initialAmount?: string;
+  /** 이전 단계에서 돌아왔을 때 그대로 들고 갈 기간입니다. */
+  initialRange?: Period;
 }
 
 export function WishGoalForm({
@@ -30,6 +43,9 @@ export function WishGoalForm({
   nextPath,
   available,
   cardBalanceAccountId,
+  initialPurpose = "",
+  initialAmount = "",
+  initialRange = { start: null, end: null },
 }: WishGoalFormProps) {
   const router = useRouter();
   const {
@@ -39,15 +55,19 @@ export function WishGoalForm({
     setValue,
     getValues,
     formState: { errors, isSubmitting },
-  } = useWishForm({ defaultValues: { purpose: "", amount: "" } });
+  } = useWishForm({
+    defaultValues: { purpose: initialPurpose, amount: initialAmount },
+  });
   const box = useKeyboardViewport();
   const isKeyboardOpen = box?.isKeyboardOpen ?? false;
+  // 첫 단계에 들어오면 새 등록이므로 지난 흐름의 표를 지운다.
+  useEffect(() => clearFlowMark(CREATED_MARK), []);
+
   const submit = handleSubmit(({ purpose, amount }) => {
-    const params = new URLSearchParams({
-      cardBalanceAccountId,
-      purpose: normalizePurpose(purpose),
-      targetAmount: String(parseKrw(amount)),
-    });
+    const params = toPeriodParams(initialRange);
+    params.set("cardBalanceAccountId", cardBalanceAccountId);
+    params.set("purpose", normalizePurpose(purpose));
+    params.set("targetAmount", String(parseKrw(amount)));
     router.push(`${nextPath}?${params.toString()}`);
   });
 
@@ -70,6 +90,7 @@ export function WishGoalForm({
       <ScreenHeader
         title="위시를 입력해주세요."
         backHref={backHref}
+        backToPrevious
         spacing="loose"
       />
 
@@ -81,7 +102,7 @@ export function WishGoalForm({
         <PullToRefresh>
           <div
             className="shrink-0 px-4 pt-5"
-            style={{ height: PURPOSE_FIELD_HEIGHT }}
+            style={{ minHeight: PURPOSE_FIELD_MIN_HEIGHT }}
           >
             <Input
               label="위시"

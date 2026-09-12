@@ -2,6 +2,9 @@ const STORAGE_PREFIX = "crabit.fund-ticket.";
 
 const MARK = "1";
 
+/** 새 위시 등록을 마쳤다는 표입니다. */
+export const CREATED_MARK = "new-wish-created";
+
 /** 금액 화면이 끊어 로딩 화면이 한 번만 쓰는 실행 표입니다. */
 export interface FundTicket {
   /** 옮길 금액이며 양의 정수입니다. */
@@ -39,6 +42,15 @@ export function hasFlowMark(name: string) {
     return sessionStorage.getItem(STORAGE_PREFIX + name) === MARK;
   } catch {
     return false;
+  }
+}
+
+/** 남아 있는 표를 지웁니다. */
+export function clearFlowMark(name: string) {
+  try {
+    sessionStorage.removeItem(STORAGE_PREFIX + name);
+  } catch {
+    // 저장소를 쓸 수 없으면 지울 표도 없다.
   }
 }
 
