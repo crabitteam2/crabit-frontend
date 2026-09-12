@@ -1,6 +1,6 @@
 import { queryValue } from "@/lib/forms/wish-form-query";
-import { FormQueryError } from "@/app/wishes/_components/form-query-error";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { isFinishedState } from "../../../_components/wish-detail";
 import { AmountForm } from "../../../_components/amount-form";
 import {
   CARD_COUNTERPART_ID,
@@ -18,17 +18,18 @@ export default async function DepositAmountPage({
   const { wishId } = await params;
   const view = await loadFundFlow(wishId);
   if (view === null) notFound();
+  if (isFinishedState(view.wish.state)) redirect(`/wishes/${wishId}`);
 
   const selectPath = `/wishes/${wishId}/deposit`;
   const query = await searchParams;
   const from =
     query.from === undefined ? CARD_COUNTERPART_ID : queryValue(query, "from");
   const source = findCounterpart(view, from);
-  if (source === null) return <FormQueryError backHref={selectPath} />;
+  if (source === null) redirect(selectPath);
 
   const available =
     source.kind === "card" ? source.card.availableBalance : source.wish.amount;
-  if (available === null) return <FormQueryError backHref={selectPath} />;
+  if (available === null) redirect(selectPath);
 
   const sourceId =
     source.kind === "card" ? CARD_COUNTERPART_ID : source.wish.id;

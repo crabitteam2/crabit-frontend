@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useWishForm } from "@/lib/forms/use-wish-form";
 import { formEnter } from "@/lib/forms/form-keyboard";
 import { amountError, parseKrw, formatKrw } from "@/lib/forms/wish-validation";
@@ -10,6 +11,8 @@ import { PullToRefresh } from "@/app/_components/pull-to-refresh";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useKeyboardViewport } from "@/hooks/use-keyboard-viewport";
+import { Toast } from "@/components/ui/toast";
+import type { FundActionResult } from "../wish-actions";
 import { ScreenHeader } from "./screen-header";
 
 interface AmountFormProps {
@@ -23,6 +26,16 @@ interface AmountFormProps {
   availableLabel: string;
   remaining?: number;
   from?: string;
+  /**
+   * 금액을 확정할 때 실행할 서버 액션입니다.
+   *
+   * 주면 이 화면에서 자금을 옮기고 만들어진 원장 이벤트를 다음 화면에 넘깁니다.
+   * 주지 않으면 금액만 들고 다음 화면으로 넘어갑니다.
+   */
+  action?: (
+    amount: number,
+    idempotencyKey: string,
+  ) => Promise<FundActionResult>;
 }
 
 export function AmountForm({
@@ -36,8 +49,11 @@ export function AmountForm({
   availableLabel,
   remaining,
   from,
+  action,
 }: AmountFormProps) {
   const router = useRouter();
+  const [idempotencyKey] = useState(() => crypto.randomUUID());
+  const [error, setError] = useState<string | null>(null);
   const {
     register,
     handleSubmit,
@@ -47,12 +63,30 @@ export function AmountForm({
   } = useWishForm({ defaultValues: { amount: "" } });
   const box = useKeyboardViewport();
   const isKeyboardOpen = box?.isKeyboardOpen ?? false;
-  const submit = handleSubmit(({ amount }) => {
+  const submit = handleSubmit(async ({ amount }) => {
+    const value = parseKrw(amount) ?? 0;
+
+    if (action === undefined) {
+      const params = new URLSearchParams({
+        ...nextParams,
+        amount: String(value),
+      });
+      if (from) params.set("from", from);
+      router.push(`${nextPath}?${params}`);
+      return;
+    }
+
+    setError(null);
+    const result = await action(value, idempotencyKey);
+    if (!result.ok) {
+      setError(result.message);
+      return;
+    }
+
     const params = new URLSearchParams({
       ...nextParams,
-      amount: String(parseKrw(amount)),
+      event: String(result.eventId),
     });
-    if (from) params.set("from", from);
     router.push(`${nextPath}?${params}`);
   });
 
@@ -137,6 +171,10 @@ export function AmountForm({
           다음
         </Button>
       </div>
+
+      {error === null ? null : (
+        <Toast message={error} tone="danger" onClose={() => setError(null)} />
+      )}
     </form>
   );
 }

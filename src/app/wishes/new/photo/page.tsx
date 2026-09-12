@@ -1,9 +1,9 @@
+import { redirect } from "next/navigation";
 import {
   queryValue,
   readWishQuery,
   serializeWish,
 } from "@/lib/forms/wish-form-query";
-import { FormQueryError } from "@/app/wishes/_components/form-query-error";
 import { WishPhotoForm } from "../_components/wish-photo-form";
 
 export default async function NewWishPhotoPage({
@@ -14,8 +14,7 @@ export default async function NewWishPhotoPage({
   const query = await searchParams;
   const cardBalanceAccountId = queryValue(query, "cardBalanceAccountId");
   const values = readWishQuery(query);
-  if (!values || !cardBalanceAccountId?.trim())
-    return <FormQueryError backHref="/wishes/new" />;
+  if (!values || !cardBalanceAccountId?.trim()) redirect("/wishes/new");
   const forwarded = serializeWish(values);
   forwarded.set("cardBalanceAccountId", cardBalanceAccountId);
 

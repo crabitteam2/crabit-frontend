@@ -1,7 +1,7 @@
-import { readAmountQuery, queryValue } from "@/lib/forms/wish-form-query";
-import { FormQueryError } from "@/app/wishes/_components/form-query-error";
-import { notFound } from "next/navigation";
+import { queryValue } from "@/lib/forms/wish-form-query";
+import { notFound, redirect } from "next/navigation";
 import { WithdrawDoneScreen } from "../../../_components/withdraw-done-screen";
+import { loadFundReceipt } from "../../../fund-receipt";
 import { findCounterpart, loadFundFlow } from "../../fund-flow";
 
 export default async function WithdrawDonePage({
@@ -16,19 +16,20 @@ export default async function WithdrawDonePage({
   if (view === null) notFound();
 
   const query = await searchParams;
-  const amount = readAmountQuery(query, Number.MAX_SAFE_INTEGER);
-  if (amount === null)
-    return <FormQueryError backHref={`/wishes/${wishId}/withdraw`} />;
+  const receipt = await loadFundReceipt(
+    wishId,
+    queryValue(query, "event"),
+    "WITHDRAWAL",
+  );
+  if (receipt === null) redirect(`/wishes/${wishId}`);
 
   const destination = findCounterpart(view, queryValue(query, "to"));
-  if (destination === null)
-    return <FormQueryError backHref={`/wishes/${wishId}/withdraw`} />;
 
   return (
     <WithdrawDoneScreen
       purpose={view.wish.purpose}
-      amount={amount}
-      balanceAfter={view.wish.amount}
+      amount={receipt.amount}
+      balanceAfter={receipt.balanceAfter}
       title={
         destination?.kind === "wish"
           ? `${destination.wish.purpose}에 보낸 금액`

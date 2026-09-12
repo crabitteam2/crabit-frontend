@@ -1,5 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AmountForm } from "@/app/wishes/_components/amount-form";
+import { isFinishedState } from "@/app/wishes/_components/wish-detail";
+import { withdrawFromWishAction } from "@/app/wishes/wish-actions";
 import { loadFundFlow } from "@/app/wishes/[wishId]/fund-flow";
 
 export default async function AdjustAmountPage({
@@ -10,6 +12,22 @@ export default async function AdjustAmountPage({
   const { wishId } = await params;
   const view = await loadFundFlow(wishId);
   if (view === null) notFound();
+  if (isFinishedState(view.wish.state)) redirect("/adjust");
+  if (view.unresolvedShortage === null || view.unresolvedShortage <= 0)
+    redirect("/");
+
+  const expectedVersion = view.wish.version;
+
+  async function move(amount: number, idempotencyKey: string) {
+    "use server";
+
+    return withdrawFromWishAction({
+      wishId,
+      expectedVersion,
+      amount,
+      idempotencyKey,
+    });
+  }
 
   return (
     <AmountForm
@@ -18,6 +36,7 @@ export default async function AdjustAmountPage({
       nextPath={`/adjust/${wishId}/loading`}
       available={view.wish.amount}
       availableLabel="현재 사용 가능한 금액"
+      action={move}
     />
   );
 }
