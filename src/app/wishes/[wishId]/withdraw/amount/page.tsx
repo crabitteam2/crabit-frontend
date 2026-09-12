@@ -1,6 +1,7 @@
 import { queryValue } from "@/lib/forms/wish-form-query";
 import { notFound, redirect } from "next/navigation";
 import { AmountForm } from "../../../_components/amount-form";
+import { isFinishedState } from "../../../_components/wish-detail";
 import {
   CARD_COUNTERPART_ID,
   findCounterpart,
@@ -17,6 +18,7 @@ export default async function WithdrawAmountPage({
   const { wishId } = await params;
   const view = await loadFundFlow(wishId);
   if (view === null) notFound();
+  if (isFinishedState(view.wish.state)) redirect(`/wishes/${wishId}`);
 
   const selectPath = `/wishes/${wishId}/withdraw`;
   const destination = findCounterpart(
@@ -43,6 +45,7 @@ export default async function WithdrawAmountPage({
       nextParams={{ to: destinationId }}
       available={view.wish.amount}
       availableLabel="현재 사용 가능한 금액"
+      ticketName={`withdraw:${wishId}:${destinationId}`}
       {...limit}
     />
   );

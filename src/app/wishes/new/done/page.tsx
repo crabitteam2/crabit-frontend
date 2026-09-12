@@ -1,12 +1,13 @@
-import { FormQueryError } from "@/app/wishes/_components/form-query-error";
 import {
   fromIsoDate,
   toSavingPeriodLabel,
 } from "@/app/wishes/_components/wish-period-format";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getWish } from "@/lib/http/wishes";
 import { unwrapResult } from "@/lib/http/result";
 import { loadAccountContext } from "../../load-account";
+import { isFinishedState } from "@/app/wishes/_components/wish-detail";
+import { FlowMarkGuard } from "@/app/wishes/_components/flow-mark-guard";
 import { WishCreatedScreen } from "../_components/wish-created-screen";
 
 export default async function NewWishDonePage({
@@ -16,12 +17,12 @@ export default async function NewWishDonePage({
 }) {
   const query = await searchParams;
   const wishId = query.wishId;
-  if (typeof wishId !== "string" || !wishId.trim())
-    return <FormQueryError backHref="/wishes/new" />;
+  if (typeof wishId !== "string" || !wishId.trim()) redirect("/wishes/new");
   const { client, cardBalanceAccountId } = await loadAccountContext();
   const result = await getWish(client, { cardBalanceAccountId, wishId });
   if (!result.ok && result.error.status === 404) notFound();
   const wish = unwrapResult(result);
+  if (isFinishedState(wish.state)) redirect(`/wishes/${wishId}`);
   const period =
     wish.startDate === null || wish.targetDate === null
       ? null
@@ -31,13 +32,15 @@ export default async function NewWishDonePage({
         });
 
   return (
-    <WishCreatedScreen
-      purpose={wish.purpose}
-      targetAmount={wish.targetAmount}
-      period={period}
-      photoUrl={wish.photo?.variants.large ?? null}
-      depositHref={`/wishes/${wish.id}/deposit/amount`}
-      closeHref="/"
-    />
+    <FlowMarkGuard name={`new-done:${wishId}`} fallbackHref="/wishes/new">
+      <WishCreatedScreen
+        purpose={wish.purpose}
+        targetAmount={wish.targetAmount}
+        period={period}
+        photoUrl={wish.photo?.variants.large ?? null}
+        depositHref={`/wishes/${wish.id}/deposit/amount`}
+        closeHref="/"
+      />
+    </FlowMarkGuard>
   );
 }

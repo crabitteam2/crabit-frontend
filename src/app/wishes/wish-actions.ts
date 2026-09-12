@@ -21,6 +21,11 @@ import { loadAccountContext } from "./load-account";
 export type WishActionResult =
   { readonly ok: true } | { readonly ok: false; readonly message: string };
 
+/** 자금을 옮기는 요청의 결과이며, 성공하면 만들어진 원장 이벤트 식별자를 담습니다. */
+export type FundActionResult =
+  | { readonly ok: true; readonly eventId: string | null }
+  | { readonly ok: false; readonly message: string };
+
 const MESSAGES: Partial<Record<FrontendHttpError["code"], string>> = {
   VERSION_CONFLICT: "위시 정보가 바뀌었어요. 새로고침한 뒤 다시 시도해주세요.",
   INVALID_STATE_TRANSITION: "지금은 처리할 수 없는 위시예요.",
@@ -118,6 +123,21 @@ export async function deleteWishAction(
   return settle(result, ["/wishes", `/wishes/${wishId}`]);
 }
 
+function settleFund(
+  result: ApiResult<{ readonly eventId: string | null }>,
+  paths: readonly string[],
+): FundActionResult {
+  if (!result.ok) {
+    return {
+      ok: false,
+      message: MESSAGES[result.error.code] ?? FALLBACK_MESSAGE,
+    };
+  }
+
+  for (const path of paths) revalidatePath(path);
+  return { ok: true, eventId: result.data.eventId };
+}
+
 function settle(
   result: ApiResult<unknown>,
   paths: readonly string[],
@@ -164,7 +184,7 @@ export interface WishTransferCommand {
 /** 카드 잔액에서 위시로 금액을 옮깁니다. */
 export async function depositToWishAction(
   command: FundMovementCommand,
-): Promise<WishActionResult> {
+): Promise<FundActionResult> {
   const { client, cardBalanceAccountId } = await loadAccountContext();
   const result = await depositToWish(client, {
     cardBalanceAccountId,
@@ -176,13 +196,13 @@ export async function depositToWishAction(
     },
   });
 
-  return settle(result, ["/wishes", `/wishes/${command.wishId}`]);
+  return settleFund(result, ["/wishes", `/wishes/${command.wishId}`]);
 }
 
 /** 위시에서 카드 잔액으로 금액을 되돌립니다. */
 export async function withdrawFromWishAction(
   command: FundMovementCommand,
-): Promise<WishActionResult> {
+): Promise<FundActionResult> {
   const { client, cardBalanceAccountId } = await loadAccountContext();
   const result = await withdrawFromWish(client, {
     cardBalanceAccountId,
@@ -194,13 +214,13 @@ export async function withdrawFromWishAction(
     },
   });
 
-  return settle(result, ["/wishes", `/wishes/${command.wishId}`]);
+  return settleFund(result, ["/wishes", `/wishes/${command.wishId}`]);
 }
 
 /** 같은 계좌의 두 위시 사이에서 금액을 한 번에 옮깁니다. */
 export async function transferWishFundsAction(
   command: WishTransferCommand,
-): Promise<WishActionResult> {
+): Promise<FundActionResult> {
   const { client, cardBalanceAccountId } = await loadAccountContext();
   const result = await transferWishFunds(client, {
     cardBalanceAccountId,
@@ -214,7 +234,7 @@ export async function transferWishFundsAction(
     },
   });
 
-  return settle(result, [
+  return settleFund(result, [
     "/wishes",
     `/wishes/${command.sourceWishId}`,
     `/wishes/${command.destinationWishId}`,

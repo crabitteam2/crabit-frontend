@@ -1,5 +1,5 @@
+import { redirect } from "next/navigation";
 import { queryValue, readWishQuery } from "@/lib/forms/wish-form-query";
-import { FormQueryError } from "@/app/wishes/_components/form-query-error";
 import { WishPeriodForm } from "../_components/wish-period-form";
 
 export default async function NewWishPeriodPage({
@@ -10,8 +10,7 @@ export default async function NewWishPeriodPage({
   const query = await searchParams;
   const cardBalanceAccountId = queryValue(query, "cardBalanceAccountId");
   const values = readWishQuery(query);
-  if (!values || !cardBalanceAccountId?.trim())
-    return <FormQueryError backHref="/wishes/new" />;
+  if (!values || !cardBalanceAccountId?.trim()) redirect("/wishes/new");
 
   return (
     <WishPeriodForm

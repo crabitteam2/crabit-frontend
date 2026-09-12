@@ -3,37 +3,52 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import closeIcon from "@/../public/images/wishes/close-32.svg";
 import { Toast } from "@/components/ui/toast";
 import { depositToWishAction, transferWishFundsAction } from "../wish-actions";
 import { CoinDrop } from "./coin-drop";
 import type { FundCounterpartRef } from "./fund-counterpart";
+import { peekFundTicket, type FundTicket } from "./fund-ticket";
 
 const DOT_PATTERN =
   "radial-gradient(ellipse 14.13px 17.17px at 14.13px 17.17px, var(--color-pink-2) 0 100%, transparent 0)";
 
 interface DepositCoinScreenProps {
   wishId: string;
-  amount: number;
   expectedVersion: number;
   source: FundCounterpartRef;
+  /** 금액 화면이 끊은 표를 찾을 이름입니다. */
+  ticketName: string;
+  /** 표가 없을 때 되돌아갈 금액 화면 경로입니다. */
+  amountHref: string;
 }
 
 export function DepositCoinScreen({
   wishId,
-  amount,
   expectedVersion,
   source,
+  ticketName,
+  amountHref,
 }: DepositCoinScreenProps) {
   const router = useRouter();
-  const [idempotencyKey] = useState(() => crypto.randomUUID());
+  const [ticket, setTicket] = useState<FundTicket | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    const found = peekFundTicket(ticketName);
+    if (found === null) {
+      router.replace(amountHref);
+      return;
+    }
+    setTicket(found);
+  }, [amountHref, router, ticketName]);
+
   const drop = async () => {
-    if (isPending) return;
+    if (isPending || ticket === null) return;
+    const { amount, idempotencyKey } = ticket;
     setIsPending(true);
     setError(null);
 
@@ -62,9 +77,7 @@ export function DepositCoinScreen({
       return;
     }
 
-    router.replace(
-      `/wishes/${wishId}/deposit/done?amount=${amount}&from=${encodeURIComponent(source.kind === "card" ? "card" : source.wishId)}`,
-    );
+    router.replace(`/wishes/${wishId}/deposit/done?event=${result.eventId}`);
   };
 
   return (
