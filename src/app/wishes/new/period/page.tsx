@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
-import { queryValue, readWishQuery } from "@/lib/forms/wish-form-query";
+import {
+  queryValue,
+  readWishQuery,
+  serializeWish,
+} from "@/lib/forms/wish-form-query";
 import { WishPeriodForm } from "../_components/wish-period-form";
 
 export default async function NewWishPeriodPage({
@@ -14,7 +18,7 @@ export default async function NewWishPeriodPage({
 
   return (
     <WishPeriodForm
-      backHref="/wishes/new"
+      backHref={`/wishes/new?${serializeWish(values).toString()}`}
       nextPath="/wishes/new/photo"
       cardBalanceAccountId={cardBalanceAccountId}
       purpose={values.purpose}

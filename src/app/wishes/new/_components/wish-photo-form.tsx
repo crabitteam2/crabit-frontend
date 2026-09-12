@@ -2,11 +2,16 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { putFlowMark } from "@/app/wishes/_components/fund-ticket";
+import {
+  hasFlowMark,
+  putFlowMark,
+  CREATED_MARK,
+} from "@/app/wishes/_components/fund-ticket";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import placeholderIcon from "@/../public/images/wishes/image-placeholder.svg";
 import { ScreenHeader } from "@/app/wishes/_components/screen-header";
 import { Button } from "@/components/ui/button";
+import { Toast } from "@/components/ui/toast";
 import { createBrowserApiClient } from "@/lib/http/browser";
 import type { components } from "@/lib/http/generated/crabit-backend";
 import {
@@ -122,8 +127,20 @@ export function WishPhotoForm({
     setTransform(initialTransform(box, photo));
   }, [photo, box]);
 
+  // 등록을 마친 뒤 뒤로 가면 사진 화면이 아니라 위시 목록으로 나간다.
+  useEffect(() => {
+    if (hasFlowMark(CREATED_MARK)) router.replace("/wishes");
+  }, [router]);
+
   const openPicker = () => {
     if (!busy.current) inputRef.current?.click();
+  };
+
+  const dropPhoto = () => {
+    setValue("photo", null, { shouldDirty: true });
+    setPhoto(null);
+    setPreviewUrl(null);
+    if (inputRef.current !== null) inputRef.current.value = "";
   };
 
   const pick = async (file: File | undefined) => {
@@ -279,6 +296,7 @@ export function WishPhotoForm({
 
       clearWishPhotoUploadState(scope);
       putFlowMark(`new-done:${created.data.wish.id}`);
+      putFlowMark(CREATED_MARK);
       router.push(`${nextPath}?wishId=${created.data.wish.id}`);
     } catch {
       setError("사진을 처리하지 못했어요. 잠시 후 다시 시도해주세요.");
@@ -366,6 +384,10 @@ export function WishPhotoForm({
                   height: event.currentTarget.naturalHeight,
                 })
               }
+              onError={() => {
+                dropPhoto();
+                setError("사진을 열지 못했어요. 다른 사진을 선택해주세요.");
+              }}
               className="max-w-none origin-top-left"
               style={
                 size === null
@@ -389,13 +411,11 @@ export function WishPhotoForm({
         onChange={(event) => void pick(event.target.files?.[0])}
       />
 
-      {error === null ? null : (
-        <p role="alert" className="text-fg-error px-4 pt-4 text-sm">
-          {error}
-        </p>
-      )}
-
       <div className="flex-1" />
+
+      {error === null ? null : (
+        <Toast message={error} tone="danger" onClose={() => setError(null)} />
+      )}
 
       <div className="px-4 pb-[calc(55px+env(safe-area-inset-bottom))]">
         <Button

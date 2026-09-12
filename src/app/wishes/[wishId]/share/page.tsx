@@ -1,5 +1,4 @@
 import { notFound, redirect } from "next/navigation";
-import { hasUnresolvedShortage } from "../../load-account";
 import { loadWishDetail } from "../(detail)/load-wish-detail";
 import { WishShareScreen } from "../../_components/wish-share-screen";
 
