@@ -72,6 +72,10 @@ export function DepositCoinScreen({
     setIsPending(false);
 
     if (!result.ok) {
+      if (result.code === "BALANCE_MISMATCH_LOCKED") {
+        router.replace("/adjust");
+        return;
+      }
       setError(result.message);
       setAttempt((count) => count + 1);
       return;

@@ -25,6 +25,16 @@ export interface AccountContext {
 }
 
 /**
+ * 카드 잔액이 모자라 위시를 바꿀 수 없는 상태인지 확인합니다.
+ *
+ * 잔액을 한 번도 조회하지 못한 계좌는 모자란지 알 수 없어 false입니다.
+ */
+export async function hasUnresolvedShortage() {
+  const { account } = await loadAccountContext();
+  return account.unresolvedShortage !== null && account.unresolvedShortage > 0;
+}
+
+/**
  * 요청 쿠키의 persona로 서버 클라이언트를 만들고 첫 카드잔액계좌를 찾습니다.
  *
  * @throws {@link CardBalanceAccountMissingError} 계좌를 하나도 받지 못했을 때 발생합니다.

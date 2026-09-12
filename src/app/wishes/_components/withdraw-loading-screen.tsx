@@ -70,6 +70,11 @@ export function WithdrawLoadingScreen({
   useEffect(() => {
     if (result === null || !isAnimationDone) return;
 
+    if (!result.ok && result.code === "BALANCE_MISMATCH_LOCKED") {
+      router.replace("/adjust");
+      return;
+    }
+
     if (result.ok) {
       router.replace(
         `${doneHref}${doneHref.includes("?") ? "&" : "?"}event=${result.eventId}`,
