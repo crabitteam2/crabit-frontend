@@ -2,11 +2,12 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, expect, it, vi } from "vitest";
 import { WishPhotoForm } from "./wish-photo-form";
 
-const { createWish, push } = vi.hoisted(() => ({
+const { createWish, push, replace } = vi.hoisted(() => ({
   createWish: vi.fn(),
   push: vi.fn(),
+  replace: vi.fn(),
 }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push, replace }) }));
 vi.mock("next/image", () => ({
   default: ({ alt }: { alt: string }) => <span aria-label={alt} />,
 }));

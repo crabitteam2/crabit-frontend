@@ -6,7 +6,8 @@ import {
   readPersonaTokenConfiguration,
   type PersonaTokenConfiguration,
 } from "../../config/persona-tokens";
-import { FIXED_PERSONA, isPersona, type Persona } from "../persona/persona";
+import { isPersona, type Persona } from "../persona/persona";
+import { resolveRequestPersona } from "../persona/cookies";
 import type { paths } from "./generated/crabit-backend";
 
 /**
@@ -42,7 +43,7 @@ export function createServerApiClient(
   const tokens = (dependencies.loadTokens ?? defaultLoadTokens)(environment);
   const persona = resolvePersona(context, environment);
   const token =
-    persona === null || tokens.active === null ? null : tokens.active[persona];
+    persona === null || tokens.active === null ? null : tokens.active[persona] ?? null;
 
   return createClient<paths>({
     baseUrl: environment.backendUrl.href,
@@ -66,7 +67,7 @@ function resolvePersona(
   if ("request" in context && context.request !== undefined) {
     return environment.profilePolicy.credentialNamespace === null
       ? null
-      : FIXED_PERSONA;
+      : resolveRequestPersona(context.request.headers, environment.profilePolicy.credentialNamespace);
   }
-  return isPersona(context.persona) ? context.persona : null;
+  return isPersona(context.persona) && !(environment.backendProfile === "e2e" && context.persona.startsWith("grade-")) ? context.persona : null;
 }

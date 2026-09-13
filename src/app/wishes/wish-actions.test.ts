@@ -134,6 +134,7 @@ describe("위시 쓰기 액션", () => {
       await expect(abandonWishAction(wishId, 4)).resolves.toEqual({
         ok: false,
         message,
+        code,
       });
       expect(revalidatePath).not.toHaveBeenCalled();
     },
@@ -170,6 +171,7 @@ describe("위시 쓰기 액션", () => {
     await expect(completeWishAction(wishId, 5)).resolves.toEqual({
       ok: false,
       message: "지금은 처리할 수 없는 위시예요.",
+      code: "INVALID_STATE_TRANSITION",
     });
     expect(revalidatePath).not.toHaveBeenCalled();
   });
@@ -252,6 +254,7 @@ describe("위시 쓰기 액션", () => {
     ).resolves.toEqual({
       ok: false,
       message: "카드에 남은 금액보다 많아요. 금액을 다시 확인해주세요.",
+      code: "INSUFFICIENT_AVAILABLE_BALANCE",
     });
     expect(revalidatePath).not.toHaveBeenCalled();
   });

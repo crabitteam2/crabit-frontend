@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { isFinishedState } from "../../_components/wish-detail";
 import { PullToRefresh } from "@/app/_components/pull-to-refresh";
 import { AccountSelect } from "../../_components/account-select";
 import { ScreenHeader } from "../../_components/screen-header";
@@ -13,9 +14,7 @@ export default async function DepositAccountPage({
   const { wishId } = await params;
   const view = await loadFundFlow(wishId);
   if (view === null) notFound();
-  if (view.unresolvedShortage !== null && view.unresolvedShortage > 0) {
-    redirect("/adjust");
-  }
+  if (isFinishedState(view.wish.state)) redirect(`/wishes/${wishId}`);
 
   const sources = view.others.filter((wish) => wish.amount > 0);
 

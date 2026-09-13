@@ -5,7 +5,7 @@ import { getWeeklyRecap } from "@/lib/http/recaps";
 import { unwrapResult } from "@/lib/http/result";
 import { getAcademySharedCard } from "@/lib/http/shared-cards";
 import type { ServerApiClient } from "@/lib/http/server";
-import { NICKNAME } from "@/lib/mock/home";
+import { readPersonaDisplayName } from "@/lib/persona/display-name-server";
 import {
   fromIsoDate,
   toSavingPeriodLabel,
@@ -43,12 +43,10 @@ export interface WeeklyRecapView {
  *
  * 리캡이 아직 없으면 null입니다.
  */
-export async function loadWeeklyRecapView(
-  weekStart?: string,
-): Promise<WeeklyRecapView | null> {
+export async function loadWeeklyRecapView(): Promise<WeeklyRecapView | null> {
   const { client, cardBalanceAccountId, account } = await loadAccountContext();
   const recap = unwrapResult(
-    await getWeeklyRecap(client, { cardBalanceAccountId, weekStart }),
+    await getWeeklyRecap(client, { cardBalanceAccountId }),
   );
   if (recap.status !== "SUCCEEDED" || recap.result === null) return null;
 
@@ -56,7 +54,7 @@ export async function loadWeeklyRecapView(
 
   return {
     savings: toSavings(recap.result),
-    growth: toGrowth(recap.result),
+    growth: toGrowth(recap.result, await readPersonaDisplayName()),
     stories: {
       headline: recap.result.page3AcademySuccessStories.messageSummary,
       description: toStoryDescription(recap.result, cards),
@@ -76,13 +74,13 @@ function toSavings(result: WeeklyRecapResult) {
   };
 }
 
-function toGrowth(result: WeeklyRecapResult) {
+function toGrowth(result: WeeklyRecapResult, nickname: string) {
   const report = result.page2GrowthReport;
 
   return {
     headline: report.messageGrowth ?? report.messageVisits,
     description: report.messageGrowth === null ? "" : report.messageVisits,
-    nickname: NICKNAME,
+    nickname,
     totalVisits: report.totalVisits,
     growthPct: report.growthPct,
   };

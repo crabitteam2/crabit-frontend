@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { putFlowMark } from "./fund-ticket";
 import { useRef, useState } from "react";
 import { useWishForm } from "@/lib/forms/use-wish-form";
 import { formEnter } from "@/lib/forms/form-keyboard";
@@ -118,6 +119,7 @@ export function WishEditForm({
         return;
       }
 
+      putFlowMark(`info-done:${wishId}`);
       router.push(donePath);
     } finally {
       busy.current = false;

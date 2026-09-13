@@ -6,7 +6,7 @@ import {
   readPersonaTokenConfiguration,
   type PersonaTokenConfiguration,
 } from "../../config/persona-tokens";
-import { FIXED_PERSONA } from "../persona/persona";
+import { resolveRequestPersona } from "../persona/cookies";
 
 const FORWARDED_METHODS = new Set(["GET", "POST", "PUT", "PATCH", "DELETE"]);
 const METHODS_WITH_BODY = new Set(["POST", "PUT", "PATCH", "DELETE"]);
@@ -84,6 +84,12 @@ export async function proxyBackendRequest(
     !environment.profilePolicy.allowsE2eUpstream
   ) {
     return errorResponse(404, "BFF_NOT_FOUND", "BFF route is not found");
+  }
+
+  const namespace = environment.profilePolicy.credentialNamespace;
+  if (namespace !== null) {
+    const persona = resolveRequestPersona(request.headers, namespace);
+    if (!persona || !tokenConfiguration.active?.[persona]) return errorResponse(401, "PERSONA_INVALID", "Persona selection is invalid");
   }
 
   const behaviorPath = pathSegments[0] === "v1" && pathSegments[1] === "academies" &&
@@ -304,10 +310,9 @@ function injectServerCredential(
     return;
   }
 
-  upstreamHeaders.set(
-    "Authorization",
-    `Bearer ${tokenConfiguration.active[FIXED_PERSONA]}`,
-  );
+  const persona = resolveRequestPersona(browserHeaders, namespace);
+  const token = persona ? tokenConfiguration.active[persona] : null;
+  if (token) upstreamHeaders.set("Authorization", `Bearer ${token}`);
 }
 
 /** 허용되지 않은 HTTP 메서드에 대한 정규화된 405 응답을 생성합니다. */

@@ -1,7 +1,7 @@
-import { readAmountQuery, queryValue } from "@/lib/forms/wish-form-query";
-import { FormQueryError } from "@/app/wishes/_components/form-query-error";
-import { notFound } from "next/navigation";
+import { queryValue } from "@/lib/forms/wish-form-query";
+import { notFound, redirect } from "next/navigation";
 import type { FundCounterpartRef } from "../../../_components/fund-counterpart";
+import { isFinishedState } from "../../../_components/wish-detail";
 import { WithdrawLoadingScreen } from "../../../_components/withdraw-loading-screen";
 import {
   CARD_COUNTERPART_ID,
@@ -19,14 +19,14 @@ export default async function WithdrawLoadingPage({
   const { wishId } = await params;
   const view = await loadFundFlow(wishId);
   if (view === null) notFound();
+  if (isFinishedState(view.wish.state)) redirect(`/wishes/${wishId}`);
 
   const selectPath = `/wishes/${wishId}/withdraw`;
-  const query = await searchParams;
-  const destination = findCounterpart(view, queryValue(query, "to"));
-  if (destination === null) return <FormQueryError backHref={selectPath} />;
-
-  const amount = readAmountQuery(query, Number.MAX_SAFE_INTEGER);
-  if (amount === null) return <FormQueryError backHref={selectPath} />;
+  const destination = findCounterpart(
+    view,
+    queryValue(await searchParams, "to"),
+  );
+  if (destination === null) redirect(selectPath);
 
   const destinationId =
     destination.kind === "card" ? CARD_COUNTERPART_ID : destination.wish.id;
@@ -43,11 +43,11 @@ export default async function WithdrawLoadingPage({
   return (
     <WithdrawLoadingScreen
       wishId={wishId}
-      amount={amount}
       expectedVersion={view.wish.version}
       destination={destinationRef}
-      amountHref={`/wishes/${wishId}/withdraw/amount?to=${destinationId}`}
-      doneHref={`/wishes/${wishId}/withdraw/done?to=${destinationId}&amount=${amount}`}
+      ticketName={`withdraw:${wishId}:${destinationId}`}
+      amountHref={`${selectPath}/amount?to=${destinationId}`}
+      doneHref={`${selectPath}/done?to=${destinationId}`}
     />
   );
 }

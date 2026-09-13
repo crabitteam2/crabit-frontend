@@ -108,10 +108,23 @@ try {
     ifMatch: "7",
   });
   assert.equal(
-    upstreamRequests.at(-1)?.headers.authorization,
-    `Bearer ${e2eTokens.tokens.owner}`,
+    upstreamRequests.at(-1)?.headers.authorization === `Bearer ${e2eTokens.tokens.friend}`,
+    true,
+    "Selected friend cookie must select the friend credential, not the default owner",
   );
-  assert.equal(forwarded.body.includes(Buffer.from(e2eTokens.tokens.owner)), false);
+  assertSecretsAbsent(forwarded.body.toString("utf8"), Object.values(e2eTokens.tokens));
+
+  const defaultIdentity = await rawRequest(appOrigin, "/api/backend/v1/echo");
+  assert.equal(defaultIdentity.status, 200);
+  assert.equal(upstreamRequests.at(-1)?.headers.authorization === `Bearer ${e2eTokens.tokens.owner}`, true,
+    "Only a missing persona cookie may use the default owner");
+  const beforeInvalidIdentity = upstreamRequests.length;
+  for (const cookie of ["crabit-e2e-persona=unknown", "crabit-e2e-persona=friend; crabit-e2e-persona=owner"]) {
+    const invalid = await rawRequest(appOrigin, "/api/backend/v1/echo", {headers:{Cookie:cookie}});
+    assert.equal(invalid.status, 401);
+    assert.equal(upstreamRequests.length, beforeInvalidIdentity,
+      "Invalid or duplicated identity must not reach the upstream");
+  }
 
   const binaryBody = Buffer.from([0, 255, 1, 254]);
   const binary = await fetch(`${appOrigin}/api/backend/v1/binary`, {
@@ -173,6 +186,22 @@ try {
   });
   nextProcess = running.process;
   const demoOrigin = `http://127.0.0.1:${demoPort}`;
+  for (const grade of [3, 4, 5, 6]) {
+    const selected = await rawRequest(demoOrigin, "/api/demo/persona", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: Buffer.from(JSON.stringify({persona:`grade-${grade}`})),
+    });
+    assert.equal(selected.status, 204);
+    const cookie = selected.headers["set-cookie"]?.[0]?.split(";", 1)[0];
+    assert.equal(cookie, `crabit-demo-persona=grade-${grade}`);
+    const forwardedGrade = await rawRequest(demoOrigin, "/api/backend/v1/echo", {
+      headers: {Cookie:cookie, Authorization:"Bearer browser-secret"},
+    });
+    assert.equal(forwardedGrade.status, 200);
+    assert.equal(upstreamRequests.at(-1)?.headers.authorization === `Bearer ${demoTokens.tokens[`grade-${grade}`]}`, true,
+      "Each demo representative must forward its own server credential");
+    assertSecretsAbsent(forwardedGrade.body.toString("utf8"), Object.values(demoTokens.tokens));
+  }
   const beforeDeniedE2e = upstreamRequests.length;
   const deniedE2e = await fetch(`${demoOrigin}/api/backend/e2e/scenario`, {
     method: "POST",
@@ -258,6 +287,10 @@ function createTokenNamespace(namespace) {
         blocked: "CRABIT_DEMO_TOKEN_BLOCKED",
         "other-academy": "CRABIT_DEMO_TOKEN_OTHER_ACADEMY",
         staff: "CRABIT_DEMO_TOKEN_STAFF",
+        "grade-3": "CRABIT_DEMO_TOKEN_GRADE_3",
+        "grade-4": "CRABIT_DEMO_TOKEN_GRADE_4",
+        "grade-5": "CRABIT_DEMO_TOKEN_GRADE_5",
+        "grade-6": "CRABIT_DEMO_TOKEN_GRADE_6",
       };
   const tokens = Object.fromEntries(Object.keys(variables).map((persona) => [
     persona,

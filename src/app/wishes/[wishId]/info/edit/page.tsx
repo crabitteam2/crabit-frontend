@@ -1,7 +1,8 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { getWish } from "@/lib/http/wishes";
 import { unwrapResult } from "@/lib/http/result";
 import { loadAccountContext } from "../../../load-account";
+import { isFinishedState } from "../../../_components/wish-detail";
 import { WishEditForm } from "../../../_components/wish-edit-form";
 import {
   fromIsoDate,
@@ -18,6 +19,7 @@ export default async function WishEditPage({
   const result = await getWish(client, { cardBalanceAccountId, wishId });
   if (!result.ok && result.error.status === 404) notFound();
   const wish = unwrapResult(result);
+  if (isFinishedState(wish.state)) redirect(`/wishes/${wishId}`);
 
   return (
     <WishEditForm

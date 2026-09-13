@@ -5,6 +5,9 @@ const getWeeklyRecap = vi.fn();
 const getAcademySharedCard = vi.fn();
 
 vi.mock("server-only", () => ({}));
+vi.mock("@/lib/persona/display-name-server", () => ({
+  readPersonaDisplayName: async () => "4학년 대표",
+}));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 vi.mock("@/lib/http/server", () => ({ createServerApiClient: () => ({}) }));
 vi.mock("@/lib/http/card-balance-accounts", () => ({
@@ -126,6 +129,7 @@ describe("주간 리캡 화면 값", () => {
     expect(view?.growth.headline).toBe("지난주보다 방문이 60% 늘었어요.");
     expect(view?.growth.description).toBe("지난주 3명이 8번 방문했어요.");
     expect(view?.growth.totalVisits).toBe(8);
+    expect(view?.growth.nickname).toBe("4학년 대표");
     expect(view?.growth.growthPct).toBe(60);
   });
 

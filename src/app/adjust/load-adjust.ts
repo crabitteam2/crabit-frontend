@@ -18,7 +18,7 @@ const CARD_NUMBER = "0000-0000-0000-0000";
 
 /** 잔액 조정 화면이 그리는 데 필요한 카드와 위시입니다. */
 export interface AdjustView {
-  /** 부족액과 카드 잔액을 담은 카드 요약입니다. */
+  /** 부족액과 카드에 실제로 남은 금액을 담은 카드 요약입니다. */
   readonly card: AdjustCard;
   /** 돈을 꺼낼 수 있는 활성 위시입니다. */
   readonly wishes: AdjustWish[];
@@ -45,7 +45,7 @@ export async function loadAdjust(nickname: string): Promise<AdjustView | null> {
   return {
     card: {
       label: `${nickname}의 크래빗 카드`,
-      balance: account.displayAvailableBalance,
+      balance: account.actualCardBalance,
       shortage: account.unresolvedShortage,
       cardNumber: CARD_NUMBER,
     },

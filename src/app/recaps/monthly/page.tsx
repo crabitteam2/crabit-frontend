@@ -1,4 +1,5 @@
-import { NICKNAME } from "@/lib/mock/home";
+import { redirect } from "next/navigation";
+import { readPersonaDisplayName } from "@/lib/persona/display-name-server";
 import { loadMonthlyRecap } from "../load-recap";
 import { MonthlyRecapEmpty } from "../_components/monthly-recap-empty";
 import { MonthlyRecapScreen } from "../_components/monthly-recap-screen";
@@ -6,12 +7,21 @@ import {
   collectHighlights,
   pickHighlights,
   toMonthTabs,
+  toMonthlyRecapEmptyMessage,
   toSubjectParticle,
 } from "./monthly-recap-view";
 
-const MONTH_PATTERN = /^\d{4}-\d{2}$/;
+const MONTH_PATTERN = /^\d{4}-(?:0[1-9]|1[0-2])$/;
 
 const YEAR_PATTERN = /^\d{4}$/;
+
+/** 주소의 값이 달력에 있는 달과 해가 아니면 값을 떼고 기본 화면으로 되돌립니다. */
+function assertReadable(month: string | undefined, year: string | undefined) {
+  const hasBadMonth = month !== undefined && !MONTH_PATTERN.test(month);
+  const hasBadYear =
+    year !== undefined && (!YEAR_PATTERN.test(year) || Number(year) === 0);
+  if (hasBadMonth || hasBadYear) redirect("/recaps/monthly");
+}
 
 export default async function MonthlyRecapPage({
   searchParams,
@@ -20,15 +30,12 @@ export default async function MonthlyRecapPage({
 }) {
   const query = await searchParams;
   const selectedMonth = firstQueryValue(query.month);
-  const month =
-    selectedMonth !== undefined && MONTH_PATTERN.test(selectedMonth)
-      ? selectedMonth
-      : undefined;
   const selectedYear = firstQueryValue(query.year);
+  assertReadable(selectedMonth, selectedYear);
+
+  const month = selectedMonth;
   const chosenYear =
-    selectedYear !== undefined && YEAR_PATTERN.test(selectedYear)
-      ? Number(selectedYear)
-      : undefined;
+    selectedYear === undefined ? undefined : Number(selectedYear);
 
   const { recap, cardBalanceAccountId } = await loadMonthlyRecap(
     month,
@@ -47,7 +54,10 @@ export default async function MonthlyRecapPage({
         backHref="/"
         year={year}
         months={months}
-        message={`${monthNumber}월 리캡이 아직 완성되지 않았어요.\n${(monthNumber % 12) + 1}월 초에 다시 확인하세요.`}
+        message={toMonthlyRecapEmptyMessage(
+          recap.status,
+          recap.period.startDate,
+        )}
       />
     );
   }
@@ -56,13 +66,14 @@ export default async function MonthlyRecapPage({
     collectHighlights(recap.result),
     `${cardBalanceAccountId}:${recap.period.startDate}`,
   );
+  const nickname = await readPersonaDisplayName();
 
   return (
     <MonthlyRecapScreen
       backHref="/"
       year={year}
       months={months}
-      intro={`${monthNumber}월의 ${NICKNAME}${toSubjectParticle(NICKNAME)}`}
+      intro={`${monthNumber}월의 ${nickname}${toSubjectParticle(nickname)}`}
       typeTitle={recap.result.typeSection.typeTitle}
       typeMessage={recap.result.typeSection.message}
       highlights={highlights}

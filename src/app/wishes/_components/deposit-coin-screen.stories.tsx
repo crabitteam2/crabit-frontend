@@ -13,8 +13,9 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {
   args: {
     wishId: "w3",
-    amount: 5_000,
     expectedVersion: 1,
     source: { kind: "card" },
+    ticketName: "deposit:w3:card",
+    amountHref: "/wishes/w3/deposit/amount?from=card",
   },
 };

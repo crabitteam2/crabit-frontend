@@ -1,0 +1,67 @@
+{
+  "checkedAt": "2026-09-13T02:54:35.908Z",
+  "origin": "http://127.0.0.1:53029",
+  "observations": [
+    {
+      "grade": 3,
+      "accountId": "37985089-64f0-4efc-8c89-3c5afa13f706",
+      "balance": 34425,
+      "weekly": "SUCCEEDED",
+      "monthly": "NOT_ELIGIBLE",
+      "routes": [
+        "/home",
+        "/wishes",
+        "/feed",
+        "/recaps/weekly?weekStart=2026-08-31",
+        "/recaps/monthly?month=2026-08"
+      ]
+    },
+    {
+      "grade": 4,
+      "accountId": "5917ae27-9611-45e9-832f-37d2ab8a4f8c",
+      "balance": 58072,
+      "weekly": "SUCCEEDED",
+      "monthly": "SUCCEEDED",
+      "routes": [
+        "/home",
+        "/wishes",
+        "/feed",
+        "/recaps/weekly?weekStart=2026-08-31",
+        "/recaps/monthly?month=2026-08"
+      ]
+    },
+    {
+      "grade": 5,
+      "accountId": "f0f019e5-3c22-49d8-a192-f985560cf5aa",
+      "balance": 35550,
+      "weekly": "SUCCEEDED",
+      "monthly": "SUCCEEDED",
+      "routes": [
+        "/home",
+        "/wishes",
+        "/feed",
+        "/recaps/weekly?weekStart=2026-08-31",
+        "/recaps/monthly?month=2026-08"
+      ]
+    },
+    {
+      "grade": 6,
+      "accountId": "5f08199b-3edf-4aa6-beb2-d14788592e3c",
+      "balance": 54619,
+      "weekly": "SUCCEEDED",
+      "monthly": "NOT_ELIGIBLE",
+      "routes": [
+        "/home",
+        "/wishes",
+        "/feed",
+        "/recaps/weekly?weekStart=2026-08-31",
+        "/recaps/monthly?month=2026-08"
+      ]
+    }
+  ],
+  "mobileWidth": 375,
+  "overflow": false,
+  "staleContextRejected": true,
+  "duplicateCookieRejected": true,
+  "ownerRefreshPerformed": false
+}

@@ -6,6 +6,27 @@ const HIGHLIGHT_COUNT = 3;
 
 const TAB_COUNT = 5;
 
+/** 확정된 생성 제외와 생성 대기·실패를 구분합니다. */
+export function toMonthlyRecapEmptyMessage(
+  status: MonthlyRecap["status"],
+  startDate: string,
+  now: Date = new Date(),
+) {
+  const month = Number(startDate.slice(5, 7));
+  if (status === "NOT_ELIGIBLE")
+    return `${month}월에는 유효한 저축이 3건 미만이라 월간 리캡이 만들어지지 않았어요.`;
+  if (status === "FAILED")
+    return `${month}월 리캡을 만들지 못했어요.\n잠시 후 다시 확인해 주세요.`;
+  if (status === "GENERATING")
+    return `${month}월 리캡을 만들고 있어요.\n잠시 후 다시 확인해 주세요.`;
+  if (isCompletedMonth(startDate.slice(0, 7), now)) {
+    return startDate.slice(0, 7) < latestCompletedMonth(now)
+      ? `${month}월 리캡이 만들어지지 않았어요.`
+      : `${month}월 리캡이 아직 준비되지 않았어요.`;
+  }
+  return `${month}월 리캡은 한 달이 끝난 뒤에 확인할 수 있어요.`;
+}
+
 /** 도형에 넣을 후보 문장을 응답에서 순서대로 모읍니다. */
 export function collectHighlights(
   result: NonNullable<MonthlyRecap["result"]>,

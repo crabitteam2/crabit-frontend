@@ -21,17 +21,18 @@ export function EmptyFeed() {
           className="size-[310px]"
         />
         <p className="text-fg-neutral-muted pt-5 text-center text-[20px] leading-7 font-medium tracking-[-0.3px]">
-          학원 피드에 표시될 내용이 없어요.
-          <br />내 위시리스트를 공유해볼까요?
+          학원 피드에 표시될 위시가 없어요.
+          <br />
+          친구들이 등록하면 여기에서 볼 수 있어요.
         </p>
       </div>
       <div className="flex-1" />
       <div className="pb-[calc(55px+env(safe-area-inset-bottom))]">
         <Link
-          href="/wishes"
+          href="/feed/me"
           className="bg-brand-solid text-fg-contrast text-b3 flex h-14 w-full items-center justify-center rounded-xl px-6 font-semibold"
         >
-          내 위시리스트 공유하기
+          내 프로필 방문하기
         </Link>
       </div>
     </div>

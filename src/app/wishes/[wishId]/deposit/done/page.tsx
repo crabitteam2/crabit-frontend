@@ -1,8 +1,7 @@
-import { readAmountQuery, queryValue } from "@/lib/forms/wish-form-query";
-import { FormQueryError } from "@/app/wishes/_components/form-query-error";
-import { notFound } from "next/navigation";
+import { queryValue } from "@/lib/forms/wish-form-query";
+import { redirect } from "next/navigation";
 import { DepositDoneScreen } from "../../../_components/deposit-done-screen";
-import { loadFundFlow, findCounterpart } from "../../fund-flow";
+import { loadFundReceipt } from "../../../fund-receipt";
 
 export default async function DepositDonePage({
   params,
@@ -12,13 +11,13 @@ export default async function DepositDonePage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { wishId } = await params;
-  const view = await loadFundFlow(wishId);
-  if (view === null) notFound();
   const query = await searchParams;
-  const source = findCounterpart(view, queryValue(query, "from"));
-  const amount = readAmountQuery(query, Number.MAX_SAFE_INTEGER);
-  if (source === null || amount === null)
-    return <FormQueryError backHref={`/wishes/${wishId}/deposit`} />;
+  const receipt = await loadFundReceipt(
+    wishId,
+    queryValue(query, "event"),
+    "DEPOSIT",
+  );
+  if (receipt === null) redirect(`/wishes/${wishId}`);
 
-  return <DepositDoneScreen amount={amount} />;
+  return <DepositDoneScreen amount={receipt.amount} />;
 }
