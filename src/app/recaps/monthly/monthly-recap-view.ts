@@ -24,7 +24,7 @@ export function toMonthlyRecapEmptyMessage(
       ? `${month}월 리캡이 만들어지지 않았어요.`
       : `${month}월 리캡이 아직 준비되지 않았어요.`;
   }
-  return `${month}월 리캡은 한 달이 끝난 뒤에 확인할 수 있어요.`;
+  return `${month}월 리캡이 아직 완성되지 않았어요.\n${(month % 12) + 1}월 초에 다시 확인하세요.`;
 }
 
 /** 도형에 넣을 후보 문장을 응답에서 순서대로 모읍니다. */

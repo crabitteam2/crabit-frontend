@@ -37,9 +37,9 @@ describe("monthly recap status copy", () => {
     expect(toMonthlyRecapEmptyMessage("NOT_GENERATED", "2026-08-01", now)).toBe(
       "8월 리캡이 아직 준비되지 않았어요.",
     );
-    expect(
-      toMonthlyRecapEmptyMessage("NOT_GENERATED", "2026-09-01", now),
-    ).toContain("한 달이 끝난 뒤");
+    expect(toMonthlyRecapEmptyMessage("NOT_GENERATED", "2026-09-01", now)).toBe(
+      "9월 리캡이 아직 완성되지 않았어요.\n10월 초에 다시 확인하세요.",
+    );
   });
 });
 
