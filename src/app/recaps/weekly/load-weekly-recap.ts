@@ -5,7 +5,7 @@ import { getWeeklyRecap } from "@/lib/http/recaps";
 import { unwrapResult } from "@/lib/http/result";
 import { getAcademySharedCard } from "@/lib/http/shared-cards";
 import type { ServerApiClient } from "@/lib/http/server";
-import { NICKNAME } from "@/lib/mock/home";
+import { readPersonaDisplayName } from "@/lib/persona/display-name-server";
 import {
   fromIsoDate,
   toSavingPeriodLabel,
@@ -54,7 +54,7 @@ export async function loadWeeklyRecapView(): Promise<WeeklyRecapView | null> {
 
   return {
     savings: toSavings(recap.result),
-    growth: toGrowth(recap.result),
+    growth: toGrowth(recap.result, await readPersonaDisplayName()),
     stories: {
       headline: recap.result.page3AcademySuccessStories.messageSummary,
       description: toStoryDescription(recap.result, cards),
@@ -74,13 +74,13 @@ function toSavings(result: WeeklyRecapResult) {
   };
 }
 
-function toGrowth(result: WeeklyRecapResult) {
+function toGrowth(result: WeeklyRecapResult, nickname: string) {
   const report = result.page2GrowthReport;
 
   return {
     headline: report.messageGrowth ?? report.messageVisits,
     description: report.messageGrowth === null ? "" : report.messageVisits,
-    nickname: NICKNAME,
+    nickname,
     totalVisits: report.totalVisits,
     growthPct: report.growthPct,
   };

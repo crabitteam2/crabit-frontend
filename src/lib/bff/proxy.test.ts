@@ -384,10 +384,10 @@ describe("proxyBackendRequest", () => {
   });
 
   it.each(PERSONAS)(
-    "replaces browser credentials with the owner credential for a %s persona cookie",
+    "replaces browser credentials with the selected credential for a %s persona cookie",
     async (persona) => {
       const tokens = tokenConfiguration("e2e");
-      const token = tokens.active!.owner;
+      const token = tokens.active![persona];
       const request = frontendRequest("GET", "/v1/echo", {
         headers: {
           Authorization: "Bearer browser-value",
@@ -418,7 +418,7 @@ describe("proxyBackendRequest", () => {
     ["malformed encoding", "crabit-e2e-persona=%ZZ"],
     ["noncanonical encoding", "crabit-e2e-persona=%66riend"],
     ["whitespace-bearing", "crabit-e2e-persona= friend"],
-  ])("uses the owner credential for a %s persona cookie", async (_label, cookie) => {
+  ])("defaults only on absence and rejects a %s persona cookie", async (_label, cookie) => {
     const tokens = tokenConfiguration("e2e");
     const request = frontendRequest("GET", "/v1/echo", {
       headers: cookie === undefined ? undefined : { Cookie: cookie },
@@ -429,10 +429,13 @@ describe("proxyBackendRequest", () => {
       loadTokens: () => tokens,
     });
 
-    expect(response.status).toBe(200);
-    expect(received[0].headers.authorization).toBe(
-      `Bearer ${tokens.active!.owner}`,
-    );
+    if (_label === "missing" || _label === "stale namespace") {
+      expect(response.status).toBe(200);
+      expect(received[0].headers.authorization).toBe(`Bearer ${tokens.active!.owner}`);
+    } else {
+      expect(response.status).toBe(401);
+      expect(received).toHaveLength(0);
+    }
   });
 
   it("forwards a validated /e2e target only for the E2E backend profile", async () => {

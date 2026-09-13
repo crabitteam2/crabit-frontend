@@ -2,7 +2,7 @@ import "server-only";
 import { isJsonMediaType } from "../http/media-type";
 import { createHash, randomUUID } from "node:crypto";
 import type { BffEnvironment } from "../../config/env";
-import { FIXED_PERSONA } from "../persona/persona";
+import { resolveRequestPersona } from "../persona/cookies";
 import { proxyBackendRequest, type ProxyDependencies } from "../bff/proxy";
 import { readBffEnvironment } from "../../config/env";
 
@@ -38,7 +38,7 @@ export function currentContext(
 ): string | null {
   const namespace = environment.profilePolicy.credentialNamespace;
   if (!namespace) return null;
-  const persona = FIXED_PERSONA;
+  const persona = resolveRequestPersona(headers, namespace);
   const names = contextCookieNames(namespace);
   const rawEpoch = cookieValue(headers, names.persona);
   if (
