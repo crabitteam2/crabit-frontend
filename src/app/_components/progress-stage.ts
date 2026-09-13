@@ -14,6 +14,16 @@ export function toProgressPercent(amount: number, targetAmount: number) {
 }
 
 /**
+ * 진행률을 계약과 같은 방식으로 내림합니다.
+ *
+ * 공유 카드의 `progressPercent`가 내림 정수라 목표에 닿아야만 100입니다.
+ * 막대 길이와 낭독 값이 모두 이 값을 써서 내 화면과 공개 화면이 같게 보입니다.
+ */
+export function toDisplayPercent(percent: number) {
+  return Math.floor(percent);
+}
+
+/**
  * 백분율을 다음 캐릭터 단계로 올림해 대응합니다.
  * 경계값 10·30·60은 각각 현재 단계에 남고, 60을 초과하면 100 단계가 됩니다.
  */

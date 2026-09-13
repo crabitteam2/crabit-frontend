@@ -1,3 +1,5 @@
+import { toDisplayPercent } from "./progress-stage";
+
 const milestoneRatios = [0.25, 0.5, 0.75];
 
 function formatAmountLabel(amount: number) {
@@ -24,12 +26,17 @@ interface ProgressBarProps {
   targetAmount: number | null;
 }
 
-export function ProgressBar({ percent, targetAmount }: ProgressBarProps) {
+export function ProgressBar({
+  percent: rawPercent,
+  targetAmount,
+}: ProgressBarProps) {
+  const percent = toDisplayPercent(rawPercent);
+
   return (
     <div className="flex h-[75px] flex-col gap-[18px]">
       <div
         role="progressbar"
-        aria-valuenow={Math.round(percent)}
+        aria-valuenow={percent}
         aria-valuemin={0}
         aria-valuemax={100}
         className="bg-pink-1 h-7 overflow-hidden rounded-full"
