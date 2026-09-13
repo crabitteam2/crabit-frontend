@@ -43,12 +43,10 @@ export interface WeeklyRecapView {
  *
  * 리캡이 아직 없으면 null입니다.
  */
-export async function loadWeeklyRecapView(
-  weekStart?: string,
-): Promise<WeeklyRecapView | null> {
+export async function loadWeeklyRecapView(): Promise<WeeklyRecapView | null> {
   const { client, cardBalanceAccountId, account } = await loadAccountContext();
   const recap = unwrapResult(
-    await getWeeklyRecap(client, { cardBalanceAccountId, weekStart }),
+    await getWeeklyRecap(client, { cardBalanceAccountId }),
   );
   if (recap.status !== "SUCCEEDED" || recap.result === null) return null;
 
