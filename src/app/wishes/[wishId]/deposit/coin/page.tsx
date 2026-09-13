@@ -1,5 +1,5 @@
 import { queryValue } from "@/lib/forms/wish-form-query";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { isFinishedState } from "../../../_components/wish-detail";
 import { DepositCoinScreen } from "../../../_components/deposit-coin-screen";
 import type { FundCounterpartRef } from "../../../_components/fund-counterpart";
@@ -18,7 +18,7 @@ export default async function DepositCoinPage({
 }) {
   const { wishId } = await params;
   const view = await loadFundFlow(wishId);
-  if (view === null) notFound();
+  if (view === null) redirect("/wishes");
   if (isFinishedState(view.wish.state)) redirect(`/wishes/${wishId}`);
 
   const selectPath = `/wishes/${wishId}/deposit`;

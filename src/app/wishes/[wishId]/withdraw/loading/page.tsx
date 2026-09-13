@@ -1,5 +1,5 @@
 import { queryValue } from "@/lib/forms/wish-form-query";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import type { FundCounterpartRef } from "../../../_components/fund-counterpart";
 import { isFinishedState } from "../../../_components/wish-detail";
 import { WithdrawLoadingScreen } from "../../../_components/withdraw-loading-screen";
@@ -18,7 +18,7 @@ export default async function WithdrawLoadingPage({
 }) {
   const { wishId } = await params;
   const view = await loadFundFlow(wishId);
-  if (view === null) notFound();
+  if (view === null) redirect("/wishes");
   if (isFinishedState(view.wish.state)) redirect(`/wishes/${wishId}`);
 
   const selectPath = `/wishes/${wishId}/withdraw`;

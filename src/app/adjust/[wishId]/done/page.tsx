@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { WithdrawDoneScreen } from "@/app/wishes/_components/withdraw-done-screen";
 import { loadFundFlow } from "@/app/wishes/[wishId]/fund-flow";
 import { loadFundReceipt } from "@/app/wishes/fund-receipt";
@@ -13,7 +13,7 @@ export default async function AdjustDonePage({
 }) {
   const { wishId } = await params;
   const view = await loadFundFlow(wishId);
-  if (view === null) notFound();
+  if (view === null) redirect("/adjust");
 
   const query = await searchParams;
   const receipt = await loadFundReceipt(

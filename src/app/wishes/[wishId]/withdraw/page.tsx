@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { isFinishedState } from "../../_components/wish-detail";
 import { PullToRefresh } from "@/app/_components/pull-to-refresh";
 import { AccountSelect } from "../../_components/account-select";
@@ -13,7 +13,7 @@ export default async function WithdrawAccountPage({
 }) {
   const { wishId } = await params;
   const view = await loadFundFlow(wishId);
-  if (view === null) notFound();
+  if (view === null) redirect("/wishes");
   if (isFinishedState(view.wish.state)) redirect(`/wishes/${wishId}`);
 
   const targets = view.others.filter((wish) => wish.amount < wish.targetAmount);

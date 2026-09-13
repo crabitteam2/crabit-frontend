@@ -2,7 +2,7 @@ import {
   fromIsoDate,
   toSavingPeriodLabel,
 } from "@/app/wishes/_components/wish-period-format";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { getWish } from "@/lib/http/wishes";
 import { unwrapResult } from "@/lib/http/result";
 import { loadAccountContext } from "../../load-account";
@@ -20,7 +20,7 @@ export default async function NewWishDonePage({
   if (typeof wishId !== "string" || !wishId.trim()) redirect("/wishes/new");
   const { client, cardBalanceAccountId } = await loadAccountContext();
   const result = await getWish(client, { cardBalanceAccountId, wishId });
-  if (!result.ok && result.error.status === 404) notFound();
+  if (!result.ok && result.error.status === 404) redirect("/wishes");
   const wish = unwrapResult(result);
   if (isFinishedState(wish.state)) redirect(`/wishes/${wishId}`);
   const period =
