@@ -91,3 +91,15 @@ function serializeCookie(
   }
   return attributes.join("; ");
 }
+
+/** Absence preserves legacy Owner; malformed, duplicate and cross-profile values fail closed. */
+export function resolveRequestPersona(headers: Headers, namespace: PersonaNamespace): Persona | null {
+  const name = PERSONA_COOKIE_NAMES[namespace];
+  const present = (headers.get("cookie") ?? "").split(";").some((part) => {
+    const trimmed = part.trimStart();
+    return trimmed === name || trimmed.startsWith(`${name}=`);
+  });
+  if (!present) return "owner";
+  const persona = readPersonaCookie(headers, namespace);
+  return namespace === "e2e" && persona?.startsWith("grade-") ? null : persona;
+}

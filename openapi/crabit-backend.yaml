@@ -9244,8 +9244,8 @@ components:
       x-request-purpose-by-category:
         Cc: "계획\n메모"
         Cf: "계획​메모"
-        Zl: "계획메모"
-        Zp: "계획메모"
+        Zl: "계획 메모"
+        Zp: "계획 메모"
       value:
         error:
           code: INVALID_PURPOSE
@@ -9893,3 +9893,116 @@ components:
           traceId: example-shared-card-cursor
           fieldErrors: []
           details: {}
+x-demo-simulation-v1:
+  schemaVersion: 1
+  scope: demo-student-behavior-simulation
+  classification: demo-only cross-repository interface
+  backendHttpContract: Existing paths, schemas, authentication, status codes, errors and idempotency remain unchanged.
+  separateSurfaces:
+    dataset:
+      schema: api/demo-simulation-v1.schema.json
+      version: 1
+      format: JSON Schema 2020-12; strict versioned bundle
+      authority: Versioned manifest, raw checksum and independent invariant validation
+    frontendPersona:
+      path: /api/demo/persona
+      namespace: Available only for credentialNamespace=demo. /api/e2e/persona remains separate and retains existing six test personas; representative aliases are enabled there only for an explicit local simulation configuration. BackendProfile=prod has neither route nor synthetic credentials. APP_ENV=prod with backendProfile=demo remains the existing deployed-demo combination.
+      post_request: 'application/json object with exactly one required property persona. Dataset-enabled demo enum is grade-3, grade-4, grade-5, grade-6. Example: {"persona":"grade-3"}. Reject extra keys, UUIDs, tokens, owner and unknown aliases. Dataset-disabled legacy demo retains its current registry until explicit dataset activation.'
+      success: "POST and DELETE return 204 with no body and Cache-Control: no-store. Set or expire only the active namespace HttpOnly persona cookie; preserve existing Secure/SameSite/Path policy. Selection rotates persona session context and clears academy/feed/behavior context. DELETE clears selection and returns to the selector on the next page request."
+      errors: "Preserve the BFF's flat {code,message} response: 400 PERSONA_INVALID for malformed JSON, unsupported content type or invalid selection; 404 PERSONA_UNAVAILABLE for namespace mismatch; 405 PERSONA_METHOD_NOT_ALLOWED with Allow: POST, DELETE; 500 PERSONA_CONFIGURATION_ERROR for invalid registry/mapping. Add 403 PERSONA_ORIGIN_FORBIDDEN for rejected cross-origin state changes. All responses are no-store, and messages expose no token/config values. GET/HEAD/OPTIONS do not become a metadata API."
+      origin: Browser state-changing calls must have the exact configured same origin; reject mismatched Origin or Sec-Fetch-Site=cross-site. Non-browser test calls without Origin require the explicitly local e2e route/configuration, never a production-demo exception.
+      metadata: The /demo selection server component reads the validated four-record mapping and renders only persona, grade and displayName. It does not expose tokens or introduce a backend endpoint.
+      propagation: One server-side resolver validates the active namespace and cookie for SSR, BFF and behavior context. Missing/invalid demo selection returns pages to /demo before backend data fetch; data/BFF requests return 401 flat PERSONA_REQUIRED without making an Owner upstream call. No implicit FIXED_PERSONA fallback. A persona switch clears client caches and discards in-flight responses/events tagged with the old persona session.
+      credentials: Map aliases server-side to opaque demo credentials and exact manifest-bound academy/student/account identities. New representative credentials must be unique, separate from committed e2e tokens and existing legacy credentials. Never reinterpret existing friend/blocked/other-academy tokens as grade representatives. Legacy Owner mapping remains intact for explicit authorized use outside this selector. Missing or inconsistent target mapping fails activation before serving the dataset.
+    management: Non-web manifest-bound apply/restore; no backend HTTP import, reset or clock operation
+  moneyAndTime:
+    - All KRW values are bounded integer won; commands use positive/nonnegative amounts as in existing API. Signed ledger effects are bounded signed integers. Calculate using exact arithmetic with overflow checks before serialization.
+    - Virtual cash equals opening funding plus GRANT minus PURCHASE. Deposits/withdrawals/transfers/completion/abandonment/deletion change allocations, not card cash. COMPLETE emits WISH_COMPLETION_RETURN and leaves current wish_amount=0; a purchase is a separate cash event.
+    - Card cash and individual wish amounts cannot be negative. A purchase can leave allocations above observed cash until a successful balance lookup and an explicit adjustment decision. Preserve this pending mismatch; do not clamp, auto-withdraw or invent cash. Failed lookups preserve last successful balance and cannot establish a new mismatch.
+    - Active fully observed monthly grants sum to 10000..30000 KRW. Joining/partial months preserve scheduled versus occurred grants without pulling future grants before cutoff. Goal-frequency/visibility probabilities are stochastic inputs; final counts and completion ratios are measured, never repaired.
+    - Wire instants use RFC3339 UTC Z; period dates use Asia/Seoul. Replay business events are within [startInclusive,endExclusive). DB applied_at, snapshot_at and feed valid_from/valid_to must be observed at the same logical clock, not merely inferred from an injected Java Clock.
+    - At a coincident boundary close WEEK then MONTH for the preceding completed periods before any event at the new boundary. Persist completion or the actual eligibility/failure state before advancing. July/August months and every completed week are checked; last completed week is 2026-08-31..2026-09-07. Do not complete September month or September 7 week at cutoff.
+    - Raw IDs and request bytes remain immutable. Normalization maps runtime IDs through typed logical ID maps and excludes only explicitly enumerated transport metadata. It must preserve ordering, money, period membership, permissions, model results and causal references. A changed real ranking is a reproducibility failure, not something to sort away.
+  providerAndOwner:
+    owner_account_id: 00000000-0000-0000-0000-000000000301
+    routing: In the active demo dataset, exactly the 99 registered non-Owner accounts use the virtual cash ledger. Only Owner can reach DemoHttpCardBalanceProvider. Unknown, stale or unmapped accounts fail the lookup without an external call; never return a default successful balance. Manual, pre-deposit and daily lookups use the same routing.
+    external_contract: Preserve the existing POST {lookupId,accountId}, opaque bearer authentication, SUCCESS/FAILURE response validation, 16KiB bound, 2-second connect and 3-second request timeout, at most two attempts and same lookupId across retries. Virtual routing must not modify or consume the external console's versions, steps or retry journal.
+    owner_exception: Preserve Owner account UUID 00000000-0000-0000-0000-000000000301 and its existing user/student/authentication identity links. All selected existing demo activity, including Owner backend balance snapshots, balance observations, financial ledger, allocation history and checkpoints, may be replaced with the validated synthetic graph. Those old backend records are not protected rows and need not be retained or reconciled to the current external console balance. Validate internal integrity of the replacement graph on its own terms. Imported balances and observations carry persisted SIMULATION provenance and cannot assert an actual external lookup. Keep Owner among the 100; its replay uses simulated cash, while future permitted live Owner lookups route to the unchanged external provider. A later genuine external observation follows ordinary domain adjustment semantics and is not an apply-time precondition.
+    preservation: The complete protected set for Owner is identity/UUID and its identity links in the backend plus the external console configuration, active/version state, steps, consumption state and every lookup/retry request/result record. External console state is excluded from both apply and restore writes. Establish the bounded preservation window before a fresh complete read-only baseline immediately preceding application; prevent scheduled and explicit Owner lookups during this window, record and later restore scheduler settings, and revalidate the baseline before mutation. Preserve all records present then and verify full equality after apply and representative UI checks. A reported earlier 22 records plus 2 subsequent records is historical rework context, never a fixed expected total or deletion target; if more records exist, include them all. Drift during the window fails the preservation check and requires a new read-only baseline and revalidation, without rolling back or deleting console records. No console consumer API is a read-only check; zero remaining steps does not prevent failed lookups being added.
+    imported_provenance:
+      required: Persist sourceKind=SIMULATION plus datasetId, source artifact reference/digest and original logical observation/event identity in the imported internal observation/balance provenance mapping; sourceKind is a new internal dataset/import field, not an addition to public HTTP responses. Separate simulatedOccurredAt from actual importedAt in the application journal.
+      external_evidence: Do not populate an actual external-success assertion from simulation. Any historical simulated lookup identifier is scoped to the dataset source and cannot join a live console lookup/retry record. Existing real provider calls retain their actual lookupId and unchanged validation/retry contract; distinguish those genuine observations from imported SIMULATION records.
+      success_reporting: Import success APPLIED is evidence of DB application only. Report simulated observation successes separately from genuine external provider successes. A synthetic balance need not equal the console balance and that difference alone is not a dry-run failure.
+      replacement_examples:
+        - "Owner identity is unchanged, old backend balance/ledger/checkpoints differ, replacement synthetic graph is internally valid, console fingerprint is unchanged: application is permitted."
+        - "Owner UUID or authentication identity link changes: reject before writes."
+        - "A simulated SUCCESS is presented as a genuine external observation: reject provenance validation."
+        - "Console has additional records before the preservation window: capture and preserve the complete latest baseline, without enforcing a historical count."
+  isolation: Non-web apply/restore CLI only. No import/reset/clock endpoint in demo/prod, and no replay clock code in the normal bootJar. Replay and two-clock control live in src/simulation and a disposable owned loopback PostgreSQL process.
+  compatibility:
+    - Public product API and Python receiver versions/statuses/errors remain compatible. BFF dataset-enabled demo selection intentionally adds four explicit aliases and removes Owner fallback; preserve dataset-disabled legacy and separate e2e behavior.
+    - The new file schema is version 1 with strict readers. Future changes to required fields, event meaning, normalization or enum values require a new version and explicit migration, not permissive deserialization.
+    - No product, migration, OpenAPI, provider or Feature Run state was edited for this proposal. Source-level reads are not executed API tests. Scoped history import/restore, persisted SIMULATION provenance, identity preservation and complete console preservation remain implementation proof obligations; there is no old-Owner-backend-state preservation or forced external-balance reconciliation requirement.
+    - Current lifecycle has no supported deploy/cutover/remote dataset-application action. Implement and verify locally and prepare exact artifacts; remote execution needs a supported exact action and authoritative read-back. No harness extension is proposed.
+  behaviorContract:
+    commands: FEED_QUERY records returned accessible ordered IDs and real ranking request/response/context. IMPRESSION records actual visible item/context and existing dwell rules. CLICK retains all existing valid context, impression identity, card, position, actor, authorization and idempotency checks, but does not require a preceding FEED_EXPOSURE event. A valid click with no eligible matching exposure is allowed and remains unmatched; never fabricate exposure, drop the click, force event arrival order, or join on card/time alone. PROFILE_VISIT records its actual source and can be independent of a click. INFLUENCED_DECISION must cite a real earlier eligible signal of its declared type (exposure, click or visit), and still pass personal funds and goal constraints.
+    metrics:
+      matching: Match existing immutable actor/impression identity bound to context/card/position. Exposure and click independently satisfy the requested period, logical retention and current access. Absence of an eligible exposure does not invalidate an otherwise valid click.
+      counts: clickCount counts eligible AUTHOR_PROFILE click events; unmatchedClickCount counts clicks without an eligible matching exposure in the requested period. clickedExposedImpressionCount counts exposed actor/impression identities with at least one eligible click, at most one per exposed identity. ctr is null at exposureCount=0, otherwise clickedExposedImpressionCount/exposureCount.
+      example_vectors:
+        - case: one valid click, no exposure
+          exposureCount: 0
+          clickCount: 1
+          clickedExposedImpressionCount: 0
+          unmatchedClickCount: 1
+          ctr: null
+        - case: one exposure and two distinct valid clicks on its identity
+          exposureCount: 1
+          clickCount: 2
+          clickedExposedImpressionCount: 1
+          unmatchedClickCount: 0
+          ctr: 1
+        - case: exposure outside requested period, click inside
+          exposureCount: 0
+          clickCount: 1
+          clickedExposedImpressionCount: 0
+          unmatchedClickCount: 1
+          ctr: null
+      invalid_cases: Invalid/expired context, forged identity, wrong card/position/actor, hidden resource and duplicate-event conflict retain their existing rejection semantics. Allowing unmatched clicks does not waive authorization or context validation.
+  applicationContract:
+    surface: Non-web apply/restore CLI only. No import/reset/clock endpoint in demo/prod, and no replay clock code in the normal bootJar. Replay and two-clock control live in src/simulation and a disposable owned loopback PostgreSQL process.
+    manifest: Closed versioned application manifest binds operation, dataset/manifest/schema digests, exact code/schema versions, environment and DB identity, academy, all 100 logical-to-target account/student IDs, explicit replaceable dependency closure including Owner backend activity, protected Owner UUID and identity links, external-console baseline reference/digest with capture time and observed record totals, exclusions, expectedTargetRevision, beforeFingerprint, backupDigest and expectedAfterFingerprint. Protected identity and excluded console state are separate from replaceable Owner balance/observation/ledger/checkpoint rows. Secrets are supplied separately. apply/restore require explicit mode and exact supported external execution binding for remote targets; command presence is not remote authorization.
+    migration: V21 adds dataset registration, target mapping, virtual cash entries, source provenance and application journal/idempotency metadata. Unique constraints bind dataset+logical identity, cash source event and target application revision. Preserve V1..V20 bytes and ordinary runtime invariants. Existing V17 immutable financial triggers and V20 history clocks make ordinary selective DELETE/INSERT insufficient.
+    limited_restore: Implement a typed, manifest-bound management path with a fixed permitted table/column closure including the replaceable Owner demo activity. If V21 introduces scoped history-import exceptions, restrict execution to a dedicated non-web management identity, verify exact target rows and manifest inside the transaction, and deny the ordinary application role; a caller-controlled session flag alone is not authorization. Validate replacement-graph foreign keys, per-account ordering and checkpoint consistency, preserved Owner identity links and unchanged outside-closure fingerprints. These are internal graph/invariant checks, not retention of the old Owner graph or a comparison with external console balance. Never use global trigger disable, session_replication_role bypass, TRUNCATE, global clock changes or a backdated collection start. Prove this path on a disposable clone before any remote action.
+    atomicity: Acquire deterministic target/dataset locks and revalidate expected revision/fingerprints after locking. Back up complete affected rows and reverse references before mutation. A transaction commits the selected graph, preserved immutable generation bytes, mapping and journal together. Failures before commit roll back graph and journal. APPLIED is durable only after DB read-back. No partial table-by-table success is accepted.
+    idempotency: Same operation+target+dataset+manifest and an authoritative full post-state match yield NO_OP. Same key with differing payload, partial graph, stale target revision, ownership conflict or drift fails before writes. Concurrent identical attempts serialize; the loser verifies and returns NO_OP. Ambiguous transport outcome returns UNKNOWN and requires read-only journal/DB reconciliation, never an automatic retry.
+    restore: "Bind the exact backup digest, target and current applied revision/fingerprint. Restore the original selected backend graph/configuration atomically, keeping Owner UUID and identity links unchanged. External console state is always excluded from restoration: preserve the complete current external records, including additions since apply, never roll them back to an earlier backup baseline. Any post-apply backend user events or outside-closure backend drift block destructive restoration until explicitly resolved; do not erase them. Establish and verify a fresh bounded console preservation baseline for restore. Preserve the application journal as audit evidence rather than pretending application never occurred."
+    report_schema: "Required: schemaVersion=1, operation in GENERATE/VALIDATE/REPLAY/APPLY/RESTORE, mode in LOCAL/DRY_RUN/APPLY/RESTORE, status in VALID/INVALID/DRY_RUN_READY/APPLIED/NO_OP/RESTORED/CONFLICT/FAILED/UNKNOWN, datasetId, manifestDigest, targetIdentity or null for generation, beforeFingerprint, afterFingerprint, journalId, counts, errors, artifactRefs. errors contain code, rule, logicalId, occurredAt and sanitized message; irrelevant optional context is null, not invented."
+    cli_errors: "Stable private codes: SCHEMA_INVALID, CHECKSUM_MISMATCH, INVARIANT_VIOLATION, TARGET_MISMATCH, REVISION_CONFLICT, OWNER_IDENTITY_DRIFT, CONSOLE_BASELINE_DRIFT, DATASET_CONFLICT, RESTORE_DRIFT, CLOCK_MISMATCH, EXECUTION_NOT_BOUND, APPLICATION_UNKNOWN. Exit 0 only for successful VALID/DRY_RUN_READY/APPLIED/NO_OP/RESTORED; exit 2 for invalid input, 3 for state conflicts, 4 for failed prerequisites/execution, 5 for unknown possible-write outcome. These are not backend HTTP error codes."
+    examples:
+      - apply --dry-run performs no mutation and returns DRY_RUN_READY only after backup/target/schema/closure/protection checks.
+      - A lost connection after possible commit returns UNKNOWN and exit 5; subsequent read-only journal inspection determines committed versus unapplied state.
+      - A restore encountering a new representative deposit returns RESTORE_DRIFT and exit 3, leaving that deposit intact.
+      - "Owner old backend balance differs from the internally consistent imported SIMULATION balance and console balance: dry-run may succeed; no forced allocation reconciliation is required."
+      - "Console identity/configuration or lookup/retry fingerprint changes during the apply preservation window: return CONSOLE_BASELINE_DRIFT and stop further mutation; never delete the additional record. If DB commit already occurred, retain its journal and report preservation failure separately from the committed apply result."
+  populationAndPeriod:
+    population: 100
+    academyCount: 1
+    grades:
+      - 3
+      - 4
+      - 5
+      - 6
+    studentsPerGrade: 25
+    initialPopulation: 80
+    laterPopulation: 20
+    representatives:
+      - grade-3
+      - grade-4
+      - grade-5
+      - grade-6
+    representativeOwnerAllowed: false
+    virtualProviderAccounts: 99
+    startInclusive: 2026-05-31T15:00:00Z
+    endExclusive: 2026-09-10T15:00:00Z
+    timezone: Asia/Seoul
