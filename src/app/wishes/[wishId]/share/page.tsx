@@ -15,7 +15,7 @@ export default async function WishSharePage({
   return (
     <WishShareScreen
       wish={view.wish}
-      photoUrl={view.wish.imageUrl ?? null}
+      photo={view.wish.photo ?? null}
       closeHref={`/wishes/${wishId}`}
       writeHref={`/wishes/${wishId}/share/write`}
     />

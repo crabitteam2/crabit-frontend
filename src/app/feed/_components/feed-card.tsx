@@ -70,7 +70,7 @@ export function FeedCard({ card, href, impression }: FeedCardProps) {
       <div className="bg-pink-1 flex flex-col pb-6">
         <WishHeroContent
           character={look.character}
-          photoUrl={card.imageUrl ?? null}
+          photo={card.photo ?? null}
           headline={look.headline}
           headlinePaddingTop={look.headlinePaddingTop}
           headlinePaddingBottom={look.headlinePaddingBottom}

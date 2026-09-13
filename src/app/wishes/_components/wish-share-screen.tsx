@@ -3,18 +3,19 @@ import { toProgressPercent } from "@/app/_components/progress-stage";
 import type { WishDetail } from "./wish-detail";
 import { WishHeroScreen } from "./wish-hero-screen";
 import { toSavingPeriodLabel } from "./wish-period-format";
+import type { WishPhotoUrls } from "./wish-photo";
 import { getWishShareLook } from "./wish-share-theme";
 
 interface WishShareScreenProps {
   wish: WishDetail;
-  photoUrl: string | null;
+  photo: WishPhotoUrls | null;
   closeHref: string;
   writeHref: string;
 }
 
 export function WishShareScreen({
   wish,
-  photoUrl,
+  photo,
   closeHref,
   writeHref,
 }: WishShareScreenProps) {
@@ -28,7 +29,7 @@ export function WishShareScreen({
     <WishHeroScreen
       closeHref={closeHref}
       character={look.character}
-      photoUrl={photoUrl}
+      photo={photo}
       headline={look.headline}
       headlinePaddingTop={look.headlinePaddingTop}
       headlinePaddingBottom={look.headlinePaddingBottom}

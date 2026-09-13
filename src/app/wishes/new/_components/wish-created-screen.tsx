@@ -4,6 +4,7 @@ import {
   WishHeroScreen,
   type HeroCharacter,
 } from "@/app/wishes/_components/wish-hero-screen";
+import type { WishPhotoUrls } from "@/app/wishes/_components/wish-photo";
 import { emptyWishTheme } from "@/app/wishes/_components/wish-theme";
 
 const CHARACTER: HeroCharacter = {
@@ -19,7 +20,7 @@ interface WishCreatedScreenProps {
   period: string | null;
   depositHref: string;
   closeHref: string;
-  photoUrl: string | null;
+  photo: WishPhotoUrls | null;
 }
 
 export function WishCreatedScreen({
@@ -28,13 +29,13 @@ export function WishCreatedScreen({
   period,
   depositHref,
   closeHref,
-  photoUrl,
+  photo,
 }: WishCreatedScreenProps) {
   return (
     <WishHeroScreen
       closeHref={closeHref}
       character={CHARACTER}
-      photoUrl={photoUrl}
+      photo={photo}
       headline="위시리스트가 생성되었어요!"
       headlinePaddingTop={28}
       headlinePaddingBottom={24}

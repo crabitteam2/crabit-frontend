@@ -41,7 +41,11 @@ describe("종료 위시 목록 카드", () => {
       <WishCard
         wish={{
           ...abandonedWish,
-          imageUrl: "https://storage.test/signed/medium",
+          photo: {
+            small: "https://storage.test/signed/small",
+            medium: "https://storage.test/signed/medium",
+            large: "https://storage.test/signed/large",
+          },
         }}
         tone="pink"
       />,

@@ -47,7 +47,7 @@ describe("위시 상세 요약 카드", () => {
     );
   });
 
-  it("renders the fresh detail variant supplied by the owner Wish response", () => {
+  it("정보 타일에는 가장 작은 사진을 쓴다", () => {
     const { container } = render(
       <WishSummaryCard
         wish={{
@@ -56,14 +56,18 @@ describe("위시 상세 요약 카드", () => {
           abandonmentAmount: null,
           state: "IN_PROGRESS",
           visibility: "PRIVATE",
-          imageUrl: "https://storage.test/signed/large",
+          photo: {
+            small: "https://storage.test/signed/small",
+            medium: "https://storage.test/signed/medium",
+            large: "https://storage.test/signed/large",
+          },
         }}
       />,
     );
 
     expect(container.querySelector("img")).toHaveAttribute(
       "src",
-      "https://storage.test/signed/large",
+      "https://storage.test/signed/small",
     );
   });
 });
