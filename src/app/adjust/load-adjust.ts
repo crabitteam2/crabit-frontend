@@ -1,16 +1,13 @@
 import "server-only";
 
 import { toProgressPercent } from "@/app/_components/progress-stage";
-import { unwrapResult } from "@/lib/http/result";
-import { listWishes } from "@/lib/http/wishes";
+import { listAllWishes } from "../wishes/list-all-wishes";
 import {
   toOwnedWishItem,
   type WishItemState,
 } from "../wishes/_components/wish-item";
 import { loadAccountContext } from "../wishes/load-account";
 import type { AdjustCard, AdjustWish } from "./_components/adjust-wish-list";
-
-const WISH_PAGE_LIMIT = 100;
 
 const FINISHED_STATES: readonly WishItemState[] = ["COMPLETED", "ABANDONED"];
 
@@ -35,12 +32,7 @@ export async function loadAdjust(nickname: string): Promise<AdjustView | null> {
     return null;
   }
 
-  const page = unwrapResult(
-    await listWishes(client, {
-      cardBalanceAccountId,
-      limit: WISH_PAGE_LIMIT,
-    }),
-  );
+  const page = await listAllWishes(client, cardBalanceAccountId);
 
   return {
     card: {
@@ -49,7 +41,7 @@ export async function loadAdjust(nickname: string): Promise<AdjustView | null> {
       shortage: account.unresolvedShortage,
       cardNumber: CARD_NUMBER,
     },
-    wishes: page.items
+    wishes: page
       .map(toOwnedWishItem)
       .filter(
         (wish) => wish.amount > 0 && !FINISHED_STATES.includes(wish.state),
