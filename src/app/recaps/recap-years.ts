@@ -1,12 +1,10 @@
 import "server-only";
 
 import { unwrapResult } from "@/lib/http/result";
-import { listWishes } from "@/lib/http/wishes";
+import { listAllWishes } from "../wishes/list-all-wishes";
 import { loadAccountContext } from "../wishes/load-account";
 import { getMonthlyRecap } from "@/lib/http/recaps";
 import { latestCompletedMonth } from "./monthly/monthly-recap-view";
-
-const WISH_PAGE_LIMIT = 100;
 
 /**
  * 월간 리캡이 있는 연도를 오래된 순으로 찾습니다.
@@ -17,12 +15,10 @@ const WISH_PAGE_LIMIT = 100;
  */
 export async function listRecapYears(): Promise<number[]> {
   const { client, cardBalanceAccountId } = await loadAccountContext();
-  const wishes = unwrapResult(
-    await listWishes(client, { cardBalanceAccountId, limit: WISH_PAGE_LIMIT }),
-  );
-  if (wishes.items.length === 0) return [];
+  const wishes = await listAllWishes(client, cardBalanceAccountId);
+  if (wishes.length === 0) return [];
 
-  const first = wishes.items
+  const first = wishes
     .map((wish) => wish.createdAt)
     .reduce((oldest, value) => (value < oldest ? value : oldest));
   const months = toCompletedMonths(first.slice(0, 7), latestCompletedMonth());

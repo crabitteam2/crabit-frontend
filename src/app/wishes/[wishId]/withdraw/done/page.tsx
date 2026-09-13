@@ -1,5 +1,5 @@
 import { queryValue } from "@/lib/forms/wish-form-query";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { WithdrawDoneScreen } from "../../../_components/withdraw-done-screen";
 import { loadFundReceipt } from "../../../fund-receipt";
 import { findCounterpart, loadFundFlow } from "../../fund-flow";
@@ -13,7 +13,7 @@ export default async function WithdrawDonePage({
 }) {
   const { wishId } = await params;
   const view = await loadFundFlow(wishId);
-  if (view === null) notFound();
+  if (view === null) redirect("/wishes");
 
   const query = await searchParams;
   const receipt = await loadFundReceipt(

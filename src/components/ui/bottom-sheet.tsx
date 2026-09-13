@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import closeIcon from "@/../public/images/common/close.svg";
+import closeIcon from "@/../public/images/wishes/close-32.svg";
 
 const TRANSITION_MS = 300;
 

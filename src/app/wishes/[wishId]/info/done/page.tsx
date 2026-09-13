@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { getWish } from "@/lib/http/wishes";
 import { unwrapResult } from "@/lib/http/result";
 import { loadAccountContext } from "../../../load-account";
@@ -18,14 +18,14 @@ export default async function WishEditDonePage({
   const { wishId } = await params;
   const { client, cardBalanceAccountId } = await loadAccountContext();
   const result = await getWish(client, { cardBalanceAccountId, wishId });
-  if (!result.ok && result.error.status === 404) notFound();
+  if (!result.ok && result.error.status === 404) redirect("/wishes");
   const wish = unwrapResult(result);
   if (isFinishedState(wish.state)) redirect(`/wishes/${wishId}`);
 
   return (
     <FlowMarkGuard
       name={`info-done:${wishId}`}
-      fallbackHref={`/wishes/${wishId}/info`}
+      fallbackHref={`/wishes/${wishId}`}
     >
       <WishEditDoneScreen
         purpose={wish.purpose}

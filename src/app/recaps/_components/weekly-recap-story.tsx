@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { WeeklyRecapFrame } from "./weekly-recap-frame";
 import { WeeklyRecapGrowth } from "./weekly-recap-growth";
@@ -29,7 +30,7 @@ interface WeeklyRecapStoryProps {
  *
  * 한 장이 다 차면 다음 장으로 넘어가고, 화면을 누르고 있으면 멈춥니다.
  * 짧게 누르면 왼쪽은 이전 장, 오른쪽은 다음 장으로 갑니다.
- * 첫 장에서 왼쪽을, 마지막 장에서 오른쪽을 눌러도 넘어가지 않습니다.
+ * 첫 장에서 왼쪽을 눌러도 넘어가지 않고, 마지막 장이 끝나면 닫기와 같은 곳으로 나갑니다.
  */
 export function WeeklyRecapStory({
   closeHref,
@@ -38,6 +39,7 @@ export function WeeklyRecapStory({
   growth,
   stories,
 }: WeeklyRecapStoryProps) {
+  const router = useRouter();
   const [step, setStep] = useState(1);
   const [isPaused, setIsPaused] = useState(false);
   const pressedAt = useRef(0);
@@ -45,7 +47,10 @@ export function WeeklyRecapStory({
   const isLast = step === STEP_COUNT;
 
   function goNext() {
-    if (isLast) return;
+    if (isLast) {
+      router.replace(closeHref);
+      return;
+    }
     setStep((current) => current + 1);
   }
 

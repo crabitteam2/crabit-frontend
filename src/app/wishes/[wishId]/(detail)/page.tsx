@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { PullToRefresh } from "@/app/_components/pull-to-refresh";
 import { HistorySection } from "../../_components/history-section";
 import { ScreenHeader } from "../../_components/screen-header";
@@ -20,7 +20,7 @@ export default async function WishDetailPage({
   const { wishId } = await params;
   const query = await searchParams;
   const view = await loadWishDetail(wishId);
-  if (view === null) notFound();
+  if (view === null) redirect("/wishes");
 
   const { wish, movements } = view;
 

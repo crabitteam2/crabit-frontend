@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { isFinishedState } from "@/app/wishes/_components/wish-detail";
 import { WithdrawLoadingScreen } from "@/app/wishes/_components/withdraw-loading-screen";
 import { loadFundFlow } from "@/app/wishes/[wishId]/fund-flow";
@@ -10,7 +10,7 @@ export default async function AdjustLoadingPage({
 }) {
   const { wishId } = await params;
   const view = await loadFundFlow(wishId);
-  if (view === null) notFound();
+  if (view === null) redirect("/adjust");
   if (isFinishedState(view.wish.state)) redirect("/adjust");
 
   return (

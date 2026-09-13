@@ -7,8 +7,6 @@ export interface WishDetail extends OwnedWishItem {
   readonly startDate: string;
   /** 목표 날짜이며 없으면 빈 문자열입니다. */
   readonly targetDate: string;
-  /** 학생이 올린 목표 사진입니다. */
-  readonly imageUrl?: string;
   /** 위시의 공개 범위이며 `PRIVATE`이면 아직 학원 피드에 공유하지 않은 위시입니다. */
   readonly visibility: components["schemas"]["WishVisibility"];
 }

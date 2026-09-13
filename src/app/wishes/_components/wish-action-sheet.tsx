@@ -76,7 +76,10 @@ export function WishActionSheet({ wish, onClose }: WishActionSheetProps) {
       >
         {wish === null ? null : (
           <>
-            <Link href={`/wishes/${wish.id}/info`} className={ACTION_STYLE}>
+            <Link
+              href={`/wishes/${wish.id}/info/edit`}
+              className={ACTION_STYLE}
+            >
               정보 수정
             </Link>
             <button

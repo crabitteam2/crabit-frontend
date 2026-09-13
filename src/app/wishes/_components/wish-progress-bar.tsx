@@ -1,3 +1,4 @@
+import { toDisplayPercent } from "@/app/_components/progress-stage";
 import type { WishTheme } from "./wish-theme";
 
 const MILESTONES = [10, 40, 70, 100];
@@ -9,17 +10,19 @@ interface WishProgressBarProps {
 }
 
 export function WishProgressBar({
-  percent,
+  percent: rawPercent,
   theme,
   compact,
 }: WishProgressBarProps) {
+  const percent = toDisplayPercent(rawPercent);
+
   return (
     <div
       className={`flex flex-col gap-2 pt-5 ${compact ? "pb-1" : "pb-[10px]"}`}
     >
       <div
         role="progressbar"
-        aria-valuenow={Math.round(percent)}
+        aria-valuenow={percent}
         aria-valuemin={0}
         aria-valuemax={100}
         className={`h-4 w-full overflow-hidden rounded-full ${theme.track}`}
