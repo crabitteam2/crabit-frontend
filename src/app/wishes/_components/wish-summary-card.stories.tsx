@@ -53,3 +53,39 @@ export const 포기_0원: Story = {
     },
   },
 };
+
+export const 사진: Story = {
+  args: {
+    wish: {
+      id: "w5",
+      purpose: "위시 텍스트 입력칸",
+      amount: 20_000,
+      abandonmentAmount: null,
+      targetAmount: 100_000,
+      state: "IN_PROGRESS",
+      visibility: "PRIVATE",
+      version: 1,
+      startDate: "26.08.24",
+      targetDate: "26.08.25",
+      imageUrl: "/images/feed/empty.png",
+    },
+  },
+};
+
+export const 사진_기간없음: Story = {
+  args: {
+    wish: {
+      id: "w6",
+      purpose: "볼펜",
+      amount: 930,
+      abandonmentAmount: null,
+      targetAmount: 5_000,
+      state: "IN_PROGRESS",
+      visibility: "PRIVATE",
+      version: 1,
+      startDate: "",
+      targetDate: "",
+      imageUrl: "/images/feed/empty.png",
+    },
+  },
+};

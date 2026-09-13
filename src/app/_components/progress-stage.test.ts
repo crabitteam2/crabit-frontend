@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { toProgressPercent, toProgressStage } from "./progress-stage";
+import {
+  toDisplayPercent,
+  toProgressPercent,
+  toProgressStage,
+} from "./progress-stage";
 
 describe("toProgressPercent", () => {
   test("returns the ratio as a percentage", () => {
@@ -31,5 +35,19 @@ describe("toProgressStage", () => {
     [100, 100],
   ])("maps %s%% to stage %s", (percent, stage) => {
     expect(toProgressStage(percent)).toBe(stage);
+  });
+});
+
+describe("toDisplayPercent", () => {
+  test("목표에 닿지 않으면 100으로 읽지 않는다", () => {
+    expect(toDisplayPercent(toProgressPercent(49_999, 50_000))).toBe(99);
+  });
+
+  test("목표에 닿으면 100으로 읽는다", () => {
+    expect(toDisplayPercent(toProgressPercent(50_000, 50_000))).toBe(100);
+  });
+
+  test("서버가 준 정수는 그대로 읽는다", () => {
+    expect(toDisplayPercent(99)).toBe(99);
   });
 });
