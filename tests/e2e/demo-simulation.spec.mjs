@@ -31,18 +31,59 @@ test("real demo representatives retain identity across SSR, BFF, navigation and 
     previousContext = behavior.contextId;
     await page.reload();
     await expect(page.getByTestId("demo-account-id")).toHaveText(accountId);
+    const weekStart = "2026-08-31";
+    const weeklyRoute = `/recaps/weekly?weekStart=${weekStart}`;
+    // Fetch before navigation so network latency does not consume the story's first slide.
+    const weeklyResponse = await context.request.get(`${origin}/api/backend/v1/card-balance-accounts/${accountId}${weeklyRoute}`);
+    expect(weeklyResponse.status()).toBe(200);
+    const weekly = await weeklyResponse.json();
+    expect(weekly.status).toBe("SUCCEEDED");
+    expect(weekly.period.startDate).toBe(weekStart);
+    expect(weekly.result).not.toBeNull();
     const routes = [];
-    for (const route of ["/home", "/wishes", "/feed", "/recaps/weekly?weekStart=2026-08-31", "/recaps/monthly?month=2026-08"]) {
+    for (const route of ["/home", "/wishes", "/feed", weeklyRoute, "/recaps/monthly?month=2026-08"]) {
       const response = await page.goto(`${origin}${route}`);
       expect(response.status()).toBe(200);
       await expect(page.getByRole("combobox", {name:"데모 대표",exact:true})).toHaveValue(`grade-${grade}`);
       await expect(page.locator("body")).not.toContainText("Application error");
+      if (route === "/home") {
+        await expect(page.getByText(`${grade}학년 대표의 크래빗 카드`, {exact:true})).toBeVisible();
+        await expect(page.locator("body")).toContainText(accounts.items[0].actualCardBalance.toLocaleString("ko-KR"));
+      }
+      if (route === "/feed") {
+        // A 200 shell can still contain a failed feed request. Require actual card content.
+        await expect(page.getByRole("link", {name:"방문하기",exact:true}).first()).toBeVisible({timeout:15000});
+        await expect(page.getByRole("alert")).toHaveCount(0);
+      }
+      if (route === weeklyRoute) {
+        const { achievement, streak, milestone } = weekly.result.page1LastWeekPerformance;
+        const headline = [achievement.message, streak.message, milestone.message]
+          .filter((message) => message !== null).join("\n");
+        expect(headline.trim()).not.toBe("");
+        await expect(page.getByText(headline, {exact:true})).toBeVisible();
+        const savingsCard = page.getByText("모인 금액", {exact:true}).locator("..");
+        await expect(savingsCard.getByText(achievement.netSavings.toLocaleString("ko-KR"), {exact:true})).toBeVisible();
+        const newWishCard = page.getByText("새로 등록한 위시", {exact:true}).locator("..");
+        await expect(newWishCard.getByText(`${achievement.newWishCount} 개`, {exact:true})).toBeVisible();
+        await expect(page.getByText("주간요약을 준비하고 있어요!", {exact:true})).toHaveCount(0);
+      }
+      if (route.startsWith("/recaps/monthly")) {
+        const resource = await context.request.get(`${origin}/api/backend/v1/card-balance-accounts/${accountId}/recaps/monthly?month=2026-08`);
+        expect(resource.status()).toBe(200);
+        const monthly = await resource.json();
+        if (monthly.status === "SUCCEEDED") {
+          await expect(page.getByText(`8월의 ${grade}학년 대표는`, {exact:true})).toBeVisible();
+          await expect(page.locator("body")).toContainText(monthly.result.typeSection.typeTitle);
+        } else if (monthly.status === "NOT_ELIGIBLE") {
+          await expect(page.locator("body")).toContainText("유효한 저축이 3건 미만");
+          await expect(page.locator("body")).not.toContainText("9월 초에 다시");
+        }
+      }
       routes.push(route);
     }
-    const weekly = await context.request.get(`${origin}/api/backend/v1/card-balance-accounts/${accountId}/recaps/weekly?weekStart=2026-08-31`);
     const monthly = await context.request.get(`${origin}/api/backend/v1/card-balance-accounts/${accountId}/recaps/monthly?month=2026-08`);
-    expect(weekly.status()).toBe(200); expect(monthly.status()).toBe(200);
-    observations.push({grade, accountId, balance: accounts.items[0].actualCardBalance, weekly: (await weekly.json()).status, monthly: (await monthly.json()).status, routes});
+    expect(monthly.status()).toBe(200);
+    observations.push({grade, accountId, balance: accounts.items[0].actualCardBalance, weekly: weekly.status, weeklyVisibleBody: true, monthly: (await monthly.json()).status, routes});
   }
   await page.setViewportSize({width:375,height:812});
   await page.goto(`${origin}/demo`);

@@ -1,4 +1,4 @@
-import { NICKNAME } from "@/lib/mock/home";
+import { readPersonaDisplayName } from "@/lib/persona/display-name-server";
 import { loadMonthlyRecap } from "../load-recap";
 import { MonthlyRecapEmpty } from "../_components/monthly-recap-empty";
 import { MonthlyRecapScreen } from "../_components/monthly-recap-screen";
@@ -7,6 +7,7 @@ import {
   pickHighlights,
   toMonthTabs,
   toSubjectParticle,
+  toMonthlyRecapEmptyMessage,
 } from "./monthly-recap-view";
 
 const MONTH_PATTERN = /^\d{4}-\d{2}$/;
@@ -47,7 +48,7 @@ export default async function MonthlyRecapPage({
         backHref="/"
         year={year}
         months={months}
-        message={`${monthNumber}월 리캡이 아직 완성되지 않았어요.\n${(monthNumber % 12) + 1}월 초에 다시 확인하세요.`}
+        message={toMonthlyRecapEmptyMessage(recap.status, recap.period.startDate)}
       />
     );
   }
@@ -56,13 +57,14 @@ export default async function MonthlyRecapPage({
     collectHighlights(recap.result),
     `${cardBalanceAccountId}:${recap.period.startDate}`,
   );
+  const nickname = await readPersonaDisplayName();
 
   return (
     <MonthlyRecapScreen
       backHref="/"
       year={year}
       months={months}
-      intro={`${monthNumber}월의 ${NICKNAME}${toSubjectParticle(NICKNAME)}`}
+      intro={`${monthNumber}월의 ${nickname}${toSubjectParticle(nickname)}`}
       typeTitle={recap.result.typeSection.typeTitle}
       typeMessage={recap.result.typeSection.message}
       highlights={highlights}
