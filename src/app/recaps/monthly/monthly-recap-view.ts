@@ -19,8 +19,11 @@ export function toMonthlyRecapEmptyMessage(
     return `${month}월 리캡을 만들지 못했어요.\n잠시 후 다시 확인해 주세요.`;
   if (status === "GENERATING")
     return `${month}월 리캡을 만들고 있어요.\n잠시 후 다시 확인해 주세요.`;
-  if (isCompletedMonth(startDate.slice(0, 7), now))
-    return `${month}월 리캡이 아직 준비되지 않았어요.`;
+  if (isCompletedMonth(startDate.slice(0, 7), now)) {
+    return startDate.slice(0, 7) < latestCompletedMonth(now)
+      ? `${month}월 리캡이 만들어지지 않았어요.`
+      : `${month}월 리캡이 아직 준비되지 않았어요.`;
+  }
   return `${month}월 리캡은 한 달이 끝난 뒤에 확인할 수 있어요.`;
 }
 
