@@ -8,7 +8,9 @@ const TAB_COUNT = 5;
 
 /** 확정된 생성 제외와 생성 대기·실패를 구분합니다. */
 export function toMonthlyRecapEmptyMessage(
-  status: MonthlyRecap["status"], startDate: string, now: Date = new Date(),
+  status: MonthlyRecap["status"],
+  startDate: string,
+  now: Date = new Date(),
 ) {
   const month = Number(startDate.slice(5, 7));
   if (status === "NOT_ELIGIBLE")

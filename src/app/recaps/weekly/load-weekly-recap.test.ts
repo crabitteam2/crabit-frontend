@@ -5,7 +5,9 @@ const getWeeklyRecap = vi.fn();
 const getAcademySharedCard = vi.fn();
 
 vi.mock("server-only", () => ({}));
-vi.mock("@/lib/persona/display-name-server", () => ({ readPersonaDisplayName: async () => "4학년 대표" }));
+vi.mock("@/lib/persona/display-name-server", () => ({
+  readPersonaDisplayName: async () => "4학년 대표",
+}));
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
 vi.mock("@/lib/http/server", () => ({ createServerApiClient: () => ({}) }));
 vi.mock("@/lib/http/card-balance-accounts", () => ({

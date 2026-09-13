@@ -48,7 +48,10 @@ export default async function MonthlyRecapPage({
         backHref="/"
         year={year}
         months={months}
-        message={toMonthlyRecapEmptyMessage(recap.status, recap.period.startDate)}
+        message={toMonthlyRecapEmptyMessage(
+          recap.status,
+          recap.period.startDate,
+        )}
       />
     );
   }

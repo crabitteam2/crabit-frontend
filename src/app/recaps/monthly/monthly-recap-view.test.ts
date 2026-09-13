@@ -19,15 +19,27 @@ const CANDIDATES = [
 describe("monthly recap status copy", () => {
   const now = new Date("2026-09-13T03:00:00Z");
   it("explains terminal ineligibility without promising a future report", () => {
-    const message = toMonthlyRecapEmptyMessage("NOT_ELIGIBLE", "2026-08-01", now);
+    const message = toMonthlyRecapEmptyMessage(
+      "NOT_ELIGIBLE",
+      "2026-08-01",
+      now,
+    );
     expect(message).toContain("3건 미만");
     expect(message).not.toMatch(/아직|다시|9월 초/);
   });
   it("distinguishes generation, failure, ungenerated and unfinished periods", () => {
-    expect(toMonthlyRecapEmptyMessage("GENERATING", "2026-08-01", now)).toContain("만들고 있어요");
-    expect(toMonthlyRecapEmptyMessage("FAILED", "2026-08-01", now)).toContain("만들지 못했어요");
-    expect(toMonthlyRecapEmptyMessage("NOT_GENERATED", "2026-08-01", now)).toBe("8월 리캡이 아직 준비되지 않았어요.");
-    expect(toMonthlyRecapEmptyMessage("NOT_GENERATED", "2026-09-01", now)).toContain("한 달이 끝난 뒤");
+    expect(
+      toMonthlyRecapEmptyMessage("GENERATING", "2026-08-01", now),
+    ).toContain("만들고 있어요");
+    expect(toMonthlyRecapEmptyMessage("FAILED", "2026-08-01", now)).toContain(
+      "만들지 못했어요",
+    );
+    expect(toMonthlyRecapEmptyMessage("NOT_GENERATED", "2026-08-01", now)).toBe(
+      "8월 리캡이 아직 준비되지 않았어요.",
+    );
+    expect(
+      toMonthlyRecapEmptyMessage("NOT_GENERATED", "2026-09-01", now),
+    ).toContain("한 달이 끝난 뒤");
   });
 });
 
