@@ -1,3 +1,6 @@
+import { headers } from "next/headers";
+import { readBffEnvironment } from "@/config/env";
+import { resolveRequestPersona } from "@/lib/persona/cookies";
 import noticeBookIcon from "@/../public/images/home/notice-book.svg";
 import transitCardIcon from "@/../public/images/home/transit-card.svg";
 import { ACADEMY_NAME, MY_NAME } from "@/lib/mock/home";
@@ -20,6 +23,14 @@ export default async function HomeTabPage({
   const rawToast = query.toast;
   const toastKey = (Array.isArray(rawToast) ? rawToast[0] : rawToast) ?? null;
   const { account } = await loadAccountContext();
+  const environment = readBffEnvironment();
+  const persona =
+    environment.backendProfile === "demo"
+      ? resolveRequestPersona(new Headers(await headers()), "demo")
+      : null;
+  const ownerName = persona?.startsWith("grade-")
+    ? `${persona.slice(-1)}학년 대표`
+    : MY_NAME;
 
   return (
     <div className="bg-layer-basement flex min-h-dvh flex-col">
@@ -34,7 +45,7 @@ export default async function HomeTabPage({
           </h2>
           <div className="px-4 pb-5">
             <MyCard
-              ownerName={MY_NAME}
+              ownerName={ownerName}
               balance={account.actualCardBalance}
               wishAvailableBalance={account.displayAvailableBalance}
             />

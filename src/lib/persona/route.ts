@@ -67,8 +67,9 @@ export async function handlePersonaRoute(
     );
   }
 
+  let tokens: PersonaTokenConfiguration;
   try {
-    (dependencies.loadTokens ?? defaultLoadTokens)(environment);
+    tokens = (dependencies.loadTokens ?? defaultLoadTokens)(environment);
   } catch {
     return personaError(
       500,
@@ -99,7 +100,7 @@ export async function handlePersonaRoute(
     return personaError(400, "PERSONA_INVALID", "Persona selection is invalid");
   }
 
-  if (!isPersonaSelection(body)) {
+  if (!isPersonaSelection(body) || (namespace === "e2e" && body.persona.startsWith("grade-")) || !tokens.active?.[body.persona]) {
     return personaError(400, "PERSONA_INVALID", "Persona selection is invalid");
   }
 

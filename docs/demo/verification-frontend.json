@@ -1,0 +1,59 @@
+{
+  "head": "29ba644f490b4c15429dd79dcff36fa8ab10559f",
+  "backendContractCommit": "b3b5345f8ff7366c4f68106c259c87b6e59cfe39",
+  "checks": {
+    "unitTests": {
+      "passed": 582,
+      "failed": 0,
+      "command": "NODE_OPTIONS=--no-experimental-webstorage npm run test"
+    },
+    "lint": {
+      "passed": true,
+      "preexistingWarnings": 2
+    },
+    "build": {
+      "passed": true,
+      "command": "npm run build -- --webpack",
+      "defaultTurbopack": "Failed: internal process port binding EPERM, including elevated retry"
+    },
+    "openapiCheck": true,
+    "typescript": true,
+    "realBrowser": {
+      "passed": 1,
+      "failed": 0
+    },
+    "secretScan": {
+      "files": 245,
+      "matches": 0
+    },
+    "writeScope": {
+      "deviations": []
+    }
+  },
+  "changedFiles": {
+    "docs/demo/artifacts/representative-desktop.png": "sha256:25f03456c447fa5c56f78bf1397858371887cd5f0cb2083bbb433df9d22f92ba",
+    "docs/demo/artifacts/representative-mobile.png": "sha256:910adc19256c71e0596e2e32b0eaae17a17f6ec619a985ef43d9c40e3b017c35",
+    "docs/demo/artifacts/representative-ui.json": "sha256:ed5b850ca978a090b9228fd937f193915d68fcdac9fca9b5edce7fd20e1d2d16",
+    "docs/demo/frontend-handoff.md": "sha256:f9ca0bd32eb21b272f1924d88da76f3da203f554fbe0372a1786f05e45fb84e1",
+    "openapi/crabit-backend.yaml": "sha256:c028a6dd7ae5e22e941b250e2a81b232d28a8f4ad597fa53aeba2e3b88094710",
+    "openapi/provenance.json": "sha256:d7b4d62ca8d8f18968b71e1b587d0505a9c499374f3e4f8be5c3dd30e13e3590",
+    "scripts/demo/preview.mjs": "sha256:053ca71b5704ace393bc24d297f7f692ad6ea2867eb4c0f744816021c74429ee",
+    "src/app/_components/demo-persona-selector.test.tsx": "sha256:ff89dc89128fd7cbdbd628ad22034e39091448bafb49b29b327e6c236da7acb0",
+    "src/app/_components/demo-persona-selector.tsx": "sha256:18aa09203818882dbc335a94461af9464b21427a7d8e84d29dd1be2ee48b694f",
+    "src/app/demo/page.tsx": "sha256:5576c722b1f6f6f8ff54dace462a634d6dfa70a9beb23cfb338708417541bf75",
+    "src/app/home/page.tsx": "sha256:a6f3f9d47242fa6e4981df39558b28649dfb3c9465f12715ecf85793fa1d4991",
+    "src/app/layout.tsx": "sha256:cabd05e74621dddfcd8da0b756b4f7cea00a365a23ea7eabe20af3ad1ac3c0bb",
+    "src/config/persona-tokens.ts": "sha256:da85a2174b085136f58df19ad0970ea5277f227eed126175a6ec78c34b24f12c",
+    "src/lib/behavior/context-server.ts": "sha256:a6f16534b492d304ff47ba5098886a2874b8cad5f48ec649f4a56dfbffe0ce8b",
+    "src/lib/bff/proxy.test.ts": "sha256:c6c49b14d87f38f5298450ee64c205171dde0478f68a72a99912ff1b5ce8ee8a",
+    "src/lib/bff/proxy.ts": "sha256:1121d22cc5991aef31039d77d5e4f5466280e653523f53cff15b502ac4baf949",
+    "src/lib/http/client.test.ts": "sha256:58762ceb016dbecaac8d3a36a7e3b7fa6e4877e4081b7dd25644fb83cdcbdaa9",
+    "src/lib/http/server.ts": "sha256:dfac02b00dea97cae192f4286aa81724f780bc18eb16dbd6140514fad9fc3fed",
+    "src/lib/persona/cookies.ts": "sha256:3f53813284640c43f305b43fabee99bb9ff12339695a789561a58522572b5de4",
+    "src/lib/persona/persona.ts": "sha256:2ff91640f5fa8cd88b40c6c343948260005f11ee1976e9758278ffc8d88b4699",
+    "src/lib/persona/route.ts": "sha256:2432f8e38d9b7a41494c266b12208436b51b362d37791ab4cdc8ac845bf056aa",
+    "src/lib/persona/selection.test.ts": "sha256:0d744fa6ab52797c9a276f4b8608b3d9250f9d117dd50a4afdfec7cf4373b787",
+    "tests/e2e/demo-simulation.spec.mjs": "sha256:cc42b4af59ca6b8a2341d163c9e4cf1b01d76e320dce3b19a6cd49a1172c24d5"
+  },
+  "remaining": "Controller commit/verification and parent-owned external application/deployment. Expanded financial mutation and DB acceptance are not asserted by this frontend check."
+}

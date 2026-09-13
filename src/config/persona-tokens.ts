@@ -1,10 +1,10 @@
 import "server-only";
 
 import type { BackendProfile, PersonaNamespace } from "./profile-policy";
-import { PERSONAS, type Persona } from "../lib/persona/persona";
+import { PERSONAS, DEMO_GRADE_PERSONAS, type BasePersona, type DemoGradePersona } from "../lib/persona/persona";
 
 /** 모든 persona에 대응하는 서버 전용 Bearer 토큰 모음입니다. */
-export type PersonaTokenRegistry = Readonly<Record<Persona, string>>;
+export type PersonaTokenRegistry = Readonly<Record<BasePersona, string> & Partial<Record<DemoGradePersona, string>>>;
 
 /** e2e와 demo 토큰 집합 및 현재 프로필에서 활성화된 집합입니다. */
 export interface PersonaTokenConfiguration {
@@ -18,7 +18,7 @@ export interface PersonaTokenConfiguration {
 
 /** persona와 서버 환경 변수 이름의 프로필별 대응표입니다. */
 export const PERSONA_TOKEN_VARIABLES: Readonly<
-  Record<PersonaNamespace, Readonly<Record<Persona, string>>>
+  Record<PersonaNamespace, Readonly<Record<BasePersona, string>>>
 > = {
   e2e: {
     owner: "E2E_OWNER_TOKEN",
@@ -59,7 +59,8 @@ export function readPersonaTokenConfiguration(
   values: Readonly<Record<string, string | undefined>> = process.env,
 ): PersonaTokenConfiguration {
   const e2eConfigured = hasConfiguredValue("e2e", values);
-  const demoConfigured = hasConfiguredValue("demo", values);
+  const gradeConfigured = DEMO_GRADE_PERSONAS.some((persona) => values[demoGradeVariable(persona)] !== undefined);
+  const demoConfigured = hasConfiguredValue("demo", values) || gradeConfigured;
 
   if (backendProfile === "prod" && (e2eConfigured || demoConfigured)) {
     throw new PersonaTokenConfigurationError();
@@ -120,7 +121,16 @@ function readRegistry(
     throw new PersonaTokenConfigurationError();
   }
 
-  return Object.fromEntries(entries) as PersonaTokenRegistry;
+  const registry: Record<string, string> = Object.fromEntries(entries);
+  if (namespace === "demo" && DEMO_GRADE_PERSONAS.some((persona) => values[demoGradeVariable(persona)] !== undefined)) {
+    for (const persona of DEMO_GRADE_PERSONAS) {
+      const token = values[demoGradeVariable(persona)];
+      if (!token || /\s/u.test(token) || hasControlCharacter(token)) throw new PersonaTokenConfigurationError();
+      registry[persona] = token;
+    }
+    if (new Set(Object.values(registry)).size !== Object.keys(registry).length) throw new PersonaTokenConfigurationError();
+  }
+  return registry as PersonaTokenRegistry;
 }
 
 function hasControlCharacter(value: string) {
@@ -128,4 +138,8 @@ function hasControlCharacter(value: string) {
     const codePoint = character.codePointAt(0) ?? 0;
     return codePoint <= 0x1f || codePoint === 0x7f;
   });
+}
+
+export function demoGradeVariable(persona: DemoGradePersona) {
+  return `CRABIT_DEMO_TOKEN_${persona.toUpperCase().replace("-", "_")}`;
 }
