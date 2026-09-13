@@ -4,7 +4,7 @@ type MonthlyRecap = components["schemas"]["MonthlyRecapResponse"];
 
 const HIGHLIGHT_COUNT = 3;
 
-const TAB_COUNT = 5;
+const MONTHS_IN_YEAR = 12;
 
 /** 확정된 생성 제외와 생성 대기·실패를 구분합니다. */
 export function toMonthlyRecapEmptyMessage(
@@ -24,7 +24,7 @@ export function toMonthlyRecapEmptyMessage(
       ? `${month}월 리캡이 만들어지지 않았어요.`
       : `${month}월 리캡이 아직 준비되지 않았어요.`;
   }
-  return `${month}월 리캡은 한 달이 끝난 뒤에 확인할 수 있어요.`;
+  return `${month}월 리캡이 아직 완성되지 않았어요.\n${(month % 12) + 1}월 초에 다시 확인하세요.`;
 }
 
 /** 도형에 넣을 후보 문장을 응답에서 순서대로 모읍니다. */
@@ -64,22 +64,18 @@ export function pickHighlights(candidates: readonly string[], seed: string) {
   return picked;
 }
 
-/** 고른 달을 뒤에서 두 번째에 두고 다섯 달을 만듭니다. */
+/** 고른 달이 속한 해의 열두 달을 만듭니다. */
 export function toMonthTabs(
   year: number,
   month: number,
   toHref: (year: number, month: number) => string,
 ) {
-  return Array.from({ length: TAB_COUNT }, (_, index) => {
-    const offset = index - (TAB_COUNT - 2);
-    const shifted = new Date(Date.UTC(year, month - 1 + offset, 1));
-    const tabYear = shifted.getUTCFullYear();
-    const tabMonth = shifted.getUTCMonth() + 1;
-    const isCurrent = tabYear === year && tabMonth === month;
+  return Array.from({ length: MONTHS_IN_YEAR }, (_, index) => {
+    const tabMonth = index + 1;
 
     return {
       label: `${tabMonth}월`,
-      href: isCurrent ? null : toHref(tabYear, tabMonth),
+      href: tabMonth === month ? null : toHref(year, tabMonth),
     };
   });
 }
