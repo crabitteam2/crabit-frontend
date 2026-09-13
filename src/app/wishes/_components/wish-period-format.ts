@@ -15,20 +15,29 @@ export function toFullDate(short: string) {
   return SHORT_DATE_PATTERN.test(short) ? `20${short}` : short;
 }
 
+/** 정하지 않은 날짜를 빈 문자열로 담아 오는 화면이 있어 없는 값으로 맞춥니다. */
+function toDate(value: string | null) {
+  return value === null || value === "" ? null : value;
+}
+
 /** 선택한 기간을 목표 기간 입력칸에 표시할 문자열로 바꿉니다. */
 export function toPeriodLabel(range: DateRange) {
-  if (range.start === null)
-    return range.end === null ? "" : `목표일 ${toShortDate(range.end)}`;
-  if (range.end === null) return toShortDate(range.start);
-  return `${toShortDate(range.start)}${SEPARATOR}${toShortDate(range.end)}`;
+  const start = toDate(range.start);
+  const end = toDate(range.end);
+
+  if (start === null) return end === null ? "" : `목표일 ${toShortDate(end)}`;
+  if (end === null) return toShortDate(start);
+  return `${toShortDate(start)}${SEPARATOR}${toShortDate(end)}`;
 }
 
 /** 저축 기간을 카드와 완료 화면에 표시할 문자열로 바꿉니다. */
 export function toSavingPeriodLabel(range: DateRange) {
-  if (range.start === null)
-    return range.end === null ? "" : `목표일 ${toShortDate(range.end)}`;
-  if (range.end === null) return toShortDate(range.start);
-  return `${toShortDate(range.start)} ~ ${toShortDate(range.end)}`;
+  const start = toDate(range.start);
+  const end = toDate(range.end);
+
+  if (start === null) return end === null ? "" : `목표일 ${toShortDate(end)}`;
+  if (end === null) return toShortDate(start);
+  return `${toShortDate(start)} ~ ${toShortDate(end)}`;
 }
 
 /** 목표 기간 표시 문자열을 달력이 쓰는 기간으로 되돌립니다. */

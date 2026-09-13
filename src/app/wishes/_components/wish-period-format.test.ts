@@ -140,3 +140,11 @@ describe("fromIsoDate", () => {
     expect(fromIsoDate(undefined)).toBeNull();
   });
 });
+
+it("정하지 않은 날짜를 빈 문자열로 받아도 기간을 만들지 않는다", () => {
+  expect(toSavingPeriodLabel({ start: "", end: "" })).toBe("");
+  expect(toPeriodLabel({ start: "", end: "" })).toBe("");
+  expect(toSavingPeriodLabel({ start: "", end: "2026.10.25" })).toBe(
+    "목표일 26.10.25",
+  );
+});
