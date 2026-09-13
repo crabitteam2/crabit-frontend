@@ -1,15 +1,14 @@
 import "server-only";
 
 import { unwrapResult, type ApiResult } from "@/lib/http/result";
-import { getWish, listWishes } from "@/lib/http/wishes";
+import { getWish } from "@/lib/http/wishes";
+import { listAllWishes } from "../list-all-wishes";
 import {
   toOwnedWishItem,
   type OwnedWishItem,
   type WishItemState,
 } from "../_components/wish-item";
 import { loadAccountContext } from "../load-account";
-
-const WISH_PAGE_LIMIT = 100;
 
 const FINISHED_STATES: readonly WishItemState[] = ["COMPLETED", "ABANDONED"];
 
@@ -62,12 +61,12 @@ export async function loadFundFlow(
   const { client, cardBalanceAccountId, account } = await loadAccountContext();
   const [wish, page] = await Promise.all([
     getWish(client, { cardBalanceAccountId, wishId }),
-    listWishes(client, { cardBalanceAccountId, limit: WISH_PAGE_LIMIT }),
+    listAllWishes(client, cardBalanceAccountId),
   ]);
 
   if (isNotFound(wish)) return null;
 
-  const wishes = unwrapResult(page).items.map(toOwnedWishItem);
+  const wishes = page.map(toOwnedWishItem);
 
   return {
     card: {

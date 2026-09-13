@@ -1,15 +1,14 @@
 import "server-only";
 
 import { unwrapResult } from "@/lib/http/result";
-import { getRepresentativeWish, listWishes } from "@/lib/http/wishes";
+import { getRepresentativeWish } from "@/lib/http/wishes";
+import { listAllWishes } from "../list-all-wishes";
 import {
   toOwnedWishItem,
   type OwnedWishItem,
   type WishItemState,
 } from "../_components/wish-item";
 import { loadAccountContext } from "../load-account";
-
-const WISH_PAGE_LIMIT = 100;
 
 const FINISHED_STATES: readonly WishItemState[] = ["COMPLETED", "ABANDONED"];
 
@@ -29,11 +28,11 @@ export interface WishListView {
 export async function loadWishList(): Promise<WishListView> {
   const { client, cardBalanceAccountId } = await loadAccountContext();
   const [page, representative] = await Promise.all([
-    listWishes(client, { cardBalanceAccountId, limit: WISH_PAGE_LIMIT }),
+    listAllWishes(client, cardBalanceAccountId),
     getRepresentativeWish(client, { cardBalanceAccountId }),
   ]);
 
-  const wishes = unwrapResult(page).items.map(toOwnedWishItem);
+  const wishes = page.map(toOwnedWishItem);
   const representativeId = unwrapResult(representative)?.id ?? null;
   const active = wishes.filter((wish) => !FINISHED_STATES.includes(wish.state));
 
