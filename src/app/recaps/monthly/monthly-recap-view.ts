@@ -4,7 +4,7 @@ type MonthlyRecap = components["schemas"]["MonthlyRecapResponse"];
 
 const HIGHLIGHT_COUNT = 3;
 
-const TAB_COUNT = 5;
+const MONTHS_IN_YEAR = 12;
 
 /** 확정된 생성 제외와 생성 대기·실패를 구분합니다. */
 export function toMonthlyRecapEmptyMessage(
@@ -64,22 +64,18 @@ export function pickHighlights(candidates: readonly string[], seed: string) {
   return picked;
 }
 
-/** 고른 달을 뒤에서 두 번째에 두고 다섯 달을 만듭니다. */
+/** 고른 달이 속한 해의 열두 달을 만듭니다. */
 export function toMonthTabs(
   year: number,
   month: number,
   toHref: (year: number, month: number) => string,
 ) {
-  return Array.from({ length: TAB_COUNT }, (_, index) => {
-    const offset = index - (TAB_COUNT - 2);
-    const shifted = new Date(Date.UTC(year, month - 1 + offset, 1));
-    const tabYear = shifted.getUTCFullYear();
-    const tabMonth = shifted.getUTCMonth() + 1;
-    const isCurrent = tabYear === year && tabMonth === month;
+  return Array.from({ length: MONTHS_IN_YEAR }, (_, index) => {
+    const tabMonth = index + 1;
 
     return {
       label: `${tabMonth}월`,
-      href: isCurrent ? null : toHref(tabYear, tabMonth),
+      href: tabMonth === month ? null : toHref(year, tabMonth),
     };
   });
 }

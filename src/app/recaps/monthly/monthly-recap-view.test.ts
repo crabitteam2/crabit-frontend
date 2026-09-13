@@ -73,30 +73,20 @@ describe("pickHighlights", () => {
 describe("toMonthTabs", () => {
   const href = (year: number, month: number) => `${year}-${month}`;
 
-  it("고른 달을 뒤에서 두 번째에 두고 다섯 달을 만든다", () => {
+  it("고른 달이 속한 해의 열두 달을 만든다", () => {
     const tabs = toMonthTabs(2026, 7, href);
 
-    expect(tabs.map((tab) => tab.label)).toEqual([
-      "4월",
-      "5월",
-      "6월",
-      "7월",
-      "8월",
-    ]);
-    expect(tabs[3]?.href).toBeNull();
+    expect(tabs).toHaveLength(12);
+    expect(tabs[0]?.label).toBe("1월");
+    expect(tabs[11]?.label).toBe("12월");
+    expect(tabs[0]?.href).toBe("2026-1");
   });
 
-  it("해를 넘겨도 달을 이어서 만든다", () => {
+  it("고른 달은 이동할 곳을 두지 않는다", () => {
     const tabs = toMonthTabs(2026, 2, href);
 
-    expect(tabs.map((tab) => tab.label)).toEqual([
-      "11월",
-      "12월",
-      "1월",
-      "2월",
-      "3월",
-    ]);
-    expect(tabs[0]?.href).toBe("2025-11");
+    expect(tabs[1]?.href).toBeNull();
+    expect(tabs.filter((tab) => tab.href === null)).toHaveLength(1);
   });
 });
 

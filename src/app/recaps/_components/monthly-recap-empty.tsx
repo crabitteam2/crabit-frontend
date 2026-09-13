@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { RecapMonthTabs } from "./recap-month-tabs";
 import chevronLeftIcon from "@/../public/images/wishes/arrow-left.svg";
 import emptyCharacter from "@/../public/images/recaps/empty-character.png";
 import type { RecapMonthTab } from "./monthly-recap-screen";
@@ -33,30 +34,11 @@ export function MonthlyRecapEmpty({
         <RecapYearSelect year={year} />
       </header>
 
-      <nav
-        aria-label="월 선택"
-        className="flex items-center justify-between px-6 py-5"
-      >
-        {months.map((month) =>
-          month.href === null ? (
-            <span
-              key={month.label}
-              aria-current="page"
-              className="text-fg-neutral text-[20px] leading-7 font-medium tracking-[-0.3px] whitespace-nowrap"
-            >
-              {month.label}
-            </span>
-          ) : (
-            <Link
-              key={month.label}
-              href={month.href}
-              className="text-gray-4 text-[20px] leading-7 font-medium tracking-[-0.3px] whitespace-nowrap"
-            >
-              {month.label}
-            </Link>
-          ),
-        )}
-      </nav>
+      <RecapMonthTabs
+        months={months}
+        currentStyle="text-fg-neutral"
+        restStyle="text-gray-4"
+      />
 
       <div className="flex justify-center px-10 pt-[60px]">
         <Image
