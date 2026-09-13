@@ -36,7 +36,7 @@ export default async function WishShareWritePage({
       <div className="bg-pink-1">
         <WishHeroContent
           character={look.character}
-          photoUrl={wish.imageUrl ?? null}
+          photo={wish.photo ?? null}
           headline={look.headline}
           headlinePaddingTop={look.headlinePaddingTop}
           headlinePaddingBottom={look.headlinePaddingBottom}

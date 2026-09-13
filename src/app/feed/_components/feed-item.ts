@@ -1,6 +1,10 @@
 import type { components } from "@/lib/http/generated/crabit-backend";
 import { fromIsoDate } from "@/app/wishes/_components/wish-period-format";
 import type { WishItemState } from "@/app/wishes/_components/wish-item";
+import {
+  toWishPhotoUrls,
+  type WishPhotoUrls,
+} from "@/app/wishes/_components/wish-photo";
 
 /** 프로필과 피드 카드가 공통으로 그리는 위시 정보입니다. */
 export interface ProfileWishItem {
@@ -16,8 +20,8 @@ export interface ProfileWishItem {
   readonly startDate: string | null;
   /** 달력 키 형태의 목표 날짜이며, 정하지 않았으면 null입니다. */
   readonly targetDate: string | null;
-  /** 현재 권한으로 발급된 짧은 사진 URL이며 사진이 없으면 생략합니다. */
-  readonly imageUrl?: string;
+  /** 현재 권한으로 발급된 짧은 사진 주소 세 벌이며 사진이 없으면 생략합니다. */
+  readonly photo?: WishPhotoUrls;
 }
 
 /** 학원 피드에 걸린 공유 카드 한 장입니다. */
@@ -44,7 +48,7 @@ export function toFeedCardItem(
     state: toWishItemState(card),
     startDate: fromIsoDate(card.startDate),
     targetDate: fromIsoDate(card.targetDate),
-    ...(card.photo == null ? {} : { imageUrl: card.photo.variants.large }),
+    ...(card.photo == null ? {} : { photo: toWishPhotoUrls(card.photo) }),
   };
 }
 

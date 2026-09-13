@@ -9,7 +9,10 @@ import {
   type WishTone,
 } from "@/app/wishes/_components/wish-theme";
 import type { WishItemState } from "@/app/wishes/_components/wish-item";
+import { pickWishPhotoUrl } from "@/app/wishes/_components/wish-photo";
 import type { ProfileWishItem } from "./feed-item";
+
+const PHOTO_SIZE = 60;
 
 const thumbnails: Record<WishItemState, StaticImageData> = {
   IN_PROGRESS: inProgressThumb,
@@ -46,20 +49,20 @@ export function ProfileWishCard({ wish, tone }: ProfileWishCardProps) {
             </p>
           )}
         </div>
-        {wish.imageUrl === undefined ? (
+        {wish.photo === undefined ? (
           <Image
             src={thumbnails[wish.state]}
             alt=""
-            width={60}
-            height={60}
+            width={PHOTO_SIZE}
+            height={PHOTO_SIZE}
             className="size-15 shrink-0 rounded-full"
           />
         ) : (
           <Image
-            src={wish.imageUrl}
+            src={pickWishPhotoUrl(wish.photo, PHOTO_SIZE)}
             alt=""
-            width={60}
-            height={60}
+            width={PHOTO_SIZE}
+            height={PHOTO_SIZE}
             className="size-15 shrink-0 rounded-full object-cover"
           />
         )}

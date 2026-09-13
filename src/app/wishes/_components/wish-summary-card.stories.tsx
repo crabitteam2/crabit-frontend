@@ -67,7 +67,11 @@ export const 사진: Story = {
       version: 1,
       startDate: "26.08.24",
       targetDate: "26.08.25",
-      imageUrl: "/images/feed/empty.png",
+      photo: {
+        small: "/images/feed/empty.png",
+        medium: "/images/feed/empty.png",
+        large: "/images/feed/empty.png",
+      },
     },
   },
 };
@@ -85,7 +89,11 @@ export const 사진_기간없음: Story = {
       version: 1,
       startDate: "",
       targetDate: "",
-      imageUrl: "/images/feed/empty.png",
+      photo: {
+        small: "/images/feed/empty.png",
+        medium: "/images/feed/empty.png",
+        large: "/images/feed/empty.png",
+      },
     },
   },
 };

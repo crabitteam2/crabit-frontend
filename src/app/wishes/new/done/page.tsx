@@ -7,6 +7,7 @@ import { getWish } from "@/lib/http/wishes";
 import { unwrapResult } from "@/lib/http/result";
 import { loadAccountContext } from "../../load-account";
 import { isFinishedState } from "@/app/wishes/_components/wish-detail";
+import { toWishPhotoUrls } from "@/app/wishes/_components/wish-photo";
 import { FlowMarkGuard } from "@/app/wishes/_components/flow-mark-guard";
 import { WishCreatedScreen } from "../_components/wish-created-screen";
 
@@ -37,7 +38,7 @@ export default async function NewWishDonePage({
         purpose={wish.purpose}
         targetAmount={wish.targetAmount}
         period={period}
-        photoUrl={wish.photo?.variants.large ?? null}
+        photo={toWishPhotoUrls(wish.photo) ?? null}
         depositHref={`/wishes/${wish.id}/deposit/amount?from=card&back=created`}
         closeHref="/"
       />

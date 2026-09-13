@@ -2,6 +2,7 @@ import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import closeIcon from "@/../public/images/wishes/close-32.svg";
+import { pickWishPhotoUrl, type WishPhotoUrls } from "./wish-photo";
 import { WishProgressBar } from "./wish-progress-bar";
 import type { WishTheme } from "./wish-theme";
 
@@ -16,7 +17,7 @@ export interface HeroCharacter {
 
 interface WishHeroContentProps {
   character: HeroCharacter;
-  photoUrl: string | null;
+  photo: WishPhotoUrls | null;
   headline: string;
   headlinePaddingTop: number;
   headlinePaddingBottom: number;
@@ -32,7 +33,7 @@ interface WishHeroContentProps {
 
 export function WishHeroContent({
   character,
-  photoUrl,
+  photo,
   headline,
   headlinePaddingTop,
   headlinePaddingBottom,
@@ -45,14 +46,14 @@ export function WishHeroContent({
   showAmount = true,
 }: WishHeroContentProps) {
   const headlineTop =
-    photoUrl === null
+    photo === null
       ? headlinePaddingTop
       : headlinePaddingTop + character.height - PHOTO_SIZE;
 
   return (
     <>
       <div className="flex justify-center pt-3">
-        {photoUrl === null ? (
+        {photo === null ? (
           <div
             className="relative overflow-hidden"
             style={{ width: character.width, height: character.height }}
@@ -80,7 +81,7 @@ export function WishHeroContent({
           </div>
         ) : (
           <Image
-            src={photoUrl}
+            src={pickWishPhotoUrl(photo, PHOTO_SIZE)}
             alt="위시 사진"
             width={PHOTO_SIZE}
             height={PHOTO_SIZE}
