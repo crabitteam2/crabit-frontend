@@ -5,6 +5,7 @@ import { MonthlyRecapEmpty } from "../_components/monthly-recap-empty";
 import { MonthlyRecapScreen } from "../_components/monthly-recap-screen";
 import {
   collectHighlights,
+  latestCompletedMonth,
   pickHighlights,
   toMonthTabs,
   toSubjectParticle,
@@ -53,7 +54,7 @@ export default async function MonthlyRecapPage({
         backHref="/"
         year={year}
         months={months}
-        message={`${monthNumber}월 리캡이 아직 완성되지 않았어요.\n${(monthNumber % 12) + 1}월 초에 다시 확인하세요.`}
+        message={toEmptyMessage(year, monthNumber)}
       />
     );
   }
@@ -74,6 +75,21 @@ export default async function MonthlyRecapPage({
       highlights={highlights}
     />
   );
+}
+
+/**
+ * 리캡이 없는 달에 보여줄 문구를 고릅니다.
+ *
+ * 마지막으로 끝난 달은 아직 만들어지는 중일 수 있어 기다리라고 안내하고,
+ * 그보다 앞선 달은 만들어지지 않았다고 알립니다.
+ */
+function toEmptyMessage(year: number, month: number) {
+  const period = `${year}-${String(month).padStart(2, "0")}`;
+  if (period < latestCompletedMonth()) {
+    return `${month}월 리캡이 만들어지지 않았어요.`;
+  }
+
+  return `${month}월 리캡이 아직 완성되지 않았어요.\n${(month % 12) + 1}월 초에 다시 확인하세요.`;
 }
 
 function toMonthHref(year: number, month: number) {
