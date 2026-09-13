@@ -6,7 +6,7 @@ const meta = {
   component: WishEditForm,
   parameters: { layout: "fullscreen" },
   args: {
-    backHref: "/wishes/w3/info",
+    backHref: "/wishes/w3",
     donePath: "/wishes/w3/info/done",
     cardBalanceAccountId: "11111111-1111-4111-8111-111111111111",
     wishId: "22222222-2222-4222-8222-222222222222",

@@ -1,34 +1,11 @@
-import { notFound } from "next/navigation";
-import { getWish } from "@/lib/http/wishes";
-import { unwrapResult } from "@/lib/http/result";
-import { loadAccountContext } from "../../load-account";
-import { WishInfoScreen } from "../../_components/wish-info-screen";
-import {
-  fromIsoDate,
-  toPeriodLabel,
-} from "../../_components/wish-period-format";
+import { redirect } from "next/navigation";
 
+/** 읽기 전용 기본 정보 화면을 없애면서 남은 주소를 위시 상세로 보냅니다. */
 export default async function WishInfoPage({
   params,
 }: {
   params: Promise<{ wishId: string }>;
 }) {
   const { wishId } = await params;
-  const { client, cardBalanceAccountId } = await loadAccountContext();
-  const result = await getWish(client, { cardBalanceAccountId, wishId });
-  if (!result.ok && result.error.status === 404) notFound();
-  const wish = unwrapResult(result);
-
-  return (
-    <WishInfoScreen
-      backHref={`/wishes/${wishId}`}
-      editHref={`/wishes/${wishId}/info/edit`}
-      purpose={wish.purpose}
-      targetAmount={wish.targetAmount}
-      period={toPeriodLabel({
-        start: fromIsoDate(wish.startDate),
-        end: fromIsoDate(wish.targetDate),
-      })}
-    />
-  );
+  redirect(`/wishes/${wishId}`);
 }
