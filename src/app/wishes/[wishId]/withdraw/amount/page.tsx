@@ -1,5 +1,5 @@
 import { queryValue } from "@/lib/forms/wish-form-query";
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { AmountForm } from "../../../_components/amount-form";
 import { isFinishedState } from "../../../_components/wish-detail";
 import {
@@ -17,7 +17,7 @@ export default async function WithdrawAmountPage({
 }) {
   const { wishId } = await params;
   const view = await loadFundFlow(wishId);
-  if (view === null) notFound();
+  if (view === null) redirect("/wishes");
   if (isFinishedState(view.wish.state)) redirect(`/wishes/${wishId}`);
 
   const selectPath = `/wishes/${wishId}/withdraw`;

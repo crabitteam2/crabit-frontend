@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { toProgressPercent } from "@/app/_components/progress-stage";
 import { loadWishDetail } from "../../(detail)/load-wish-detail";
 import { ScreenHeader } from "../../../_components/screen-header";
@@ -14,7 +14,7 @@ export default async function WishShareWritePage({
 }) {
   const { wishId } = await params;
   const view = await loadWishDetail(wishId);
-  if (view === null) notFound();
+  if (view === null) redirect("/wishes");
   if (view.wish.visibility !== "PRIVATE") redirect("/feed/me");
 
   const { wish } = view;
