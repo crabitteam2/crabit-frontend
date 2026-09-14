@@ -52,8 +52,7 @@ export default async function WishShareWritePage({
       </div>
 
       <WishShareWriteForm
-        wishId={wishId}
-        version={wish.version}
+        ticketName={`share:${wishId}`}
         donePath={`/wishes/${wishId}/share/loading`}
       />
     </div>

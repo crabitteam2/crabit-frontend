@@ -2,63 +2,38 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useRef } from "react";
 import { useWishForm } from "@/lib/forms/use-wish-form";
 import radioOffIcon from "@/../public/images/common/radio-off.svg";
 import radioOnIcon from "@/../public/images/common/radio-on.svg";
 import { Button } from "@/components/ui/button";
-import { Toast } from "@/components/ui/toast";
-import { shareWishAction } from "../wish-actions";
+import { putShareTicket, type ShareVisibility } from "./share-ticket";
 
 const VISIBILITIES = [
   { value: "ACADEMY", label: "학원 전체" },
   { value: "FOLLOWERS", label: "팔로워 공개" },
 ] as const;
 
-type Visibility = (typeof VISIBILITIES)[number]["value"];
-
 interface WishShareWriteFormProps {
-  wishId: string;
-  version: number;
+  /** 로딩 화면이 찾을 표의 이름입니다. */
+  ticketName: string;
   donePath: string;
 }
 
 export function WishShareWriteForm({
-  wishId,
-  version,
+  ticketName,
   donePath,
 }: WishShareWriteFormProps) {
   const router = useRouter();
-  const {
-    watch,
-    setValue,
-    handleSubmit,
-    setError,
-    clearErrors,
-    formState: { isSubmitting, errors },
-  } = useWishForm<{ visibility: Visibility }>({
+  const { watch, setValue, handleSubmit } = useWishForm<{
+    visibility: ShareVisibility;
+  }>({
     defaultValues: { visibility: "ACADEMY" },
   });
   const visibility = watch("visibility");
-  const sharing = useRef(false);
-  const share = handleSubmit(async ({ visibility }) => {
-    if (sharing.current) return;
-    sharing.current = true;
-    clearErrors("root");
-    try {
-      const result = await shareWishAction(wishId, version, visibility);
-      if (result.ok) {
-        router.replace(donePath);
-        return;
-      }
-      setError("root", { message: result.message });
-      sharing.current = false;
-    } catch {
-      sharing.current = false;
-      setError("root", { message: "공유하지 못했어요. 다시 시도해주세요." });
-    }
+  const share = handleSubmit(({ visibility }) => {
+    putShareTicket(ticketName, visibility);
+    router.replace(donePath);
   });
-  const error = errors.root?.message;
 
   return (
     <form onSubmit={share}>
@@ -108,7 +83,6 @@ export function WishShareWriteForm({
                 );
               buttons?.[next === "ACADEMY" ? 0 : 1]?.focus();
             }}
-            disabled={isSubmitting || sharing.current}
             onClick={() =>
               setValue("visibility", item.value, { shouldDirty: true })
             }
@@ -131,24 +105,10 @@ export function WishShareWriteForm({
       <div className="h-[calc(131px+env(safe-area-inset-bottom))]" />
 
       <div className="max-w-app fixed inset-x-0 bottom-0 z-10 mx-auto w-full bg-white px-4 pt-5 pb-[calc(55px+env(safe-area-inset-bottom))]">
-        <Button
-          size="xlarge"
-          className="w-full"
-          type="submit"
-          isLoading={isSubmitting}
-          disabled={sharing.current}
-        >
+        <Button size="xlarge" className="w-full" type="submit">
           공유하기
         </Button>
       </div>
-
-      {error === undefined ? null : (
-        <Toast
-          message={error}
-          tone="danger"
-          onClose={() => clearErrors("root")}
-        />
-      )}
     </form>
   );
 }
