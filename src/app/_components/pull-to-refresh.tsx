@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { Spinner } from "@/components/ui/spinner";
 
 const PULL_THRESHOLD = 64;
 const MAX_PULL = 96;
@@ -144,12 +145,11 @@ export function PullToRefresh({ children, onRefresh }: PullToRefreshProps) {
         className={`pointer-events-none absolute inset-x-0 top-0 flex items-center justify-center overflow-hidden ${easing}`}
         style={{ height: offset, opacity: offset === 0 ? 0 : 1 }}
       >
-        <span
-          role={isRefreshing ? "status" : undefined}
-          aria-label={isRefreshing ? "새로고침 중" : undefined}
-          className={`border-stroke-brand block size-6 rounded-full border-[3px] border-t-transparent ${
-            isRefreshing ? "animate-spin" : ""
-          }`}
+        <Spinner
+          tone="brand"
+          className="size-6"
+          isPaused={!isRefreshing}
+          label={isRefreshing ? "새로고침 중" : undefined}
           style={
             isRefreshing ? undefined : { transform: `rotate(${offset * 4}deg)` }
           }
