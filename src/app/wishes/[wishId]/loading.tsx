@@ -1,12 +1,13 @@
 import { Skeleton, SkeletonRegion } from "@/components/ui/skeleton";
-import { ScreenHeader } from "../../_components/screen-header";
+import { ScreenHeaderSkeleton } from "@/app/_components/screen-header-skeleton";
 
-export default function WishDetailLoading() {
+export default function WishFlowLoading() {
   return (
-    <div className="flex flex-col">
-      <ScreenHeader title="모은 돈 기록" backHref="/wishes" spacing="tight" />
+    <div className="flex min-h-dvh flex-col">
+      <ScreenHeaderSkeleton />
+
       <SkeletonRegion
-        label="위시를 불러오는 중"
+        label="위시 화면을 불러오는 중"
         className="flex flex-col gap-6 px-4"
       >
         <Skeleton className="h-[232px]" />

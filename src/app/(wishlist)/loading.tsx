@@ -1,3 +1,4 @@
+import { Skeleton, SkeletonRegion } from "@/components/ui/skeleton";
 import { ACADEMY_NAME, NICKNAME } from "@/lib/mock/home";
 import { AcademySection } from "../_components/academy-section";
 import { CharacterArea } from "../_components/character-area";
@@ -12,14 +13,13 @@ export default function WishlistTabLoading() {
       </CharacterArea>
 
       <main className="relative -mt-[17px] flex flex-col px-4">
-        <div
-          role="status"
-          aria-label="위시리스트를 불러오는 중"
+        <SkeletonRegion
+          label="위시리스트를 불러오는 중"
           className="flex flex-col"
         >
-          <div className="bg-gray-1 h-[52px] animate-pulse rounded-[20px]" />
-          <div className="bg-gray-1 mt-10 h-[152px] animate-pulse rounded-[20px]" />
-        </div>
+          <Skeleton className="h-[52px]" />
+          <Skeleton className="mt-10 h-[152px]" />
+        </SkeletonRegion>
         <div className="pt-[68px]">
           <AcademySection academyName={ACADEMY_NAME} />
         </div>
@@ -31,14 +31,13 @@ export default function WishlistTabLoading() {
             >
               리플레이: 저축 리포트
             </h2>
-            <div
-              role="status"
-              aria-label="리플레이를 불러오는 중"
+            <SkeletonRegion
+              label="리플레이를 불러오는 중"
               className="no-scrollbar -mx-4 mt-2 flex gap-4 overflow-x-auto px-4 pb-1"
             >
-              <div className="bg-gray-1 h-[300px] w-60 shrink-0 animate-pulse rounded-[20px]" />
-              <div className="bg-gray-1 h-[300px] w-60 shrink-0 animate-pulse rounded-[20px]" />
-            </div>
+              <Skeleton className="h-[300px] w-60 shrink-0" />
+              <Skeleton className="h-[300px] w-60 shrink-0" />
+            </SkeletonRegion>
           </section>
         </div>
       </main>

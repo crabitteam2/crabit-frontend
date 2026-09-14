@@ -1,6 +1,7 @@
 "use client";
 
 import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { Spinner } from "./spinner";
 
 type ButtonVariant = "fill" | "weak";
 type ButtonColor = "primary" | "danger" | "dark";
@@ -74,10 +75,7 @@ export function Button({
     >
       {isLoading ? (
         <>
-          <span
-            aria-hidden="true"
-            className={`absolute animate-spin rounded-full border-2 border-current border-t-transparent ${spinnerStyles[size]}`}
-          />
+          <Spinner className={`absolute ${spinnerStyles[size]}`} />
           <span className="opacity-0">{children}</span>
         </>
       ) : (

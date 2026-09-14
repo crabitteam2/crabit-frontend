@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { loadWishDetail } from "../../(detail)/load-wish-detail";
-import { LoadingScreen } from "../../../_components/loading-screen";
+import { ShareLoadingScreen } from "../../../_components/share-loading-screen";
 
 export default async function WishShareLoadingPage({
   params,
@@ -10,7 +10,15 @@ export default async function WishShareLoadingPage({
   const { wishId } = await params;
   const view = await loadWishDetail(wishId);
   if (view === null) redirect("/wishes");
-  if (view.wish.visibility === "PRIVATE") redirect(`/wishes/${wishId}/share`);
+  if (view.wish.visibility !== "PRIVATE") redirect("/feed/me");
 
-  return <LoadingScreen label="학원 피드 공유 중" donePath="/feed/me" />;
+  return (
+    <ShareLoadingScreen
+      wishId={wishId}
+      expectedVersion={view.wish.version}
+      ticketName={`share:${wishId}`}
+      writeHref={`/wishes/${wishId}/share/write`}
+      doneHref="/feed/me"
+    />
+  );
 }

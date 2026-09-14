@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { useEffect, useRef, useState } from "react";
 import type { DemoGradePersona, Persona } from "@/lib/persona/persona";
+import { Spinner } from "@/components/ui/spinner";
 
 /** Server supplies aliases only; credentials never cross the component boundary. */
 export function DemoPersonaSelector({
@@ -76,7 +77,13 @@ export function DemoPersonaSelector({
       {available.length === 0 && (
         <p className="mt-2 text-sm">대표 계정이 아직 준비되지 않았어요.</p>
       )}
-      {pending && <p role="status">대표를 변경하고 있어요.</p>}
+      {pending && (
+        <Spinner
+          tone="brand"
+          className="mt-2 size-4"
+          label="대표를 변경하는 중"
+        />
+      )}
       {error && (
         <p role="alert" className="mt-2 text-sm">
           {error}

@@ -13,6 +13,7 @@ import {
 } from "./feed-item";
 import { findMyStudentBlock } from "./student-blocks";
 import { StudentProfile } from "./student-profile";
+import { ProfileSkeleton } from "./profile-skeleton";
 
 const CARD_PAGE_LIMIT = 100;
 
@@ -121,7 +122,8 @@ export function StudentProfileScreen({ studentId }: StudentProfileScreenProps) {
     );
   }
 
-  if (view === null || session === null) return null;
+  if (view === null || session === null)
+    return <ProfileSkeleton label="프로필을 불러오는 중" />;
 
   return (
     <StudentProfile

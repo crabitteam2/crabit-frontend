@@ -11,6 +11,7 @@ import { EmptyFeed } from "./empty-feed";
 import { FeedCard } from "./feed-card";
 import { FeedHeader } from "./feed-header";
 import { toFeedCardItem } from "./feed-item";
+import { FeedSkeleton } from "./feed-skeleton";
 
 const PAGE_LIMIT = 100;
 
@@ -63,7 +64,7 @@ export function FeedScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.entry]);
 
-  if (session === null) return null;
+  if (session === null) return <FeedSkeleton />;
 
   const cards = result?.items ?? [];
   if (!isLoading && !hasError && cards.length === 0) return <EmptyFeed />;
