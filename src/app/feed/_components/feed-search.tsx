@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import chipCloseIcon from "@/../public/images/feed/chip-close.svg";
 import searchIcon from "@/../public/images/feed/search.svg";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { Skeleton, SkeletonRegion } from "@/components/ui/skeleton";
 import { createBrowserApiClient } from "@/lib/http/browser";
 import { searchAcademyStudents } from "@/lib/http/follows";
 import type { components } from "@/lib/http/generated/crabit-backend";
@@ -33,6 +34,7 @@ export function FeedSearch() {
   const [recent, setRecent] = useState<string[]>([]);
   const [results, setResults] = useState<Student[]>([]);
   const [hasError, setHasError] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const version = useRef(0);
 
@@ -44,9 +46,11 @@ export function FeedSearch() {
     if (academyId === undefined || nickname === "") {
       setResults([]);
       setHasError(false);
+      setIsSearching(false);
       return;
     }
 
+    setIsSearching(true);
     const current = ++version.current;
     const timer = setTimeout(async () => {
       const result = await searchAcademyStudents(client, {
@@ -58,6 +62,7 @@ export function FeedSearch() {
 
       setHasError(!result.ok);
       setResults(result.ok ? result.data.items : []);
+      setIsSearching(false);
     }, DEBOUNCE_MS);
 
     return () => clearTimeout(timer);
@@ -124,7 +129,16 @@ export function FeedSearch() {
         </p>
       ) : null}
 
-      {results.length === 0 ? null : (
+      {isSearching ? (
+        <SkeletonRegion
+          label="학생을 찾는 중"
+          className="flex flex-col px-4 pt-3 pb-10"
+        >
+          <Skeleton shape="control" className="h-[72px]" />
+        </SkeletonRegion>
+      ) : null}
+
+      {isSearching || results.length === 0 ? null : (
         <section>
           <h2 className="text-t1 text-fg-neutral px-4 pt-3 pb-2 font-bold">
             학생

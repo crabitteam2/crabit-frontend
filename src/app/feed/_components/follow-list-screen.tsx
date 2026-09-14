@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import searchIcon from "@/../public/images/feed/search.svg";
 import arrowLeftIcon from "@/../public/images/wishes/arrow-left.svg";
 import { Button } from "@/components/ui/button";
+import { Skeleton, SkeletonRegion } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { components } from "@/lib/http/generated/crabit-backend";
 import {
@@ -219,7 +220,17 @@ export function FollowListScreen(props: FollowListScreenProps) {
           {mutationError}
         </p>
       )}
-      {remoteError === null ? (
+      {remoteError === null && page === null ? (
+        <SkeletonRegion
+          label="팔로우 목록을 불러오는 중"
+          className="flex flex-col gap-3 px-4 pt-3"
+        >
+          <Skeleton shape="control" className="h-10" />
+          <Skeleton shape="control" className="h-10" />
+          <Skeleton shape="control" className="h-10" />
+        </SkeletonRegion>
+      ) : null}
+      {remoteError === null && page !== null ? (
         <ul aria-label={tab === "following" ? "팔로잉 목록" : "팔로워 목록"}>
           {items.map((item) => {
             const isFollowing = changed[item.id] ?? item.isFollowing;

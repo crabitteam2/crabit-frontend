@@ -10,6 +10,7 @@ import {
 import { usePathname } from "next/navigation";
 import { EventQueue, type CollectionContext } from "@/lib/behavior/collector";
 import type { components } from "@/lib/http/generated/crabit-backend";
+import { SessionSkeleton } from "./session-skeleton";
 
 type Account = components["schemas"]["CardBalanceAccount"];
 export interface Entry {
@@ -213,11 +214,7 @@ export function BehaviorSession({ children }: { children: ReactNode }) {
       </p>
     );
   if (!context || !entry || entry.key !== pathname)
-    return (
-      <p role="status" className="p-6">
-        불러오는 중이에요.
-      </p>
-    );
+    return <SessionSkeleton pathname={pathname} />;
   return (
     <SessionContext.Provider
       value={{ context, entry, accounts, selectAcademy }}
