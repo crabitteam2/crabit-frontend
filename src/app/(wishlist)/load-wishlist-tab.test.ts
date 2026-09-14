@@ -61,9 +61,10 @@ beforeEach(() => {
 });
 
 describe("위시리스트 탭 데이터 조회", () => {
-  it("대표 위시의 이름과 금액을 넘긴다", async () => {
+  it("대표 위시의 식별자와 이름, 금액을 넘긴다", async () => {
     await expect(loadWishlistTab()).resolves.toEqual({
       representativeWish: {
+        id: "22222222-2222-4222-8222-222222222222",
         purpose: "노트북",
         amount: 350_000,
         targetAmount: 1_500_000,

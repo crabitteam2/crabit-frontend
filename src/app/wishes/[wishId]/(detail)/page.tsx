@@ -12,19 +12,15 @@ import { loadWishDetail } from "./load-wish-detail";
 
 export default async function WishDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ wishId: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { wishId } = await params;
-  const query = await searchParams;
   const view = await loadWishDetail(wishId);
   if (view === null) redirect("/wishes");
 
   const { wish, movements } = view;
 
-  const isJustCompleted = query.completed === wishId;
   const isFinished = isFinishedState(wish.state);
   const hasReachedTarget = !isFinished && wish.amount >= wish.targetAmount;
 
@@ -32,7 +28,8 @@ export default async function WishDetailPage({
     <div className="flex flex-col">
       <ScreenHeader
         title="모은 돈 기록"
-        backHref={isJustCompleted ? `/wishes?completed=${wishId}` : "/wishes"}
+        backHref="/wishes"
+        backToPrevious
         spacing="tight"
         action={isFinished ? undefined : <WishDetailActions wish={wish} />}
       />

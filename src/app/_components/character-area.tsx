@@ -1,4 +1,5 @@
 import Image, { type StaticImageData } from "next/image";
+import Link from "next/link";
 import backgroundImage from "@/../public/images/home/character-area-bg.png";
 import character1 from "@/../public/images/home/character-1.png";
 import character2 from "@/../public/images/home/character-2.png";
@@ -54,15 +55,17 @@ const characterByStage: Record<ProgressStage, CharacterLayout> = {
 interface CharacterAreaProps {
   /** 대표 위시가 없으면 `null`, 있으면 계산된 저축 진행 단계입니다. */
   stage: ProgressStage | null;
+  /** 영역을 눌렀을 때 갈 경로이며, 주지 않으면 누를 수 없습니다. */
+  href?: string;
   /** 캐릭터 배경 위에 배치할 헤더 등의 전경 콘텐츠입니다. */
   children: React.ReactNode;
 }
 
 /** 진행 단계에 맞는 캐릭터와 고정 높이의 홈 상단 배경을 렌더링합니다. */
-export function CharacterArea({ stage, children }: CharacterAreaProps) {
+export function CharacterArea({ stage, href, children }: CharacterAreaProps) {
   const character = stage === null ? null : characterByStage[stage];
 
-  return (
+  const area = (
     <div className="relative h-[439px] w-full overflow-hidden">
       <Image
         src={backgroundImage}
@@ -91,5 +94,13 @@ export function CharacterArea({ stage, children }: CharacterAreaProps) {
       ) : null}
       <div className="relative">{children}</div>
     </div>
+  );
+
+  if (href === undefined) return area;
+
+  return (
+    <Link href={href} className="block">
+      {area}
+    </Link>
   );
 }
