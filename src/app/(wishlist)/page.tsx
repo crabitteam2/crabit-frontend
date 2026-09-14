@@ -42,6 +42,11 @@ export default async function WishlistTabPage({
       <PullToRefresh>
         <CharacterArea
           stage={representativeWish === null ? null : toProgressStage(percent)}
+          href={
+            representativeWish === null
+              ? undefined
+              : `/wishes/${representativeWish.id}`
+          }
         >
           <HomeHeader
             nickname={NICKNAME}

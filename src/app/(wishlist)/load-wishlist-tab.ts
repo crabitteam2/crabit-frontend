@@ -9,6 +9,8 @@ import { findLatestMonthlyRecap } from "../recaps/load-recap";
 
 /** 위시리스트 탭이 진행률로 그리는 대표 위시입니다. */
 export interface RepresentativeWishView {
+  /** 위시 식별자이며 상세 화면으로 이동할 때 씁니다. */
+  readonly id: string;
   /** 위시 이름입니다. */
   readonly purpose: string;
   /** 지금까지 모은 금액입니다. */
@@ -48,6 +50,7 @@ export async function loadWishlistTab(): Promise<WishlistTabView> {
       representative === undefined
         ? null
         : {
+            id: representative.id,
             purpose: representative.purpose,
             amount: representative.amount,
             targetAmount: representative.targetAmount,
