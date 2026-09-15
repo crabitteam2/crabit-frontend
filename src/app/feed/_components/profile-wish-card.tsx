@@ -63,6 +63,7 @@ export function ProfileWishCard({ wish, tone }: ProfileWishCardProps) {
             alt=""
             width={PHOTO_SIZE}
             height={PHOTO_SIZE}
+            unoptimized
             className="size-15 shrink-0 rounded-full object-cover"
           />
         )}
