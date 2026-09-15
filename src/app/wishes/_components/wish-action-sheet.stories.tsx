@@ -9,6 +9,7 @@ const wish: OwnedWishItem = {
   abandonmentAmount: null,
   targetAmount: 30_000,
   state: "IN_PROGRESS",
+  visibility: "PRIVATE",
   version: 3,
 };
 
