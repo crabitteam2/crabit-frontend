@@ -138,13 +138,18 @@ export function FeedSearch() {
         </SkeletonRegion>
       ) : null}
 
-      {isSearching || results.length === 0 ? null : (
+      {isSearching || hasError || query.trim() === "" ? null : (
         <section>
           <h2 className="text-t1 text-fg-neutral px-4 pt-3 pb-2 font-bold">
-            학생
+            친구
           </h2>
           <div className="px-4 pb-10">
             <div className="bg-pink-1 flex items-center gap-3 overflow-x-auto rounded-[15px] p-4">
+              {results.length === 0 ? (
+                <p className="text-gray-7 flex h-7 flex-1 items-center justify-center text-[16px] leading-[23px] font-medium tracking-[-0.3px]">
+                  검색 결과가 없어요.
+                </p>
+              ) : null}
               {results.map((student) => (
                 <button
                   key={student.studentId}
