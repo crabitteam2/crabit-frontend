@@ -10,6 +10,7 @@ const abandonedWish: WishItem = {
   abandonmentAmount: 12_000,
   targetAmount: 30_000,
   state: "ABANDONED",
+  visibility: "PRIVATE",
 };
 
 describe("종료 위시 목록 카드", () => {

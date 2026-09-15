@@ -25,6 +25,8 @@ const inProgress: WishShareLook = {
   headlinePaddingBottom: 24,
   theme: {
     card: "",
+    amount: "text-fg-neutral",
+    goal: "text-fg-neutral-muted",
     track: "bg-pink-2",
     fill: "bg-pink-5",
     fillsTrack: false,
@@ -39,6 +41,8 @@ const completed: WishShareLook = {
   headlinePaddingBottom: 23,
   theme: {
     card: "",
+    amount: "text-fg-neutral",
+    goal: "text-fg-neutral-muted",
     track: "bg-pink-5",
     fill: "",
     fillsTrack: false,
@@ -53,6 +57,8 @@ const abandoned: WishShareLook = {
   headlinePaddingBottom: 23,
   theme: {
     card: "",
+    amount: "text-fg-neutral",
+    goal: "text-fg-neutral-muted",
     track: "bg-gray-3",
     fill: "bg-gray-5",
     fillsTrack: false,

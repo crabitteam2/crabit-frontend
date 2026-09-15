@@ -6,6 +6,8 @@ import completedCharacter from "@/../public/images/wishes/share-completed.png";
 
 const CARD_THEME: WishTheme = {
   card: "",
+  amount: "text-fg-neutral",
+  goal: "text-fg-neutral-muted",
   track: "bg-[#f1f5ff]",
   fill: "bg-[#1948cb]",
   fillsTrack: true,

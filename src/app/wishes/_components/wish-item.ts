@@ -21,6 +21,8 @@ export interface WishItem {
   readonly targetAmount: number;
   /** 위시의 진행 단계입니다. */
   readonly state: WishItemState;
+  /** 공개 범위이며 `PRIVATE`이 아니면 학원 피드에 올라가 있습니다. */
+  readonly visibility: components["schemas"]["WishVisibility"];
   /** 현재 권한으로 발급된 짧은 사진 주소 세 벌이며 사진이 없으면 생략합니다. */
   readonly photo?: WishPhotoUrls;
 }
@@ -42,6 +44,7 @@ export function toWishItem(wish: components["schemas"]["Wish"]): WishItem {
     abandonmentAmount: wish.abandonmentAmount,
     targetAmount: wish.targetAmount,
     state: wish.state,
+    visibility: wish.visibility,
     ...(wish.photo == null ? {} : { photo: toWishPhotoUrls(wish.photo) }),
   };
 }

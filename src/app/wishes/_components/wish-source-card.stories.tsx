@@ -18,6 +18,7 @@ export const Default: Story = {
       amount: 12_000,
       targetAmount: 30_000,
       state: "IN_PROGRESS",
+      visibility: "PRIVATE",
     },
   },
 };

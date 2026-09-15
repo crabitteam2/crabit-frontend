@@ -33,7 +33,7 @@ export function WishCard({
     >
       <Link
         href={`/wishes/${wish.id}`}
-        className="flex flex-col gap-6 px-9 pt-7 pb-2"
+        className="flex flex-col px-9 pt-7 pb-2"
         aria-label={`${wish.purpose} 모은 돈 기록`}
       >
         <span className={`flex h-7 items-center gap-1 ${onMore ? "pr-6" : ""}`}>
@@ -43,7 +43,26 @@ export function WishCard({
           {isRepresentative ? (
             <Badge className="bg-gray-10 text-white">대표</Badge>
           ) : null}
+          {wish.visibility === "PRIVATE" ? null : (
+            <Badge className="border-gray-9 text-fg-neutral border">
+              학원 피드
+            </Badge>
+          )}
         </span>
+        <span
+          className={`flex justify-end pt-6 font-bold tracking-[-0.3px] ${theme.amount}`}
+        >
+          <span className="text-[28px] leading-[34px]">
+            {toWishDisplayAmount(wish).toLocaleString("ko-KR")}
+          </span>
+          <span className="text-[26px] leading-[34px]">&nbsp;원</span>
+        </span>
+        <span
+          className={`flex justify-end pb-3 text-[14px] leading-[34px] tracking-[-0.3px] ${theme.goal}`}
+        >
+          {wish.targetAmount.toLocaleString("ko-KR")} 원
+        </span>
+
         <WishProgressBar percent={percent} theme={theme} />
       </Link>
       {onMore ? (
