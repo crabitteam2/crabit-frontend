@@ -249,7 +249,7 @@ export function FollowListScreen(props: FollowListScreenProps) {
                 {item.id === MY_STUDENT_ID ? null : (
                   <Button
                     size="medium"
-                    variant={isFollowing ? "weak" : "fill"}
+                    variant={isFollowing ? "subtle" : "fill"}
                     isLoading={pending[item.id] === true}
                     onClick={() =>
                       isFollowing

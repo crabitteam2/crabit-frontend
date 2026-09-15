@@ -324,7 +324,7 @@ export function WishPhotoForm({
             type="button"
             onClick={openPicker}
             aria-label="위시 사진 선택"
-            className="bg-pink-1 flex aspect-square w-full flex-col items-center overflow-hidden rounded-[20px] pt-[89px]"
+            className="bg-pink-2 flex aspect-square w-full flex-col items-center overflow-hidden rounded-[20px] pt-[89px]"
           >
             <Image
               src={placeholderIcon}

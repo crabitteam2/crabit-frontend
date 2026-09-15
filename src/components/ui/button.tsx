@@ -3,7 +3,7 @@
 import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { Spinner } from "./spinner";
 
-type ButtonVariant = "fill" | "weak";
+type ButtonVariant = "fill" | "weak" | "subtle";
 type ButtonColor = "primary" | "danger" | "dark";
 type ButtonSize = "small" | "medium" | "large" | "xlarge";
 
@@ -28,6 +28,11 @@ const toneStyles: Record<ButtonVariant, Record<ButtonColor, string>> = {
     dark: "bg-neutral-inverted text-fg-neutral-inverted",
   },
   weak: {
+    primary: "bg-pink-2 text-fg-brand",
+    danger: "bg-critical-weak text-error",
+    dark: "bg-neutral-weak text-fg-neutral",
+  },
+  subtle: {
     primary: "bg-brand-weak text-fg-brand",
     danger: "bg-critical-weak text-error",
     dark: "bg-neutral-weak text-fg-neutral",
@@ -39,7 +44,7 @@ export interface ButtonProps extends Omit<
   ButtonHTMLAttributes<HTMLButtonElement>,
   "color"
 > {
-  /** 채움 정도입니다. 기본값은 `fill`입니다. */
+  /** 채움 정도입니다. 기본값은 `fill`이며 `subtle`은 `weak`보다 연합니다. */
   variant?: ButtonVariant;
   /** 의미 색상입니다. 기본값은 `primary`입니다. */
   color?: ButtonColor;

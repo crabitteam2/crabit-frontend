@@ -13,7 +13,7 @@ export function WishSourceCard({ wish, isSelected }: WishSourceCardProps) {
 
   return (
     <div
-      className={`flex flex-col overflow-hidden rounded-[20px] px-9 pt-7 pb-4 ${isSelected ? "bg-pink-3" : "bg-pink-1"}`}
+      className={`flex flex-col overflow-hidden rounded-[20px] px-9 pt-7 pb-4 ${isSelected ? "bg-pink-3" : "bg-pink-2"}`}
     >
       <p className="text-t3 text-fg-neutral truncate pb-[10px] font-medium">
         {wish.purpose}
