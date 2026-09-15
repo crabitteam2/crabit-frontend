@@ -8,6 +8,10 @@ export interface WishTheme {
   card: string;
   track: string;
   fill: string;
+  /** 모은 금액에 쓰는 글자색입니다. */
+  amount: string;
+  /** 목표 금액에 쓰는 글자색입니다. */
+  goal: string;
   fillsTrack: boolean;
   highlightsGoal: boolean;
 }
@@ -15,6 +19,8 @@ export interface WishTheme {
 const inProgress: Record<WishTone, WishTheme> = {
   pink: {
     card: "bg-[#fde3ef]",
+    amount: "text-pink-6",
+    goal: "text-fg-neutral-muted",
     track: "bg-[#f8f8f8]",
     fill: "bg-[#fb8fc7]",
     fillsTrack: false,
@@ -22,6 +28,8 @@ const inProgress: Record<WishTone, WishTheme> = {
   },
   yellow: {
     card: "bg-[#fff9ca]",
+    amount: "text-[#ffc600]",
+    goal: "text-fg-neutral-muted",
     track: "bg-[#fffcf0]",
     fill: "bg-[#ffde6b]",
     fillsTrack: false,
@@ -29,6 +37,8 @@ const inProgress: Record<WishTone, WishTheme> = {
   },
   blue: {
     card: "bg-[#cdeffe]",
+    amount: "text-[#618afd]",
+    goal: "text-fg-neutral-muted",
     track: "bg-[#f8f8f8]",
     fill: "bg-[#618afd]",
     fillsTrack: false,
@@ -39,6 +49,8 @@ const inProgress: Record<WishTone, WishTheme> = {
 const reached: Record<WishTone, WishTheme> = {
   pink: {
     card: "bg-[linear-gradient(164.47deg,#fdedf4_2.77%,#fb75bb_100%)]",
+    amount: "text-pink-8",
+    goal: "text-fg-neutral",
     track: "bg-[#f8f8f8]",
     fill: "bg-[#c44a8c]",
     fillsTrack: true,
@@ -46,6 +58,8 @@ const reached: Record<WishTone, WishTheme> = {
   },
   yellow: {
     card: "bg-[linear-gradient(114.67deg,#fff9ca_3.25%,#ffde6b_100%)]",
+    amount: "text-[#ffc704]",
+    goal: "text-fg-neutral",
     track: "bg-[#f8f8f8]",
     fill: "bg-[#ffc704]",
     fillsTrack: true,
@@ -53,6 +67,8 @@ const reached: Record<WishTone, WishTheme> = {
   },
   blue: {
     card: "bg-[linear-gradient(113.44deg,#cdeffe_3.63%,#618afd_100%)]",
+    amount: "text-[#1948cb]",
+    goal: "text-fg-neutral",
     track: "bg-[#f8f8f8]",
     fill: "bg-[#1948cb]",
     fillsTrack: true,
@@ -62,6 +78,8 @@ const reached: Record<WishTone, WishTheme> = {
 
 const completed: WishTheme = {
   card: "bg-gray-1",
+  amount: "text-pink-6",
+  goal: "text-fg-neutral-muted",
   track: "bg-gray-1",
   fill: "bg-[linear-gradient(to_right,#dedede_0%,#fcb1d6_100%)]",
   fillsTrack: true,
@@ -70,6 +88,8 @@ const completed: WishTheme = {
 
 const abandoned: WishTheme = {
   card: "bg-gray-1",
+  amount: "text-gray-8",
+  goal: "text-fg-neutral-muted",
   track: "bg-gray-1",
   fill: "bg-gray-4",
   fillsTrack: false,
@@ -78,6 +98,8 @@ const abandoned: WishTheme = {
 
 export const emptyWishTheme: WishTheme = {
   card: "bg-pink-1",
+  amount: "text-fg-neutral",
+  goal: "text-fg-neutral-muted",
   track: "bg-pink-2",
   fill: "",
   fillsTrack: false,
@@ -97,6 +119,8 @@ export function getWishTheme(
 
 export const detailWishTheme: WishTheme = {
   card: "",
+  amount: "text-fg-neutral",
+  goal: "text-fg-neutral-muted",
   track: "bg-pink-2",
   fill: "bg-pink-5",
   fillsTrack: false,
@@ -105,6 +129,8 @@ export const detailWishTheme: WishTheme = {
 
 export const reachedDetailWishTheme: WishTheme = {
   card: "",
+  amount: "text-fg-neutral",
+  goal: "text-fg-neutral-muted",
   track: "bg-pink-2",
   fill: "bg-[linear-gradient(to_right,#fdedf4_4.84%,#fb75bb_95.78%)]",
   fillsTrack: true,
@@ -113,6 +139,8 @@ export const reachedDetailWishTheme: WishTheme = {
 
 export const finishedDetailWishTheme: WishTheme = {
   card: "",
+  amount: "text-fg-neutral",
+  goal: "text-fg-neutral-muted",
   track: "bg-pink-2",
   fill: "bg-[linear-gradient(to_right,#dedede_0%,#fcb1d6_100%)]",
   fillsTrack: true,
@@ -121,6 +149,8 @@ export const finishedDetailWishTheme: WishTheme = {
 
 export const abandonedDetailWishTheme: WishTheme = {
   card: "",
+  amount: "text-fg-neutral",
+  goal: "text-fg-neutral-muted",
   track: "bg-gray-2",
   fill: "bg-gray-4",
   fillsTrack: false,
@@ -129,6 +159,8 @@ export const abandonedDetailWishTheme: WishTheme = {
 
 export const sourceWishTheme: WishTheme = {
   card: "",
+  amount: "text-fg-neutral",
+  goal: "text-fg-neutral-muted",
   track: "bg-pink-2",
   fill: "bg-pink-6",
   fillsTrack: false,

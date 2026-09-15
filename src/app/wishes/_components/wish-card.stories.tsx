@@ -9,6 +9,7 @@ const wish: WishItem = {
   abandonmentAmount: null,
   targetAmount: 30_000,
   state: "IN_PROGRESS",
+  visibility: "PRIVATE",
 };
 
 const meta = {
@@ -56,6 +57,7 @@ export const 목표달성: Story = {
       amount: 25_000,
       targetAmount: 25_000,
       state: "AMOUNT_REACHED",
+      visibility: "PRIVATE",
     },
     tone: "pink",
     onMore: () => {},
@@ -70,6 +72,7 @@ export const 완료: Story = {
       amount: 45_000,
       targetAmount: 45_000,
       state: "COMPLETED",
+      visibility: "PRIVATE",
     },
     tone: "pink",
   },
@@ -84,6 +87,7 @@ export const 포기: Story = {
       abandonmentAmount: 12_000,
       targetAmount: 55_000,
       state: "ABANDONED",
+      visibility: "PRIVATE",
     },
     tone: "pink",
   },
@@ -98,6 +102,7 @@ export const 포기_0원: Story = {
       abandonmentAmount: 0,
       targetAmount: 10_000,
       state: "ABANDONED",
+      visibility: "PRIVATE",
     },
     tone: "pink",
   },
@@ -123,6 +128,7 @@ export const 대표위시: Story = {
       abandonmentAmount: null,
       targetAmount: 30_000,
       state: "AMOUNT_REACHED",
+      visibility: "PRIVATE",
     },
     tone: "pink",
     isRepresentative: true,

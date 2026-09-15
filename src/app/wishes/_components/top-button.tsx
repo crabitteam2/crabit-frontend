@@ -22,11 +22,11 @@ export function TopButton() {
         type="button"
         aria-label="맨 위로 이동"
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        className={`pointer-events-auto absolute right-4 bottom-[calc(3rem+env(safe-area-inset-bottom))] block size-24 transition-opacity duration-200 motion-reduce:transition-none ${
+        className={`pointer-events-auto absolute right-4 bottom-[calc(3rem+env(safe-area-inset-bottom))] block size-[76px] transition-opacity duration-200 motion-reduce:transition-none ${
           isVisible ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
-        <Image src={topIcon} alt="" fill sizes="96px" />
+        <Image src={topIcon} alt="" fill sizes="76px" />
       </button>
     </div>
   );
