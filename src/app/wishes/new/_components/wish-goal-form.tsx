@@ -54,10 +54,13 @@ export function WishGoalForm({
     setFocus,
     setValue,
     getValues,
+    watch,
     formState: { errors, isSubmitting },
   } = useWishForm({
     defaultValues: { purpose: initialPurpose, amount: initialAmount },
   });
+  const isFilled =
+    watch("purpose").trim() !== "" && watch("amount").trim() !== "";
   const box = useKeyboardViewport();
   const isKeyboardOpen = box?.isKeyboardOpen ?? false;
   // 첫 단계에 들어오면 새 등록이므로 지난 흐름의 표를 지운다.
@@ -146,6 +149,7 @@ export function WishGoalForm({
         className={`shrink-0 px-4 ${isKeyboardOpen ? "pb-5" : "pb-[calc(55px+env(safe-area-inset-bottom))]"}`}
       >
         <Button
+          variant={isFilled ? "fill" : "weak"}
           size="xlarge"
           className="w-full"
           type="submit"

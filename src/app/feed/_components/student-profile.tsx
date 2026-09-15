@@ -127,7 +127,7 @@ export function StudentProfile({
           isBlocked || isMine ? undefined : (
             <Button
               size="medium"
-              variant={isFollowing ? "weak" : "fill"}
+              variant={isFollowing ? "subtle" : "fill"}
               isLoading={pending === "follow"}
               disabled={pending !== null}
               onClick={() =>

@@ -57,7 +57,7 @@ export default async function WishDetailPage({
             </Link>
             <Link
               href={`/wishes/${wishId}/withdraw`}
-              className="bg-brand-weak text-fg-brand text-b4 inline-flex h-12 flex-1 items-center justify-center rounded-xl px-5 font-semibold"
+              className="bg-pink-2 text-fg-brand text-b4 inline-flex h-12 flex-1 items-center justify-center rounded-xl px-5 font-semibold"
             >
               돈 꺼내기
             </Link>

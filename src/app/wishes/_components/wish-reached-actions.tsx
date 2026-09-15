@@ -62,7 +62,7 @@ export function WishReachedActions({
         </button>
         <Link
           href={`/wishes/${wishId}/withdraw`}
-          className={`bg-brand-weak text-fg-brand ${ACTION_STYLE}`}
+          className={`bg-pink-2 text-fg-brand ${ACTION_STYLE}`}
         >
           돈 꺼내기
         </Link>

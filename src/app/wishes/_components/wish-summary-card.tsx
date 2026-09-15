@@ -36,7 +36,7 @@ export function WishSummaryCard({ wish }: WishSummaryCardProps) {
 
   return (
     <article
-      className={`flex flex-col overflow-hidden rounded-[20px] px-8 pt-7 pb-4 ${isFinished ? "bg-gray-1" : "bg-pink-6/5"}`}
+      className={`flex flex-col overflow-hidden rounded-[20px] px-8 pt-7 pb-4 ${isFinished ? "bg-gray-1" : "bg-pink-2"}`}
     >
       <div className="flex min-h-[88px] items-start justify-between gap-4">
         <div className="flex min-w-0 flex-col">

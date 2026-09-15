@@ -59,7 +59,7 @@ export function WishFinishedActions({
         <button
           type="button"
           onClick={() => setIsDialogOpen(true)}
-          className={`bg-brand-weak text-fg-brand ${ACTION_STYLE}`}
+          className={`bg-pink-2 text-fg-brand ${ACTION_STYLE}`}
         >
           삭제하기
         </button>

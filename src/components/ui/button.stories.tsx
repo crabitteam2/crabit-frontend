@@ -12,7 +12,7 @@ const meta = {
     children: "메인 액션",
   },
   argTypes: {
-    variant: { control: "inline-radio", options: ["fill", "weak"] },
+    variant: { control: "inline-radio", options: ["fill", "weak", "subtle"] },
     color: {
       control: "inline-radio",
       options: ["primary", "danger", "dark"],
@@ -32,7 +32,7 @@ export const Default: Story = {};
 export const VariantColorSizeMatrix: Story = {
   render: () => (
     <div className="flex flex-col gap-6">
-      {(["fill", "weak"] as const).map((variant) =>
+      {(["fill", "weak", "subtle"] as const).map((variant) =>
         (["primary", "danger", "dark"] as const).map((color) => (
           <section key={`${variant}-${color}`} className="flex flex-col gap-3">
             <p className="text-e1 text-fg-neutral-muted">
