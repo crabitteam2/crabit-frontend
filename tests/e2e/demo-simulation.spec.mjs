@@ -11,6 +11,8 @@ test("real demo representatives retain identity across SSR, BFF, navigation and 
   let previousContext;
   for (const grade of [3, 4, 5, 6]) {
     await page.goto(`${origin}/demo`);
+    await page.getByRole("button", { name: "데모 계정 선택", exact: true }).focus();
+    await page.keyboard.press("Enter");
     await page.getByRole("combobox", { name: "데모 대표", exact: true }).selectOption(`grade-${grade}`);
     await expect(page.getByRole("heading", { name: `${grade}학년 대표`, exact: true })).toBeVisible();
     const accountId = await page.getByTestId("demo-account-id").innerText();
@@ -44,7 +46,7 @@ test("real demo representatives retain identity across SSR, BFF, navigation and 
     for (const route of ["/home", "/wishes", "/feed", weeklyRoute, "/recaps/monthly?month=2026-08"]) {
       const response = await page.goto(`${origin}${route}`);
       expect(response.status()).toBe(200);
-      await expect(page.getByRole("combobox", {name:"데모 대표",exact:true})).toHaveValue(`grade-${grade}`);
+      await expect(page.getByRole("combobox", {name:"데모 대표",exact:true,includeHidden:true})).toHaveValue(`grade-${grade}`);
       await expect(page.locator("body")).not.toContainText("Application error");
       if (route === "/home") {
         await expect(page.getByText(`${grade}학년 대표의 크래빗 카드`, {exact:true})).toBeVisible();
@@ -88,6 +90,8 @@ test("real demo representatives retain identity across SSR, BFF, navigation and 
   await page.setViewportSize({width:375,height:812});
   await page.goto(`${origin}/demo`);
   await expect(page.getByTestId("demo-account-id")).toHaveText(observations[3].accountId);
+  await page.getByRole("button", {name:"데모 계정 선택",exact:true}).focus();
+  await page.keyboard.press("Enter");
   const selector = page.getByRole("combobox", {name:"데모 대표",exact:true});
   await selector.focus(); await expect(selector).toBeFocused();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
@@ -95,6 +99,8 @@ test("real demo representatives retain identity across SSR, BFF, navigation and 
   await expect(page).toHaveURL(`${origin}/home`);
   await page.goBack();
   await expect(page.getByTestId("demo-account-id")).toHaveText(observations[3].accountId);
+  await page.getByRole("button", {name:"데모 계정 선택",exact:true}).focus();
+  await page.keyboard.press("Enter");
   await selector.selectOption("grade-3");
   await expect(page.getByTestId("demo-account-id")).toHaveText(observations[0].accountId);
   await page.reload();
