@@ -21,7 +21,11 @@ function toInitialShown(total: number) {
   return total <= FULL_LIST_MAX ? total : COLLAPSED_SHOWN;
 }
 
-const TOAST_MESSAGE = "설정이 저장되었습니다.";
+const TOAST_MESSAGES: Record<string, string> = {
+  unshared: "학원 피드에서는 이제 보이지 않아요.",
+};
+
+const DEFAULT_TOAST_MESSAGE = "설정이 저장되었습니다.";
 
 interface WishListProps {
   inProgress: OwnedWishItem[];
@@ -40,7 +44,9 @@ export function WishList({
   const [finishedSheetWish, setFinishedSheetWish] =
     useState<OwnedWishItem | null>(null);
   const [toast, setToast] = useState<string | null>(
-    toastKey === null || toastKey === undefined ? null : TOAST_MESSAGE,
+    toastKey === null || toastKey === undefined
+      ? null
+      : (TOAST_MESSAGES[toastKey] ?? DEFAULT_TOAST_MESSAGE),
   );
   const [inProgressShown, setInProgressShown] = useState(
     toInitialShown(inProgress.length),

@@ -13,11 +13,14 @@ const ACTION_STYLE =
 interface WishFinishedActionsProps {
   wishId: string;
   version: number;
+  /** 이미 학원 피드에 올린 위시인지 여부입니다. */
+  isShared: boolean;
 }
 
 export function WishFinishedActions({
   wishId,
   version,
+  isShared,
 }: WishFinishedActionsProps) {
   const router = useRouter();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -48,10 +51,10 @@ export function WishFinishedActions({
     <>
       <div className="flex gap-4 px-4 pt-[22.25px] pb-[6.25px]">
         <Link
-          href={`/wishes/${wishId}/share`}
+          href={`/wishes/${wishId}/share${isShared ? "/write" : ""}`}
           className={`bg-brand-solid text-fg-contrast ${ACTION_STYLE}`}
         >
-          공유하기
+          {isShared ? "공개 대상 수정" : "공유하기"}
         </Link>
         <button
           type="button"

@@ -18,6 +18,7 @@ import {
   unfollowAcademyStudent,
 } from "@/lib/http/follows";
 import { createBrowserApiClient } from "@/lib/http/browser";
+import { MY_STUDENT_ID } from "@/lib/mock/me";
 
 /** 팔로잉과 팔로워 중 어느 목록을 보고 있는지 나타냅니다. */
 const PAGE_LIMIT = 100;
@@ -245,18 +246,20 @@ export function FollowListScreen(props: FollowListScreenProps) {
                 >
                   {item.nickname}
                 </Link>
-                <Button
-                  size="medium"
-                  variant={isFollowing ? "weak" : "fill"}
-                  isLoading={pending[item.id] === true}
-                  onClick={() =>
-                    isFollowing
-                      ? setUnfollowTarget(item.id)
-                      : void toggle(item.id, false)
-                  }
-                >
-                  {isFollowing ? "팔로잉" : "팔로우"}
-                </Button>
+                {item.id === MY_STUDENT_ID ? null : (
+                  <Button
+                    size="medium"
+                    variant={isFollowing ? "weak" : "fill"}
+                    isLoading={pending[item.id] === true}
+                    onClick={() =>
+                      isFollowing
+                        ? setUnfollowTarget(item.id)
+                        : void toggle(item.id, false)
+                    }
+                  >
+                    {isFollowing ? "팔로잉" : "팔로우"}
+                  </Button>
+                )}
               </li>
             );
           })}

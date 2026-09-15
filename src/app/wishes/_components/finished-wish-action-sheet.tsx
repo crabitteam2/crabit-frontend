@@ -65,9 +65,18 @@ export function FinishedWishActionSheet({
       >
         {wish === null ? null : (
           <>
-            <Link href={`/wishes/${wish.id}/share`} className={ACTION_STYLE}>
-              학원 피드 공유하기
-            </Link>
+            {wish.visibility === "PRIVATE" ? (
+              <Link href={`/wishes/${wish.id}/share`} className={ACTION_STYLE}>
+                학원 피드 공유하기
+              </Link>
+            ) : (
+              <Link
+                href={`/wishes/${wish.id}/share/write`}
+                className={ACTION_STYLE}
+              >
+                학원 피드 공개 대상 수정
+              </Link>
+            )}
             <button type="button" onClick={openDialog} className={ACTION_STYLE}>
               삭제하기
             </button>

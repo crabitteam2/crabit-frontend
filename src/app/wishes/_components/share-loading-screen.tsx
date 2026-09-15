@@ -14,6 +14,8 @@ interface ShareLoadingScreenProps {
   ticketName: string;
   writeHref: string;
   doneHref: string;
+  /** 비공개로 되돌렸을 때 갈 경로입니다. */
+  unsharedHref: string;
 }
 
 /** 공유 요청을 보내고 결과가 올 때까지 로딩 연출을 보여줍니다. */
@@ -23,10 +25,12 @@ export function ShareLoadingScreen({
   ticketName,
   writeHref,
   doneHref,
+  unsharedHref,
 }: ShareLoadingScreenProps) {
   const router = useRouter();
   const startedRef = useRef(false);
   const [result, setResult] = useState<WishActionResult | null>(null);
+  const [isUnshared, setIsUnshared] = useState(false);
   const [isAnimationDone, setIsAnimationDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +44,7 @@ export function ShareLoadingScreen({
       return;
     }
 
+    setIsUnshared(visibility === "PRIVATE");
     void shareWishAction(wishId, expectedVersion, visibility).then(setResult);
   }, [expectedVersion, router, ticketName, wishId, writeHref]);
 
@@ -48,7 +53,7 @@ export function ShareLoadingScreen({
 
     if (result.ok) {
       clearShareTicket(ticketName);
-      router.replace(doneHref);
+      router.replace(isUnshared ? unsharedHref : doneHref);
       return;
     }
 
@@ -59,7 +64,15 @@ export function ShareLoadingScreen({
     }
 
     setError(result.message);
-  }, [doneHref, isAnimationDone, result, router, ticketName]);
+  }, [
+    doneHref,
+    isAnimationDone,
+    isUnshared,
+    result,
+    router,
+    ticketName,
+    unsharedHref,
+  ]);
 
   return (
     <>

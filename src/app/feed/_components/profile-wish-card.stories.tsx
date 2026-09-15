@@ -34,6 +34,19 @@ export const 포기: Story = {
   },
 };
 
+export const 사진: Story = {
+  args: {
+    wish: {
+      ...wish,
+      photo: {
+        small: "https://storage.test/signed/small",
+        medium: "https://storage.test/signed/medium",
+        large: "https://storage.test/signed/large",
+      },
+    },
+  },
+};
+
 export const 기간없음: Story = {
   args: {
     wish: { ...wish, startDate: null, targetDate: null },

@@ -96,9 +96,18 @@ export function WishActionSheet({ wish, onClose }: WishActionSheetProps) {
             >
               위시 포기
             </button>
-            <Link href={`/wishes/${wish.id}/share`} className={ACTION_STYLE}>
-              학원 피드 올리기
-            </Link>
+            {wish.visibility === "PRIVATE" ? (
+              <Link href={`/wishes/${wish.id}/share`} className={ACTION_STYLE}>
+                학원 피드 올리기
+              </Link>
+            ) : (
+              <Link
+                href={`/wishes/${wish.id}/share/write`}
+                className={ACTION_STYLE}
+              >
+                학원 피드 공개 대상 수정
+              </Link>
+            )}
           </>
         )}
       </BottomSheet>
