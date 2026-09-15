@@ -78,13 +78,7 @@ export function FinishedWishActionSheet({
       <ConfirmDialog
         isOpen={target !== null}
         title="위시를 정말 삭제할까요?"
-        description={
-          <>
-            지금까지 모은 금액은 카드 잔액으로 돌아가요.
-            <br />
-            자금 이동 내역에서 계속 확인할 수 있어요.
-          </>
-        }
+        description="삭제한 위시는 다시 복구할 수 없어요."
         primaryLabel="아니요"
         secondaryLabel="삭제하기"
         onPrimary={dismiss}
