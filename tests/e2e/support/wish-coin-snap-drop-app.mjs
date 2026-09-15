@@ -7,7 +7,7 @@ export const WISH_ID = "44444444-4444-4444-8444-444444444444";
 export const SOURCE_ID = "66666666-6666-4666-8666-666666666666";
 export const EVENT_ID = "55555555-5555-4555-8555-555555555555";
 
-export async function startWishCoinApplication() {
+export async function startWishCoinApplication({ port } = {}) {
   const state = { requests: [], delay: 0, error: null };
   const backend = createServer(async (request, response) => {
     try {
@@ -70,7 +70,7 @@ export async function startWishCoinApplication() {
     }
   });
   await listen(backend);
-  const appPort = await availablePort();
+  const appPort = port ?? (await availablePort());
   const url = `http://127.0.0.1:${appPort}`;
   const app = spawn(
     process.execPath,

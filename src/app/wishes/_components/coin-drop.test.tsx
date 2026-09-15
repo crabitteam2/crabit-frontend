@@ -1,6 +1,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CoinDrop } from "./coin-drop";
+import { ALIGNED, LANDED } from "./coin-drop-geometry";
 
 vi.mock("next/image", () => ({ default: () => <span /> }));
 let now = 0;
@@ -80,19 +81,36 @@ describe("coin drop", () => {
         `translate(${x - 72}px, ${y - 72}px)`,
       );
       advance(150);
-      expect(coin.style.transform).toBe("translate(123.5px, 150px)");
+      expect(coin.style.transform).toBe(
+        `translate(${ALIGNED.x}px, ${ALIGNED.y}px)`,
+      );
       expect(coin).toHaveAttribute("data-phase", "holding");
+      const artwork = coin.querySelector<HTMLElement>("[data-coin-art]")!;
+      expect(artwork.style.transform).toBe(
+        "rotate(0deg) rotateY(0deg) scale(1)",
+      );
       advance(99);
-      expect(coin.style.transform).toBe("translate(123.5px, 150px)");
+      expect(coin.style.transform).toBe(
+        `translate(${ALIGNED.x}px, ${ALIGNED.y}px)`,
+      );
       advance(1);
       expect(coin).toHaveAttribute("data-phase", "falling");
       expect(
         coin.parentElement?.querySelector('[aria-hidden="true"]'),
       ).not.toBeNull();
-      advance(499);
+      expect(artwork.style.transform).toBe(
+        "rotate(0deg) rotateY(0deg) scale(1)",
+      );
+      advance(250);
+      expect(artwork.style.transform).not.toBe(
+        "rotate(0deg) rotateY(0deg) scale(1)",
+      );
+      advance(249);
       expect(drop).not.toHaveBeenCalled();
       advance(1);
-      expect(coin.style.transform).toBe("translate(123.5px, 435px)");
+      expect(coin.style.transform).toBe(
+        `translate(${LANDED.x}px, ${LANDED.y}px)`,
+      );
       expect(screen.getByRole("button")).toBe(coin);
       expect(drop).toHaveBeenCalledTimes(1);
       down(coin);

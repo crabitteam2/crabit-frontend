@@ -6,13 +6,17 @@ import coinImage from "@/../public/images/wishes/coin.png";
 import piggyBankSmileImage from "@/../public/images/wishes/piggy-bank-smile.png";
 import piggyBankImage from "@/../public/images/wishes/piggy-bank.png";
 
-const COIN = { left: -5, top: 215, size: 144 };
-const BANK = { left: 92, top: 310, width: 207, height: 277 };
-const FRONT_TOP = 428;
+import {
+  ALIGNED,
+  BANK,
+  COIN,
+  COIN_INK,
+  FRONT_CLIP,
+  LANDED,
+  fallPose,
+} from "./coin-drop-geometry";
+
 const HOME = { x: COIN.left, y: COIN.top };
-// 동전 전체가 귀 끝보다 16px 위에 보이도록 정렬합니다.
-const ALIGNED = { x: BANK.left + (BANK.width - COIN.size) / 2, y: 150 };
-const LANDED = { x: ALIGNED.x, y: 435 };
 const ALIGN_MS = 300;
 const HOLD_MS = 100;
 const FALL_MS = 500;
@@ -50,6 +54,7 @@ export function CoinDrop({ onDrop, disabled = false }: CoinDropProps) {
   const locked = useRef(false);
   const frame = useRef<number | null>(null);
   const [point, setPoint] = useState<Point>(HOME);
+  const [fallProgress, setFallProgress] = useState(0);
   const [phase, setPhase] = useState<Phase>("idle");
   const onDropRef = useRef(onDrop);
   onDropRef.current = onDrop;
@@ -70,6 +75,7 @@ export function CoinDrop({ onDrop, disabled = false }: CoinDropProps) {
     locked.current = true;
     if (reducedMotion()) {
       move(accepted ? LANDED : HOME);
+      setFallProgress(accepted ? 1 : 0);
       setPhase(accepted ? "landed" : "idle");
       if (accepted) onDropRef.current();
       else locked.current = false;
@@ -104,7 +110,9 @@ export function CoinDrop({ onDrop, disabled = false }: CoinDropProps) {
         setPhase("holding");
       } else {
         const t = Math.min((elapsed - ALIGN_MS - HOLD_MS) / FALL_MS, 1);
-        move(interpolate(ALIGNED, LANDED, t * t));
+        const pose = fallPose(t);
+        move({ x: pose.x, y: pose.y });
+        setFallProgress(t);
         setPhase(t === 1 ? "landed" : "falling");
         if (t === 1) {
           frame.current = null;
@@ -175,6 +183,7 @@ export function CoinDrop({ onDrop, disabled = false }: CoinDropProps) {
   const isAccepted = ["aligning", "holding", "falling", "landed"].includes(
     phase,
   );
+  const pose = fallPose(fallProgress);
   const unavailable = disabled || (phase !== "idle" && phase !== "dragging");
 
   return (
@@ -186,7 +195,12 @@ export function CoinDrop({ onDrop, disabled = false }: CoinDropProps) {
         height={BANK.height}
         priority
         className="absolute"
-        style={{ left: BANK.left, top: BANK.top }}
+        style={{
+          left: BANK.left,
+          top: BANK.top,
+          width: BANK.width,
+          height: BANK.height,
+        }}
       />
       <div
         role="button"
@@ -208,15 +222,24 @@ export function CoinDrop({ onDrop, disabled = false }: CoinDropProps) {
           transform: `translate(${point.x}px, ${point.y}px)`,
         }}
       >
-        <Image
-          src={coinImage}
-          alt=""
-          width={COIN.size}
-          height={COIN.size}
-          priority
-          draggable={false}
-          className="pointer-events-none size-full"
-        />
+        <div
+          data-coin-art="true"
+          className="size-full"
+          style={{
+            transformOrigin: `${COIN_INK.centerX}px ${COIN_INK.centerY}px`,
+            transform: `rotate(${pose.rotation}deg) rotateY(${pose.turn}deg) scale(${pose.scale})`,
+          }}
+        >
+          <Image
+            src={coinImage}
+            alt=""
+            width={COIN.size}
+            height={COIN.size}
+            priority
+            draggable={false}
+            className="pointer-events-none size-full"
+          />
+        </div>
       </div>
       {phase === "falling" || phase === "landed" ? (
         <div
@@ -224,9 +247,10 @@ export function CoinDrop({ onDrop, disabled = false }: CoinDropProps) {
           className="pointer-events-none absolute overflow-hidden"
           style={{
             left: BANK.left,
-            top: FRONT_TOP,
+            top: BANK.top,
             width: BANK.width,
-            height: BANK.top + BANK.height - FRONT_TOP,
+            height: BANK.height,
+            clipPath: FRONT_CLIP,
           }}
         >
           <Image
@@ -235,7 +259,7 @@ export function CoinDrop({ onDrop, disabled = false }: CoinDropProps) {
             width={BANK.width}
             height={BANK.height}
             priority
-            style={{ marginTop: BANK.top - FRONT_TOP }}
+            style={{ width: BANK.width, height: BANK.height }}
           />
         </div>
       ) : null}

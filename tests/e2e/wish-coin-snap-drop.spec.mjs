@@ -66,20 +66,39 @@ test.describe("Wish coin alignment and funding", () => {
             await screenshot(page, testInfo, `${viewport.width}-release`);
           await page.clock.runFor(320);
           await expect(coin).toHaveAttribute("data-phase", "holding");
-          await expect(coin).toHaveCSS(
-            "transform",
-            "matrix(1, 0, 0, 1, 123.5, 150)",
-          );
+          const aligned = await coin.evaluate((el) => {
+            const matrix = new DOMMatrix(getComputedStyle(el).transform);
+            return { x: matrix.m41, y: matrix.m42 };
+          });
+          expect(aligned.x).toBeCloseTo(92 + (519 / 1086) * 207 - 217 / 3, 3);
+          expect(aligned.y).toBe(150);
+          const art = coin.locator("[data-coin-art]");
+          await expect(art).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
           if (name === "bottom")
             await screenshot(page, testInfo, `${viewport.width}-aligned`);
           await page.clock.runFor(64);
           await expect(coin).toHaveAttribute("data-phase", "holding");
-          await page.clock.runFor(432);
+          await page.clock.runFor(256);
           await expect(coin).toHaveAttribute("data-phase", "falling");
+          const shrinking = await art.evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m11);
+          expect(shrinking).toBeGreaterThan(0.44);
+          expect(shrinking).toBeLessThan(1);
+          if (name === "bottom")
+            await screenshot(page, testInfo, `${viewport.width}-shrinking`);
+          await page.clock.runFor(144);
+          if (name === "bottom")
+            await screenshot(page, testInfo, `${viewport.width}-before-rim`);
+          await page.clock.runFor(32);
           if (name === "bottom")
             await screenshot(page, testInfo, `${viewport.width}-falling`);
+          await page.clock.runFor(32);
+          if (name === "bottom")
+            await screenshot(page, testInfo, `${viewport.width}-inside-rim`);
+          await page.clock.runFor(32);
+          if (name === "bottom")
+            await screenshot(page, testInfo, `${viewport.width}-hidden`);
           expect(application.state.requests).toHaveLength(before);
-          await page.clock.runFor(112);
+          await page.clock.runFor(48);
           await expect(coin).toHaveAttribute("data-phase", "landed");
           await expect
             .poll(() => application.state.requests.length)
