@@ -6,176 +6,228 @@ import coinImage from "@/../public/images/wishes/coin.png";
 import piggyBankSmileImage from "@/../public/images/wishes/piggy-bank-smile.png";
 import piggyBankImage from "@/../public/images/wishes/piggy-bank.png";
 
-const COIN = { left: -5, top: 215, size: 144 };
-const BANK = { left: 92, top: 310, width: 207, height: 277 };
+import {
+  ALIGNED,
+  BANK,
+  COIN,
+  COIN_INK,
+  FRONT_CLIP,
+  LANDED,
+  fallPose,
+} from "./coin-drop-geometry";
 
-/** 저금통 그림에서 앞으로 겹쳐 그릴 아랫부분이 시작하는 높이입니다. */
-const FRONT_TOP = 428;
+const HOME = { x: COIN.left, y: COIN.top };
+const ALIGN_MS = 300;
+const HOLD_MS = 100;
+const FALL_MS = 500;
+const RETURN_MS = 200;
 
-/** 떨어지는 동전이 멈추는 자리입니다. 앞조각에 완전히 가려집니다. */
-const FALLING_COIN = { left: 124, top: 435, size: COIN.size };
-
-const FALL_MS = 1000;
-
-const SETTLE_MS = 250;
-
+type Phase =
+  | "idle"
+  | "dragging"
+  | "returning"
+  | "aligning"
+  | "holding"
+  | "falling"
+  | "landed";
 interface Point {
   x: number;
   y: number;
 }
-
 interface CoinDropProps {
   onDrop: () => void;
+  disabled?: boolean;
 }
 
-function prefersReducedMotion() {
+function reducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
+function interpolate(from: Point, to: Point, t: number): Point {
+  return { x: from.x + (to.x - from.x) * t, y: from.y + (to.y - from.y) * t };
+}
 
-export function CoinDrop({ onDrop }: CoinDropProps) {
+export function CoinDrop({ onDrop, disabled = false }: CoinDropProps) {
   const areaRef = useRef<HTMLDivElement>(null);
+  const pointer = useRef<number | null>(null);
   const grabOffset = useRef<Point>({ x: 0, y: 0 });
-  const [offset, setOffset] = useState<Point>({ x: 0, y: 0 });
-  const [isDragging, setIsDragging] = useState(false);
-  const [isFalling, setIsFalling] = useState(false);
-  const [hasLanded, setHasLanded] = useState(false);
+  const position = useRef<Point>(HOME);
+  const locked = useRef(false);
+  const frame = useRef<number | null>(null);
+  const [point, setPoint] = useState<Point>(HOME);
+  const [fallProgress, setFallProgress] = useState(0);
+  const [phase, setPhase] = useState<Phase>("idle");
   const onDropRef = useRef(onDrop);
   onDropRef.current = onDrop;
 
-  useEffect(() => {
-    if (!isFalling) return;
-    const frame = requestAnimationFrame(() => setHasLanded(true));
-    return () => cancelAnimationFrame(frame);
-  }, [isFalling]);
+  useEffect(
+    () => () => {
+      if (frame.current !== null) cancelAnimationFrame(frame.current);
+    },
+    [],
+  );
 
-  useEffect(() => {
-    if (!hasLanded) return;
-    const timer = setTimeout(() => onDropRef.current(), FALL_MS + SETTLE_MS);
-    return () => clearTimeout(timer);
-  }, [hasLanded]);
+  const move = (next: Point) => {
+    position.current = next;
+    setPoint(next);
+  };
+
+  const animate = (from: Point, accepted: boolean) => {
+    locked.current = true;
+    if (reducedMotion()) {
+      move(accepted ? LANDED : HOME);
+      setFallProgress(accepted ? 1 : 0);
+      setPhase(accepted ? "landed" : "idle");
+      if (accepted) onDropRef.current();
+      else locked.current = false;
+      return;
+    }
+    setPhase(accepted ? "aligning" : "returning");
+    const started = performance.now();
+    // A quadratic path bends upward before easing into the centered hold.
+    const control = { x: from.x, y: Math.min(from.y, ALIGNED.y) - 48 };
+    const tick = (now: number) => {
+      const elapsed = now - started;
+      if (!accepted) {
+        const t = Math.min(elapsed / RETURN_MS, 1);
+        move(interpolate(from, HOME, 1 - (1 - t) ** 3));
+        if (t === 1) {
+          locked.current = false;
+          setPhase("idle");
+          frame.current = null;
+          return;
+        }
+      } else if (elapsed < ALIGN_MS) {
+        const t = 1 - (1 - elapsed / ALIGN_MS) ** 2;
+        move(
+          interpolate(
+            interpolate(from, control, t),
+            interpolate(control, ALIGNED, t),
+            t,
+          ),
+        );
+      } else if (elapsed < ALIGN_MS + HOLD_MS) {
+        move(ALIGNED);
+        setPhase("holding");
+      } else {
+        const t = Math.min((elapsed - ALIGN_MS - HOLD_MS) / FALL_MS, 1);
+        const pose = fallPose(t);
+        move({ x: pose.x, y: pose.y });
+        setFallProgress(t);
+        setPhase(t === 1 ? "landed" : "falling");
+        if (t === 1) {
+          frame.current = null;
+          onDropRef.current();
+          return;
+        }
+      }
+      frame.current = requestAnimationFrame(tick);
+    };
+    frame.current = requestAnimationFrame(tick);
+  };
 
   const toAreaPoint = (event: React.PointerEvent) => {
-    const area = areaRef.current;
-    if (area === null) return null;
-    const rect = area.getBoundingClientRect();
-    return { x: event.clientX - rect.left, y: event.clientY - rect.top };
+    const rect = areaRef.current?.getBoundingClientRect();
+    return rect
+      ? { x: event.clientX - rect.left, y: event.clientY - rect.top }
+      : null;
   };
-
+  const draggedPoint = (event: React.PointerEvent) => {
+    const next = toAreaPoint(event);
+    return next
+      ? { x: next.x - grabOffset.current.x, y: next.y - grabOffset.current.y }
+      : position.current;
+  };
   const onPointerDown = (event: React.PointerEvent<HTMLDivElement>) => {
-    const point = toAreaPoint(event);
-    if (point === null) return;
+    if (
+      disabled ||
+      locked.current ||
+      pointer.current !== null ||
+      event.button !== 0
+    )
+      return;
+    const next = toAreaPoint(event);
+    if (!next) return;
+    pointer.current = event.pointerId;
     event.currentTarget.setPointerCapture(event.pointerId);
     grabOffset.current = {
-      x: point.x - (COIN.left + offset.x),
-      y: point.y - (COIN.top + offset.y),
+      x: next.x - position.current.x,
+      y: next.y - position.current.y,
     };
-    setIsDragging(true);
+    setPhase("dragging");
   };
-
   const onPointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
-    const point = toAreaPoint(event);
-    if (point === null) return;
-    setOffset({
-      x: point.x - grabOffset.current.x - COIN.left,
-      y: point.y - grabOffset.current.y - COIN.top,
-    });
+    if (pointer.current !== event.pointerId) return;
+    move(draggedPoint(event));
   };
-
-  const onPointerUp = () => {
-    if (!isDragging) return;
-    setIsDragging(false);
-
-    const centerX = COIN.left + offset.x + COIN.size / 2;
-    const centerY = COIN.top + offset.y + COIN.size / 2;
-    const isOverBank =
+  const finish = (
+    event: React.PointerEvent<HTMLDivElement>,
+    cancelled: boolean,
+  ) => {
+    if (pointer.current !== event.pointerId) return;
+    pointer.current = null;
+    const released = cancelled ? position.current : draggedPoint(event);
+    move(released);
+    const centerX = released.x + COIN.size / 2;
+    const centerY = released.y + COIN.size / 2;
+    const accepted =
+      !cancelled &&
+      !disabled &&
       centerX >= BANK.left &&
       centerX <= BANK.left + BANK.width &&
       centerY >= BANK.top &&
       centerY <= BANK.top + BANK.height;
-
-    if (!isOverBank) return;
-    if (prefersReducedMotion()) {
-      onDrop();
-      return;
-    }
-    setIsFalling(true);
+    animate(released, accepted);
+    if (event.currentTarget.hasPointerCapture(event.pointerId))
+      event.currentTarget.releasePointerCapture(event.pointerId);
   };
+  const isAccepted = ["aligning", "holding", "falling", "landed"].includes(
+    phase,
+  );
+  const pose = fallPose(fallProgress);
+  const unavailable = disabled || (phase !== "idle" && phase !== "dragging");
 
   return (
     <div ref={areaRef} className="absolute inset-0">
       <Image
-        src={isFalling ? piggyBankSmileImage : piggyBankImage}
+        src={isAccepted ? piggyBankSmileImage : piggyBankImage}
         alt=""
         width={BANK.width}
         height={BANK.height}
         priority
         className="absolute"
-        style={{ left: BANK.left, top: BANK.top }}
+        style={{
+          left: BANK.left,
+          top: BANK.top,
+          width: BANK.width,
+          height: BANK.height,
+        }}
       />
-
-      {isFalling ? (
+      <div
+        role="button"
+        tabIndex={unavailable ? -1 : 0}
+        aria-label="동전을 저금통으로 끌어 넣기"
+        aria-disabled={unavailable}
+        data-phase={phase}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={(event) => finish(event, false)}
+        onPointerCancel={(event) => finish(event, true)}
+        onLostPointerCapture={(event) => finish(event, true)}
+        className={`absolute touch-none select-none ${phase === "dragging" ? "cursor-grabbing" : "cursor-grab"}`}
+        style={{
+          left: 0,
+          top: 0,
+          width: COIN.size,
+          height: COIN.size,
+          transform: `translate(${point.x}px, ${point.y}px)`,
+        }}
+      >
         <div
-          aria-hidden="true"
-          className="absolute flex items-center justify-center transition-transform duration-[1000ms] ease-in motion-reduce:transition-none"
+          data-coin-art="true"
+          className="size-full"
           style={{
-            left: FALLING_COIN.left,
-            top: FALLING_COIN.top,
-            width: FALLING_COIN.size,
-            height: FALLING_COIN.size,
-            transform: hasLanded
-              ? "translateY(0)"
-              : `translateY(${-(FALLING_COIN.top + FALLING_COIN.size)}px)`,
-          }}
-        >
-          <Image
-            src={coinImage}
-            alt=""
-            width={FALLING_COIN.size}
-            height={FALLING_COIN.size}
-            priority
-            className="drop-shadow-[0px_7.333px_6.111px_rgba(0,0,0,0.1)]"
-          />
-        </div>
-      ) : null}
-
-      {isFalling ? (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute overflow-hidden"
-          style={{
-            left: BANK.left,
-            top: FRONT_TOP,
-            width: BANK.width,
-            height: BANK.top + BANK.height - FRONT_TOP,
-          }}
-        >
-          <Image
-            src={piggyBankSmileImage}
-            alt=""
-            width={BANK.width}
-            height={BANK.height}
-            priority
-            style={{ marginTop: BANK.top - FRONT_TOP }}
-          />
-        </div>
-      ) : null}
-
-      {isFalling ? null : (
-        <div
-          role="button"
-          tabIndex={0}
-          aria-label="동전을 저금통으로 끌어 넣기"
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerCancel={onPointerUp}
-          className={`absolute touch-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
-          style={{
-            left: COIN.left + offset.x,
-            top: COIN.top + offset.y,
-            width: COIN.size,
-            height: COIN.size,
+            transformOrigin: `${COIN_INK.centerX}px ${COIN_INK.centerY}px`,
+            transform: `rotate(${pose.rotation}deg) rotateY(${pose.turn}deg) scale(${pose.scale})`,
           }}
         >
           <Image
@@ -188,7 +240,29 @@ export function CoinDrop({ onDrop }: CoinDropProps) {
             className="pointer-events-none size-full"
           />
         </div>
-      )}
+      </div>
+      {phase === "falling" || phase === "landed" ? (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute overflow-hidden"
+          style={{
+            left: BANK.left,
+            top: BANK.top,
+            width: BANK.width,
+            height: BANK.height,
+            clipPath: FRONT_CLIP,
+          }}
+        >
+          <Image
+            src={piggyBankSmileImage}
+            alt=""
+            width={BANK.width}
+            height={BANK.height}
+            priority
+            style={{ width: BANK.width, height: BANK.height }}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

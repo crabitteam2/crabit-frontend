@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import closeIcon from "@/../public/images/wishes/close-32.svg";
 import { Toast } from "@/components/ui/toast";
 import { depositToWishAction, transferWishFundsAction } from "../wish-actions";
@@ -34,6 +34,7 @@ export function DepositCoinScreen({
   const router = useRouter();
   const [ticket, setTicket] = useState<FundTicket | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const pendingRef = useRef(false);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,7 +48,8 @@ export function DepositCoinScreen({
   }, [amountHref, router, ticketName]);
 
   const drop = async () => {
-    if (isPending || ticket === null) return;
+    if (pendingRef.current || ticket === null) return;
+    pendingRef.current = true;
     const { amount, idempotencyKey } = ticket;
     setIsPending(true);
     setError(null);
@@ -76,6 +78,7 @@ export function DepositCoinScreen({
         router.replace("/adjust");
         return;
       }
+      pendingRef.current = false;
       setError(result.message);
       setAttempt((count) => count + 1);
       return;
@@ -93,7 +96,11 @@ export function DepositCoinScreen({
         backgroundPosition: "0 -5px",
       }}
     >
-      <CoinDrop key={attempt} onDrop={drop} />
+      <CoinDrop
+        key={attempt}
+        onDrop={drop}
+        disabled={ticket === null || isPending}
+      />
 
       <div className="pointer-events-none relative">
         <div className="flex justify-end px-4 pt-[calc(env(safe-area-inset-top)+12px)]">
