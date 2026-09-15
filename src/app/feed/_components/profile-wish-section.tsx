@@ -30,7 +30,9 @@ export function ProfileWishSection({ title, wishes }: ProfileWishSectionProps) {
         {title}
       </h2>
       {wishes.length === 0 ? (
-        <div className="h-[226px]" />
+        <p className="text-gray-7 flex h-[226px] items-center justify-center text-[16px] leading-[23px] font-medium tracking-[-0.3px]">
+          공유한 위시가 없어요.
+        </p>
       ) : (
         <ul className="flex flex-col gap-10 px-4 pb-10">
           {wishes.slice(0, shown).map((wish, index) => (
