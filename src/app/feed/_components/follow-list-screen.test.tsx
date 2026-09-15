@@ -37,6 +37,7 @@ vi.mock("@/lib/http/follows", () => ({
 }));
 
 import { FollowListScreen } from "./follow-list-screen";
+import { MY_STUDENT_ID } from "@/lib/mock/me";
 
 const academyId = "11111111-1111-4111-8111-111111111111";
 const ownerStudentId = "22222222-2222-4222-8222-222222222222";
@@ -215,6 +216,21 @@ describe("FollowListScreen", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(unfollowAcademyStudent).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "팔로잉" })).toBeVisible();
+  });
+
+  it("내 계정 줄에는 팔로우 버튼을 두지 않는다", () => {
+    const mine = page();
+    renderRemote({
+      initialPage: {
+        ...mine,
+        items: mine.items.map((item) => ({
+          ...item,
+          studentId: MY_STUDENT_ID,
+        })),
+      },
+    });
+
+    expect(screen.queryByRole("button", { name: "팔로우" })).toBeNull();
   });
 
   it("does not explain why an owner-addressed list is unavailable", () => {

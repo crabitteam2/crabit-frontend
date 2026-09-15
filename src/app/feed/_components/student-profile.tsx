@@ -17,6 +17,7 @@ import {
 } from "../follow-actions";
 import type { StudentProfileItem } from "./feed-item";
 import { ProfileScreen } from "./profile-screen";
+import { MY_STUDENT_ID } from "@/lib/mock/me";
 
 const BLOCKED_MESSAGE = "차단이 완료되었어요.";
 
@@ -109,6 +110,8 @@ export function StudentProfile({
     setToast({ message: UNBLOCKED_MESSAGE, tone: "success" });
   };
 
+  const isMine = profile.id === MY_STUDENT_ID;
+
   return (
     <>
       <ProfileScreen
@@ -121,7 +124,7 @@ export function StudentProfile({
         followsHref={`/feed/${profile.id}/follows?academyId=${encodeURIComponent(academyId)}`}
         showCounts={!isBlocked}
         followAction={
-          isBlocked ? undefined : (
+          isBlocked || isMine ? undefined : (
             <Button
               size="medium"
               variant={isFollowing ? "weak" : "fill"}
