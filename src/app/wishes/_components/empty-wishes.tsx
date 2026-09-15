@@ -32,7 +32,7 @@ export function EmptyWishes() {
           href="/wishes/new"
           className="bg-brand-solid text-fg-contrast text-b3 flex h-14 w-full items-center justify-center rounded-xl px-6 font-semibold"
         >
-          위시리스트 만들기
+          위시 만들기
         </Link>
       </div>
     </div>
