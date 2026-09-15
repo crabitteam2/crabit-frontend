@@ -15,9 +15,9 @@ export default async function WishShareWritePage({
   const { wishId } = await params;
   const view = await loadWishDetail(wishId);
   if (view === null) redirect("/wishes");
-  if (view.wish.visibility !== "PRIVATE") redirect("/feed/me");
 
   const { wish } = view;
+  const isShared = wish.visibility !== "PRIVATE";
 
   const look = getWishShareLook(wish);
   const period = toSavingPeriodLabel({
@@ -28,8 +28,8 @@ export default async function WishShareWritePage({
   return (
     <div className="flex min-h-dvh flex-col">
       <ScreenHeader
-        title="새로 글 작성하기"
-        backHref={`/wishes/${wishId}/share`}
+        title={isShared ? "공개 대상 수정" : "새 글 작성하기"}
+        backHref={isShared ? `/wishes/${wishId}` : `/wishes/${wishId}/share`}
         spacing="tight"
       />
 
@@ -54,6 +54,9 @@ export default async function WishShareWritePage({
       <WishShareWriteForm
         ticketName={`share:${wishId}`}
         donePath={`/wishes/${wishId}/share/loading`}
+        initialVisibility={isShared ? wish.visibility : "ACADEMY"}
+        canUnshare={isShared}
+        submitLabel={isShared ? "수정하기" : "공유하기"}
       />
     </div>
   );

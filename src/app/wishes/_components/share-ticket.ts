@@ -1,9 +1,9 @@
 const STORAGE_PREFIX = "crabit.share-ticket.";
 
-/** 공유 글쓰기 화면에서 고를 수 있는 공개 범위입니다. */
-export type ShareVisibility = "ACADEMY" | "FOLLOWERS";
+/** 공개 대상 화면에서 고를 수 있는 공개 범위입니다. */
+export type ShareVisibility = "ACADEMY" | "FOLLOWERS" | "PRIVATE";
 
-const VISIBILITIES: readonly string[] = ["ACADEMY", "FOLLOWERS"];
+const VISIBILITIES: readonly string[] = ["ACADEMY", "FOLLOWERS", "PRIVATE"];
 
 /** 글쓰기 화면이 고른 공개 범위를 로딩 화면이 찾을 수 있게 보관합니다. */
 export function putShareTicket(name: string, visibility: ShareVisibility) {
