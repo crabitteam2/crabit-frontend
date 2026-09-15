@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Toast } from "@/components/ui/toast";
 import { EmptyWishCard } from "./empty-wish-card";
+import { FinishedWishActionSheet } from "./finished-wish-action-sheet";
 import { WishActionSheet } from "./wish-action-sheet";
 import { WishCard } from "./wish-card";
 import type { OwnedWishItem } from "./wish-item";
@@ -36,6 +37,8 @@ export function WishList({
   toastKey,
 }: WishListProps) {
   const [sheetWish, setSheetWish] = useState<OwnedWishItem | null>(null);
+  const [finishedSheetWish, setFinishedSheetWish] =
+    useState<OwnedWishItem | null>(null);
   const [toast, setToast] = useState<string | null>(
     toastKey === null || toastKey === undefined ? null : TOAST_MESSAGE,
   );
@@ -104,7 +107,11 @@ export function WishList({
             <ul className="flex flex-col gap-10 px-4 pb-10">
               {finished.slice(0, finishedShown).map((wish) => (
                 <li key={wish.id}>
-                  <WishCard wish={wish} tone="pink" />
+                  <WishCard
+                    wish={wish}
+                    tone="pink"
+                    onMore={() => setFinishedSheetWish(wish)}
+                  />
                 </li>
               ))}
             </ul>
@@ -126,6 +133,11 @@ export function WishList({
       )}
 
       <WishActionSheet wish={sheetWish} onClose={() => setSheetWish(null)} />
+
+      <FinishedWishActionSheet
+        wish={finishedSheetWish}
+        onClose={() => setFinishedSheetWish(null)}
+      />
 
       {toast === null ? null : (
         <Toast message={toast} onClose={() => setToast(null)} />
