@@ -15,7 +15,7 @@ export function DemoPersonaSelector({
   available,
   selected,
 }: {
-  available: readonly DemoGradePersona[];
+  available: readonly ("owner" | DemoGradePersona)[];
   selected: Persona | null;
 }) {
   const panelId = useId();
@@ -212,7 +212,7 @@ export function DemoPersonaSelector({
       });
       if (!response.ok) throw new Error("selection failed");
       setExpanded(false);
-      window.location.replace("/demo");
+      window.location.replace("/home");
     } catch {
       setError("대표를 변경하지 못했어요. 다시 시도해 주세요.");
       switching.current = false;
@@ -259,7 +259,9 @@ export function DemoPersonaSelector({
             )}
             {available.map((persona) => (
               <option key={persona} value={persona}>
-                {persona.slice(-1)}학년 대표 · {persona}
+                {persona === "owner"
+                  ? "기본 Owner"
+                  : `${persona.slice(-1)}학년 대표 · ${persona}`}
               </option>
             ))}
           </select>

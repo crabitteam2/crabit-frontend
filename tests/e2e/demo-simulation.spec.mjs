@@ -14,6 +14,11 @@ test("real demo representatives retain identity across SSR, BFF, navigation and 
     await page.getByRole("button", { name: "데모 계정 선택", exact: true }).focus();
     await page.keyboard.press("Enter");
     await page.getByRole("combobox", { name: "데모 대표", exact: true }).selectOption(`grade-${grade}`);
+    await expect(page).toHaveURL(`${origin}/home`);
+    await expect(page.getByTestId("demo-account-id")).toHaveCount(0);
+    await page.getByRole("button", { name: "데모 계정 선택", exact: true }).focus();
+    await page.keyboard.press("Enter");
+    await page.getByRole("link", { name: "대표 정보", exact: true }).click();
     await expect(page.getByRole("heading", { name: `${grade}학년 대표`, exact: true })).toBeVisible();
     const accountId = await page.getByTestId("demo-account-id").innerText();
     expect(accountIds.has(accountId)).toBe(false);
@@ -102,6 +107,11 @@ test("real demo representatives retain identity across SSR, BFF, navigation and 
   await page.getByRole("button", {name:"데모 계정 선택",exact:true}).focus();
   await page.keyboard.press("Enter");
   await selector.selectOption("grade-3");
+  await expect(page).toHaveURL(`${origin}/home`);
+  await expect(page.getByTestId("demo-account-id")).toHaveCount(0);
+  await page.getByRole("button", {name:"데모 계정 선택",exact:true}).focus();
+  await page.keyboard.press("Enter");
+  await page.getByRole("link", {name:"대표 정보",exact:true}).click();
   await expect(page.getByTestId("demo-account-id")).toHaveText(observations[0].accountId);
   await page.reload();
   await expect(page.getByTestId("demo-account-id")).toHaveText(observations[0].accountId);

@@ -11,15 +11,20 @@ export default async function DemoPage() {
   if (environment.backendProfile !== "demo") notFound();
   const persona = resolveRequestPersona(new Headers(await headers()), "demo");
   const tokens = readPersonaTokenConfiguration("demo");
-  const selected = persona?.startsWith("grade-") && tokens.active?.[persona];
+  const selected =
+    persona &&
+    (persona === "owner" || persona.startsWith("grade-")) &&
+    tokens.active?.[persona];
   const context = selected ? await loadAccountContext() : null;
   return (
     <main className="space-y-5 px-4 py-8">
-      <h1 className="text-2xl font-bold">학년 대표 데모</h1>
+      <h1 className="text-2xl font-bold">데모 계정</h1>
       {context && persona ? (
         <>
           <h2 className="text-lg font-semibold">
-            {persona.slice(-1)}학년 대표
+            {persona === "owner"
+              ? "기본 Owner"
+              : `${persona.slice(-1)}학년 대표`}
           </h2>
           <dl className="space-y-2 text-sm break-all">
             <dt>계좌</dt>
@@ -63,7 +68,8 @@ export default async function DemoPage() {
         </>
       ) : (
         <p>
-          위에서 학년 대표를 선택하면 실제 계좌와 제품 화면을 확인할 수 있어요.
+          위에서 Owner 또는 학년 대표를 선택하면 실제 계좌와 제품 화면을 확인할
+          수 있어요.
         </p>
       )}
     </main>

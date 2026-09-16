@@ -43,8 +43,8 @@ export default async function RootLayout({
   const demo = environment.backendProfile === "demo";
   const tokens = demo ? readPersonaTokenConfiguration("demo") : null;
   const selected = demo ? resolveRequestPersona(requestHeaders, "demo") : null;
-  const available = DEMO_GRADE_PERSONAS.filter((persona) =>
-    Boolean(tokens?.active?.[persona]),
+  const available = (["owner", ...DEMO_GRADE_PERSONAS] as const).filter(
+    (persona) => Boolean(tokens?.active?.[persona]),
   );
   return (
     <html lang="ko" className={`${pretendard.variable} overscroll-y-none`}>
