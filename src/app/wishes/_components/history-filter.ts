@@ -1,4 +1,5 @@
 import type { HistoryPeriod, HistorySort } from "./history-filter-sheet";
+import type { HistorySearchKind } from "./history-search-dialog";
 import type { FundMovementItem } from "./wish-detail";
 
 const MONTHS_BY_PERIOD: Record<HistoryPeriod, number> = {
@@ -8,20 +9,29 @@ const MONTHS_BY_PERIOD: Record<HistoryPeriod, number> = {
   "1년": 12,
 };
 
-/** 조회 기간과 정렬 기준에 맞춰 저축 기록을 고릅니다. */
+/** 조회 기간과 정렬 기준, 고른 종류에 맞춰 저축 기록을 고릅니다. */
 export function filterMovements(
   movements: FundMovementItem[],
   period: HistoryPeriod,
   sort: HistorySort,
+  kind: HistorySearchKind | null = null,
   now: Date = new Date(),
 ): FundMovementItem[] {
   return movements
     .filter((movement) => isWithinPeriod(movement.occurredAt, period, now))
+    .filter((movement) => isKind(movement, kind))
     .sort((a, b) =>
       sort === "최신순"
         ? b.occurredAt.getTime() - a.occurredAt.getTime()
         : a.occurredAt.getTime() - b.occurredAt.getTime(),
     );
+}
+
+function isKind(movement: FundMovementItem, kind: HistorySearchKind | null) {
+  if (kind === null) return true;
+  if (kind === "잔액 조정") return movement.isAdjustment;
+  if (kind === "넣은 돈") return movement.kind === "DEPOSIT";
+  return movement.kind === "WITHDRAWAL" && !movement.isAdjustment;
 }
 
 function isWithinPeriod(occurredAt: Date, period: HistoryPeriod, now: Date) {
