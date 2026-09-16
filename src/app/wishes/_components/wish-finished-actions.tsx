@@ -36,7 +36,7 @@ export function WishFinishedActions({
     setIsDialogOpen(false);
 
     if (result.ok) {
-      router.push("/wishes?toast=delete");
+      router.replace("/wishes?toast=delete");
       return;
     }
     setError(result.message);

@@ -1,15 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
-import closeIcon from "@/../public/images/wishes/close-32.svg";
+import { CloseButton } from "@/components/ui/close-button";
 import emptyImage from "@/../public/images/wishes/empty.png";
 
 export function EmptyWishes() {
   return (
     <div className="flex min-h-dvh flex-col px-4 pt-[calc(env(safe-area-inset-top)+12px)]">
       <div className="flex justify-end">
-        <Link href="/" aria-label="닫기" className="relative block size-8">
-          <Image src={closeIcon} alt="" fill sizes="32px" />
-        </Link>
+        <CloseButton fallbackHref="/" className="relative block size-8" />
       </div>
       <div className="flex flex-col items-center pt-[72px]">
         <Image

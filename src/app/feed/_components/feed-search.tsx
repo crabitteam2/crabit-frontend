@@ -78,7 +78,7 @@ export function FeedSearch() {
       router.back();
       return;
     }
-    router.push("/feed");
+    router.replace("/feed");
   };
 
   const visit = (studentId: string, nickname: string) => {

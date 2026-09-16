@@ -49,7 +49,7 @@ export function WishPeriodForm({
     params.set("cardBalanceAccountId", cardBalanceAccountId);
     params.set("purpose", purpose);
     params.set("targetAmount", String(targetAmount));
-    router.push(`${nextPath}?${params.toString()}`);
+    router.replace(`${nextPath}?${params.toString()}`);
   });
 
   return (
@@ -57,6 +57,7 @@ export function WishPeriodForm({
       <ScreenHeader
         title="기간을 설정할까요?"
         backHref={backHref}
+        backToHref
         spacing="loose"
       />
 

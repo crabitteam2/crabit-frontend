@@ -50,6 +50,7 @@ export function RecapMonthTabs({
             month.href ??
             `/recaps/monthly?month=${year}-${String(index + 1).padStart(2, "0")}`
           }
+          replace
           scroll={false}
           aria-current={month.href === null ? "page" : undefined}
           onClick={

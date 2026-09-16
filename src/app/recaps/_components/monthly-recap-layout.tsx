@@ -1,7 +1,5 @@
-import Image from "next/image";
-import Link from "next/link";
 import type { ReactNode } from "react";
-import chevronLeftIcon from "@/../public/images/wishes/arrow-left.svg";
+import { BackButton } from "@/components/ui/back-button";
 import { RecapMonthTabs } from "./recap-month-tabs";
 import { RecapYearSelect } from "./recap-year-select";
 import { RecapPattern } from "./recap-pattern";
@@ -40,13 +38,10 @@ export function MonthlyRecapLayout({
       <header
         className={`relative flex items-center justify-between border-b px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-4 ${theme === null ? "border-gray-3" : "border-white"}`}
       >
-        <Link
-          href={backHref}
-          aria-label="뒤로 가기"
+        <BackButton
+          fallbackHref={backHref}
           className={`relative block size-8 shrink-0 ${theme === null ? "" : "brightness-0 invert"}`}
-        >
-          <Image src={chevronLeftIcon} alt="" fill sizes="32px" />
-        </Link>
+        />
         <RecapYearSelect year={year} isOnDarkBackground={theme !== null} />
       </header>
       <RecapMonthTabs

@@ -120,7 +120,7 @@ export function WishEditForm({
       }
 
       putFlowMark(`info-done:${wishId}`);
-      router.push(donePath);
+      router.replace(donePath);
     } finally {
       busy.current = false;
       setIsSubmitting(false);

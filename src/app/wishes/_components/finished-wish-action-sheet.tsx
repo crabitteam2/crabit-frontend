@@ -45,7 +45,7 @@ export function FinishedWishActionSheet({
     setTarget(null);
 
     if (result.ok) {
-      router.push("/wishes?toast=delete");
+      router.replace("/wishes?toast=delete");
       return;
     }
     setError(result.message);

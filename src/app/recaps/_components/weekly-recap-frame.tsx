@@ -1,7 +1,5 @@
-import Image from "next/image";
-import Link from "next/link";
 import type { ReactNode } from "react";
-import closeIcon from "@/../public/images/wishes/close-32.svg";
+import { CloseButton } from "@/components/ui/close-button";
 
 const FILL =
   "bg-[linear-gradient(to_right,var(--color-pink-2),var(--color-pink-6))]";
@@ -66,13 +64,10 @@ export function WeeklyRecapFrame({
       </div>
 
       <div className="flex justify-end px-4 py-3">
-        <Link
-          href={closeHref}
-          aria-label="닫기"
+        <CloseButton
+          fallbackHref={closeHref}
           className="relative block size-8 shrink-0"
-        >
-          <Image src={closeIcon} alt="" fill sizes="32px" />
-        </Link>
+        />
       </div>
 
       {children}

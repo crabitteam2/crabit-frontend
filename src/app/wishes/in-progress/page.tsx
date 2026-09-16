@@ -9,7 +9,7 @@ export default async function InProgressWishesPage() {
 
   return (
     <div className="flex flex-col">
-      <ScreenHeader title="진행중인 위시" backHref="/wishes" backToPrevious />
+      <ScreenHeader title="진행중인 위시" backHref="/wishes" />
       <PullToRefresh>
         <WishList
           mode="in-progress"

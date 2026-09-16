@@ -1,7 +1,6 @@
 import Image, { type StaticImageData } from "next/image";
-import Link from "next/link";
 import type { ReactNode } from "react";
-import closeIcon from "@/../public/images/wishes/close-32.svg";
+import { CloseButton } from "@/components/ui/close-button";
 import { pickWishPhotoUrl, type WishPhotoUrls } from "./wish-photo";
 import { WishProgressBar } from "./wish-progress-bar";
 import type { WishTheme } from "./wish-theme";
@@ -149,13 +148,10 @@ export function WishHeroScreen({
   return (
     <div className="bg-pink-1 flex min-h-dvh flex-col">
       <header className="flex justify-end px-4 pt-[calc(env(safe-area-inset-top)+10px)]">
-        <Link
-          href={closeHref}
-          aria-label="닫기"
+        <CloseButton
+          fallbackHref={closeHref}
           className="relative block size-8"
-        >
-          <Image src={closeIcon} alt="" fill sizes="32px" />
-        </Link>
+        />
       </header>
 
       <WishHeroContent {...content} />

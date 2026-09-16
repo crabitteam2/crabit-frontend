@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { WishGoalForm } from "./wish-goal-form";
-const { push } = vi.hoisted(() => ({ push: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 vi.mock("@/hooks/use-keyboard-viewport", () => ({
   useKeyboardViewport: () => null,
 }));
-beforeEach(() => push.mockClear());
+beforeEach(() => replace.mockClear());
 const setup = () => {
   render(
     <WishGoalForm
@@ -35,7 +35,7 @@ describe("goal form", () => {
     await waitFor(() =>
       expect(screen.getByRole("textbox", { name: "위시 금액" })).toHaveFocus(),
     );
-    expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
   });
   it("moves focus on Enter, protects IME, preserves invalid paste and allows targets above cash", async () => {
     const user = setup();
@@ -51,11 +51,11 @@ describe("goal form", () => {
     await user.type(amount, "-100");
     await user.click(screen.getByRole("button", { name: "다음" }));
     expect(amount).toHaveValue("-100");
-    expect(push).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
     await user.clear(amount);
     await user.type(amount, "30000{Enter}");
     await waitFor(() =>
-      expect(push).toHaveBeenCalledWith(
+      expect(replace).toHaveBeenCalledWith(
         expect.stringContaining("targetAmount=30000"),
       ),
     );

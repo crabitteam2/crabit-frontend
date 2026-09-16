@@ -70,6 +70,7 @@ export function RecapYearSelect({
               <li key={candidate}>
                 <Link
                   href={`/recaps/monthly?year=${candidate}`}
+                  replace
                   aria-current={candidate === year ? "true" : undefined}
                   onClick={() => setIsOpen(false)}
                   className={`block px-4 text-[16px] leading-[23px] tracking-[-0.3px] ${

@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import searchIcon from "@/../public/images/feed/search.svg";
-import arrowLeftIcon from "@/../public/images/wishes/arrow-left.svg";
+import { BackButton } from "@/components/ui/back-button";
 import { Button } from "@/components/ui/button";
 import { Skeleton, SkeletonRegion } from "@/components/ui/skeleton";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -167,18 +167,16 @@ export function FollowListScreen(props: FollowListScreenProps) {
   return (
     <div className="flex flex-col">
       <header className="border-gray-3 flex items-center border-b px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-4">
-        <Link
-          href={backHref}
-          aria-label="뒤로 가기"
+        <BackButton
+          fallbackHref={backHref}
           className="relative block size-8 shrink-0"
-        >
-          <Image src={arrowLeftIcon} alt="" fill sizes="32px" />
-        </Link>
+        />
         <nav className="flex flex-1 items-center justify-center gap-6">
           {TABS.map((item) => (
             <Link
               key={item.value}
               href={item.value === "followers" ? followersHref : followingHref}
+              replace
               aria-current={item.value === tab ? "page" : undefined}
               className={`text-[16px] leading-[23px] tracking-[-0.3px] ${
                 item.value === tab
