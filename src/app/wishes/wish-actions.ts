@@ -15,6 +15,7 @@ import {
   transferWishFunds,
   withdrawFromWish,
 } from "@/lib/http/wishes";
+import { toActionMessage } from "./action-message";
 import { loadAccountContext } from "./load-account";
 
 /** 위시 쓰기 요청의 결과이며, 실패하면 화면에 그대로 보여줄 문구를 담습니다. */
@@ -34,26 +35,6 @@ export type FundActionResult =
       readonly message: string;
       readonly code: FrontendHttpError["code"];
     };
-
-const MESSAGES: Partial<Record<FrontendHttpError["code"], string>> = {
-  VERSION_CONFLICT: "위시 정보가 바뀌었어요. 새로고침한 뒤 다시 시도해주세요.",
-  INVALID_STATE_TRANSITION: "지금은 처리할 수 없는 위시예요.",
-  WISH_NOT_FOUND: "이미 사라진 위시예요.",
-  NETWORK_ERROR: "연결이 불안정해요. 잠시 후 다시 시도해주세요.",
-  INSUFFICIENT_AVAILABLE_BALANCE:
-    "카드에 남은 금액보다 많아요. 금액을 다시 확인해주세요.",
-  INSUFFICIENT_WISH_AMOUNT:
-    "위시에 모인 금액보다 많아요. 금액을 다시 확인해주세요.",
-  TARGET_AMOUNT_EXCEEDED: "목표 금액을 넘게는 넣을 수 없어요.",
-  BALANCE_SYNC_FAILED:
-    "카드 잔액을 확인하지 못했어요. 잠시 후 다시 시도해주세요.",
-  CROSS_ACCOUNT_TRANSFER_FORBIDDEN: "다른 카드의 위시로는 보낼 수 없어요.",
-  IDEMPOTENCY_KEY_REUSED:
-    "이미 처리한 요청이에요. 새로고침한 뒤 다시 시도해주세요.",
-  INVALID_AMOUNT: "금액을 다시 확인해주세요.",
-};
-
-const FALLBACK_MESSAGE = "잠시 후 다시 시도해주세요.";
 
 /** 카드잔액계좌의 대표 위시를 지정한 위시로 바꿉니다. */
 export async function selectRepresentativeWishAction(
@@ -139,7 +120,7 @@ function settleFund(
   if (!result.ok) {
     return {
       ok: false,
-      message: MESSAGES[result.error.code] ?? FALLBACK_MESSAGE,
+      message: toActionMessage(result.error.code),
       code: result.error.code,
     };
   }
@@ -155,7 +136,7 @@ function settle(
   if (!result.ok) {
     return {
       ok: false,
-      message: MESSAGES[result.error.code] ?? FALLBACK_MESSAGE,
+      message: toActionMessage(result.error.code),
       code: result.error.code,
     };
   }

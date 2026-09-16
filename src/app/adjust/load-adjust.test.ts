@@ -41,6 +41,7 @@ function account(unresolvedShortage: number | null) {
           cardBalanceAccountId: accountId,
           unresolvedShortage,
           displayAvailableBalance: unresolvedShortage === null ? null : 0,
+          actualCardBalance: 30_000,
         },
       ],
       nextCursor: null,
@@ -67,29 +68,26 @@ beforeEach(() => {
 
 describe("잔액 조정 화면 데이터 조회", () => {
   it("돈이 들어 있는 활성 위시만 넘긴다", async () => {
-    const view = await loadAdjust("아라");
+    const view = await loadAdjust();
 
     expect(view?.wishes.map((item) => item.id)).toEqual(["w1", "w4"]);
   });
 
-  it("부족액과 카드 이름을 넘긴다", async () => {
-    const view = await loadAdjust("아라");
+  it("부족액과 카드에 남은 금액을 넘긴다", async () => {
+    const view = await loadAdjust();
 
-    expect(view?.card).toMatchObject({
-      label: "아라의 크래빗 카드",
-      shortage: 50_000,
-    });
+    expect(view).toMatchObject({ shortage: 50_000 });
   });
 
   it("부족액이 없으면 null이다", async () => {
     listMyCardBalanceAccounts.mockResolvedValue(account(0));
 
-    await expect(loadAdjust("아라")).resolves.toBeNull();
+    await expect(loadAdjust()).resolves.toBeNull();
   });
 
   it("잔액을 조회하지 못한 계좌도 null이다", async () => {
     listMyCardBalanceAccounts.mockResolvedValue(account(null));
 
-    await expect(loadAdjust("아라")).resolves.toBeNull();
+    await expect(loadAdjust()).resolves.toBeNull();
   });
 });
