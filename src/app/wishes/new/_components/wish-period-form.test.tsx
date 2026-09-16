@@ -3,8 +3,8 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { WishPeriodForm } from "./wish-period-form";
 
-const { push } = vi.hoisted(() => ({ push: vi.fn() }));
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+const { replace } = vi.hoisted(() => ({ replace: vi.fn() }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 vi.mock("next/image", () => ({
   default: ({ alt }: { alt: string }) => <span aria-label={alt} />,
 }));
@@ -28,7 +28,7 @@ const renderForm = () =>
   );
 
 const submittedQuery = () =>
-  new URL(push.mock.calls[0]![0], "http://test").searchParams;
+  new URL(replace.mock.calls[0]![0], "http://test").searchParams;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -43,7 +43,7 @@ describe("WishPeriodForm", () => {
 
     expect(screen.getByRole("button", { name: "넘어가기" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "넘어가기" }));
-    await waitFor(() => expect(push).toHaveBeenCalled());
+    await waitFor(() => expect(replace).toHaveBeenCalled());
     expect(submittedQuery().has("startDate")).toBe(false);
     expect(submittedQuery().has("targetDate")).toBe(false);
   });
@@ -56,7 +56,7 @@ describe("WishPeriodForm", () => {
     await user.click(day(20));
 
     await user.click(screen.getByRole("button", { name: "다음" }));
-    await waitFor(() => expect(push).toHaveBeenCalled());
+    await waitFor(() => expect(replace).toHaveBeenCalled());
     expect(submittedQuery().get("startDate")).toMatch(/^\d{4}-\d{2}-10$/);
     expect(submittedQuery().get("targetDate")).toMatch(/^\d{4}-\d{2}-20$/);
   });
@@ -70,7 +70,7 @@ describe("WishPeriodForm", () => {
 
     expect(screen.queryByRole("alert")).toBeNull();
     await user.click(screen.getByRole("button", { name: "다음" }));
-    await waitFor(() => expect(push).toHaveBeenCalled());
+    await waitFor(() => expect(replace).toHaveBeenCalled());
     expect(submittedQuery().get("startDate")).toMatch(/^\d{4}-\d{2}-10$/);
     expect(submittedQuery().get("targetDate")).toMatch(/^\d{4}-\d{2}-20$/);
   });
@@ -84,7 +84,7 @@ describe("WishPeriodForm", () => {
 
     expect(screen.getByRole("button", { name: "넘어가기" })).toBeVisible();
     await user.click(screen.getByRole("button", { name: "넘어가기" }));
-    await waitFor(() => expect(push).toHaveBeenCalled());
+    await waitFor(() => expect(replace).toHaveBeenCalled());
     expect(submittedQuery().has("startDate")).toBe(false);
     expect(submittedQuery().has("targetDate")).toBe(false);
   });

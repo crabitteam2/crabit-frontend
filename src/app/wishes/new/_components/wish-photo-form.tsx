@@ -2,11 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import {
-  hasFlowMark,
-  putFlowMark,
-  CREATED_MARK,
-} from "@/app/wishes/_components/fund-ticket";
+import { putFlowMark } from "@/app/wishes/_components/fund-ticket";
 import { useEffect, useRef, useState, type PointerEvent } from "react";
 import placeholderIcon from "@/../public/images/wishes/image-placeholder.svg";
 import { ScreenHeader } from "@/app/wishes/_components/screen-header";
@@ -126,11 +122,6 @@ export function WishPhotoForm({
     if (photo === null || box === 0) return;
     setTransform(initialTransform(box, photo));
   }, [photo, box]);
-
-  // 등록을 마친 뒤 뒤로 가면 사진 화면이 아니라 위시 목록으로 나간다.
-  useEffect(() => {
-    if (hasFlowMark(CREATED_MARK)) router.replace("/wishes");
-  }, [router]);
 
   const openPicker = () => {
     if (!busy.current) inputRef.current?.click();
@@ -296,8 +287,7 @@ export function WishPhotoForm({
 
       clearWishPhotoUploadState(scope);
       putFlowMark(`new-done:${created.data.wish.id}`);
-      putFlowMark(CREATED_MARK);
-      router.push(`${nextPath}?wishId=${created.data.wish.id}`);
+      router.replace(`${nextPath}?wishId=${created.data.wish.id}`);
     } catch {
       setError("사진을 처리하지 못했어요. 잠시 후 다시 시도해주세요.");
     } finally {
@@ -315,6 +305,7 @@ export function WishPhotoForm({
       <ScreenHeader
         title="사진을 업로드 할까요?"
         backHref={backHref}
+        backToHref
         spacing="loose"
       />
 

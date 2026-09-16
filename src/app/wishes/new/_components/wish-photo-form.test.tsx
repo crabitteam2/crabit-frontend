@@ -55,7 +55,7 @@ it.each([
         },
       }),
     );
-    expect(push).toHaveBeenCalledWith("/done?wishId=created-wish");
+    expect(replace).toHaveBeenCalledWith("/done?wishId=created-wish");
   },
 );
 
@@ -80,6 +80,6 @@ it("sends only one create request while repeated form submissions are in flight"
   await waitFor(() => expect(createWish).toHaveBeenCalledTimes(1));
   finish({ ok: true, data: { wish: { id: "created-wish" } } });
   await waitFor(() =>
-    expect(push).toHaveBeenCalledWith("/done?wishId=created-wish"),
+    expect(replace).toHaveBeenCalledWith("/done?wishId=created-wish"),
   );
 });
