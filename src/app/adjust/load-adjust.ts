@@ -1,22 +1,19 @@
 import "server-only";
 
-import { toProgressPercent } from "@/app/_components/progress-stage";
 import { listAllWishes } from "../wishes/list-all-wishes";
 import {
   toOwnedWishItem,
   type WishItemState,
 } from "../wishes/_components/wish-item";
 import { loadAccountContext } from "../wishes/load-account";
-import type { AdjustCard, AdjustWish } from "./_components/adjust-wish-list";
+import type { AdjustWish } from "./_components/adjust-withdraw-form";
 
 const FINISHED_STATES: readonly WishItemState[] = ["COMPLETED", "ABANDONED"];
 
-const CARD_NUMBER = "0000-0000-0000-0000";
-
-/** 잔액 조정 화면이 그리는 데 필요한 카드와 위시입니다. */
+/** 잔액 조정 화면이 그리는 데 필요한 부족액과 위시입니다. */
 export interface AdjustView {
-  /** 부족액과 카드에 실제로 남은 금액을 담은 카드 요약입니다. */
-  readonly card: AdjustCard;
+  /** 카드에 채워야 하는 금액입니다. */
+  readonly shortage: number;
   /** 돈을 꺼낼 수 있는 활성 위시입니다. */
   readonly wishes: AdjustWish[];
 }
@@ -26,7 +23,7 @@ export interface AdjustView {
  *
  * 모자라지 않거나 잔액을 조회하지 못했으면 null을 돌려줍니다.
  */
-export async function loadAdjust(nickname: string): Promise<AdjustView | null> {
+export async function loadAdjust(): Promise<AdjustView | null> {
   const { client, cardBalanceAccountId, account } = await loadAccountContext();
   if (account.unresolvedShortage === null || account.unresolvedShortage <= 0) {
     return null;
@@ -35,12 +32,7 @@ export async function loadAdjust(nickname: string): Promise<AdjustView | null> {
   const page = await listAllWishes(client, cardBalanceAccountId);
 
   return {
-    card: {
-      label: `${nickname}의 크래빗 카드`,
-      balance: account.actualCardBalance,
-      shortage: account.unresolvedShortage,
-      cardNumber: CARD_NUMBER,
-    },
+    shortage: account.unresolvedShortage,
     wishes: page
       .map(toOwnedWishItem)
       .filter(
@@ -50,7 +42,7 @@ export async function loadAdjust(nickname: string): Promise<AdjustView | null> {
         id: wish.id,
         label: wish.purpose,
         amount: wish.amount,
-        percent: toProgressPercent(wish.amount, wish.targetAmount),
+        version: wish.version,
       })),
   };
 }
