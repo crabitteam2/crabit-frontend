@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { readPersonaDisplayName } from "@/lib/persona/display-name-server";
 import { loadMonthlyRecap } from "../load-recap";
-import { MonthlyRecapEmpty } from "../_components/monthly-recap-empty";
-import { MonthlyRecapScreen } from "../_components/monthly-recap-screen";
+import { MonthlyRecapEmptyContent } from "../_components/monthly-recap-empty";
+import { MonthlyRecapContent } from "../_components/monthly-recap-screen";
 import {
   collectHighlights,
   pickHighlights,
@@ -10,6 +10,8 @@ import {
   toMonthlyRecapEmptyMessage,
   toSubjectParticle,
 } from "./monthly-recap-view";
+
+import { MonthlyRecapLayout } from "../_components/monthly-recap-layout";
 
 const MONTH_PATTERN = /^\d{4}-(?:0[1-9]|1[0-2])$/;
 
@@ -50,15 +52,14 @@ export default async function MonthlyRecapPage({
 
   if (recap.status !== "SUCCEEDED" || recap.result === null) {
     return (
-      <MonthlyRecapEmpty
-        backHref="/"
-        year={year}
-        months={months}
-        message={toMonthlyRecapEmptyMessage(
-          recap.status,
-          recap.period.startDate,
-        )}
-      />
+      <MonthlyRecapLayout backHref="/" year={year} months={months}>
+        <MonthlyRecapEmptyContent
+          message={toMonthlyRecapEmptyMessage(
+            recap.status,
+            recap.period.startDate,
+          )}
+        />
+      </MonthlyRecapLayout>
     );
   }
 
@@ -69,15 +70,19 @@ export default async function MonthlyRecapPage({
   const nickname = await readPersonaDisplayName();
 
   return (
-    <MonthlyRecapScreen
+    <MonthlyRecapLayout
       backHref="/"
       year={year}
       months={months}
-      intro={`${monthNumber}월의 ${nickname}${toSubjectParticle(nickname)}`}
       typeTitle={recap.result.typeSection.typeTitle}
-      typeMessage={recap.result.typeSection.message}
-      highlights={highlights}
-    />
+    >
+      <MonthlyRecapContent
+        intro={`${monthNumber}월의 ${nickname}${toSubjectParticle(nickname)}`}
+        typeTitle={recap.result.typeSection.typeTitle}
+        typeMessage={recap.result.typeSection.message}
+        highlights={highlights}
+      />
+    </MonthlyRecapLayout>
   );
 }
 

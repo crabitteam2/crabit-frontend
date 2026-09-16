@@ -25,10 +25,17 @@ vi.mock("../load-recap", () => ({
   }),
 }));
 vi.mock("../_components/monthly-recap-screen", () => ({
-  MonthlyRecapScreen: ({ intro }: { intro: string }) => <p>{intro}</p>,
+  MonthlyRecapContent: ({ intro }: { intro: string }) => <p>{intro}</p>,
 }));
 vi.mock("../_components/monthly-recap-empty", () => ({
-  MonthlyRecapEmpty: ({ message }: { message: string }) => <p>{message}</p>,
+  MonthlyRecapEmptyContent: ({ message }: { message: string }) => (
+    <p>{message}</p>
+  ),
+}));
+vi.mock("../_components/monthly-recap-layout", () => ({
+  MonthlyRecapLayout: ({ children }: { children: React.ReactNode }) => (
+    <>{children}</>
+  ),
 }));
 import MonthlyRecapPage from "./page";
 
