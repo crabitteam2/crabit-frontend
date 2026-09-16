@@ -2,13 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Toast } from "@/components/ui/toast";
 import {
   transferWishFundsAction,
   withdrawFromWishAction,
   type FundActionResult,
 } from "../wish-actions";
 import type { FundCounterpartRef } from "./fund-counterpart";
+import { FundErrorScreen } from "./fund-error-screen";
 import { takeFundTicket } from "./fund-ticket";
 import { LoadingScreen } from "./loading-screen";
 
@@ -84,20 +84,21 @@ export function WithdrawLoadingScreen({
     setError(result.message);
   }, [doneHref, isAnimationDone, result, router]);
 
-  return (
-    <>
-      <LoadingScreen
-        label="돈 꺼내는 중"
-        isComplete={result !== null}
-        onFinish={() => setIsAnimationDone(true)}
+  if (error !== null) {
+    return (
+      <FundErrorScreen
+        action="돈 꺼내기"
+        reason={error}
+        wishHref={`/wishes/${wishId}`}
       />
-      {error === null ? null : (
-        <Toast
-          message={error}
-          tone="danger"
-          onClose={() => router.replace(amountHref)}
-        />
-      )}
-    </>
+    );
+  }
+
+  return (
+    <LoadingScreen
+      label="돈 꺼내는 중"
+      isComplete={result !== null}
+      onFinish={() => setIsAnimationDone(true)}
+    />
   );
 }
