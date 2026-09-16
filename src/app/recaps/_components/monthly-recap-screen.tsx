@@ -1,9 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
-import { RecapMonthTabs } from "./recap-month-tabs";
-import chevronLeftIcon from "@/../public/images/wishes/arrow-left.svg";
-import { RecapPattern } from "./recap-pattern";
-import { RecapYearSelect } from "./recap-year-select";
+import { MonthlyRecapLayout } from "./monthly-recap-layout";
 import { RecapShape, type RecapShapeKind } from "./recap-shape";
 import { getRecapTheme } from "./recap-theme";
 
@@ -46,37 +42,39 @@ export function MonthlyRecapScreen({
   typeMessage,
   highlights,
 }: MonthlyRecapScreenProps) {
+  return (
+    <MonthlyRecapLayout
+      backHref={backHref}
+      year={year}
+      months={months}
+      typeTitle={typeTitle}
+    >
+      <MonthlyRecapContent
+        intro={intro}
+        typeTitle={typeTitle}
+        typeMessage={typeMessage}
+        highlights={highlights}
+      />
+    </MonthlyRecapLayout>
+  );
+}
+
+/** 선택한 달의 결과 본문입니다. */
+export function MonthlyRecapContent({
+  intro,
+  typeTitle,
+  typeMessage,
+  highlights,
+}: Pick<
+  MonthlyRecapScreenProps,
+  "intro" | "typeTitle" | "typeMessage" | "highlights"
+>) {
   const theme = getRecapTheme(typeTitle);
   const characterHeight = Math.round(
     (CHARACTER_WIDTH * theme.character.height) / theme.character.width,
   );
-
   return (
-    <div
-      className="relative flex min-h-dvh flex-col overflow-hidden"
-      style={{
-        backgroundImage: `linear-gradient(to bottom, ${theme.gradient[0]}, ${theme.gradient[1]})`,
-      }}
-    >
-      <RecapPattern kind={theme.pattern.kind} color={theme.pattern.color} />
-
-      <header className="relative flex items-center justify-between border-b border-white px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-4">
-        <Link
-          href={backHref}
-          aria-label="뒤로 가기"
-          className="relative block size-8 shrink-0 brightness-0 invert"
-        >
-          <Image src={chevronLeftIcon} alt="" fill sizes="32px" />
-        </Link>
-        <RecapYearSelect year={year} isOnDarkBackground />
-      </header>
-
-      <RecapMonthTabs
-        months={months}
-        currentStyle="text-gray-9"
-        restStyle="text-static-white"
-      />
-
+    <>
       <div className="relative flex flex-col items-center gap-1 px-4 py-5">
         <p className="text-static-white text-[22px] leading-[30px] font-medium tracking-[-0.3px]">
           {intro}
@@ -115,7 +113,7 @@ export function MonthlyRecapScreen({
           />
         ))}
       </div>
-    </div>
+    </>
   );
 }
 

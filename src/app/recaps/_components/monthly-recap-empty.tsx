@@ -1,10 +1,7 @@
 import Image from "next/image";
-import Link from "next/link";
-import { RecapMonthTabs } from "./recap-month-tabs";
-import chevronLeftIcon from "@/../public/images/wishes/arrow-left.svg";
 import emptyCharacter from "@/../public/images/recaps/empty-character.png";
 import type { RecapMonthTab } from "./monthly-recap-screen";
-import { RecapYearSelect } from "./recap-year-select";
+import { MonthlyRecapLayout } from "./monthly-recap-layout";
 
 interface MonthlyRecapEmptyProps {
   backHref: string;
@@ -22,24 +19,18 @@ export function MonthlyRecapEmpty({
   message,
 }: MonthlyRecapEmptyProps) {
   return (
-    <div className="flex min-h-dvh flex-col">
-      <header className="border-gray-3 flex items-center justify-between border-b px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-4">
-        <Link
-          href={backHref}
-          aria-label="뒤로 가기"
-          className="relative block size-8 shrink-0"
-        >
-          <Image src={chevronLeftIcon} alt="" fill sizes="32px" />
-        </Link>
-        <RecapYearSelect year={year} />
-      </header>
+    <MonthlyRecapLayout backHref={backHref} year={year} months={months}>
+      <MonthlyRecapEmptyContent message={message} />
+    </MonthlyRecapLayout>
+  );
+}
 
-      <RecapMonthTabs
-        months={months}
-        currentStyle="text-fg-neutral"
-        restStyle="text-gray-4"
-      />
-
+/** 선택한 달에 결과가 없는 이유를 보여줍니다. */
+export function MonthlyRecapEmptyContent({
+  message,
+}: Pick<MonthlyRecapEmptyProps, "message">) {
+  return (
+    <>
       <div className="flex justify-center px-10 pt-[60px]">
         <Image
           src={emptyCharacter}
@@ -55,6 +46,6 @@ export function MonthlyRecapEmpty({
       <p className="text-fg-neutral-muted px-4 py-5 text-center text-[20px] leading-7 font-medium tracking-[-0.3px] whitespace-pre-line">
         {message}
       </p>
-    </div>
+    </>
   );
 }
