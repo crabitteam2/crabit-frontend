@@ -1,4 +1,6 @@
 import { headers } from "next/headers";
+import { redirect } from "next/navigation";
+import { MY_STUDENT_ID } from "@/lib/mock/me";
 import {
   listAcademyStudentFollowers,
   listAcademyStudentFollowing,
@@ -22,6 +24,9 @@ export default async function StudentFollowsPage({
   const query = await searchParams;
   const raw = firstQueryValue(query.tab);
   const tab: FollowTab = raw === "followers" ? "followers" : "following";
+  if (studentId === MY_STUDENT_ID) {
+    redirect(`/feed/me/follows${tab === "followers" ? "?tab=followers" : ""}`);
+  }
   const academyId = firstQueryValue(query.academyId);
   const base = `/feed/${encodeURIComponent(studentId)}/follows`;
   const academyQuery =

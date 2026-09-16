@@ -89,6 +89,9 @@ function settle(
     };
   }
 
+  revalidatePath(`/feed/${studentId}`);
   revalidatePath(`/feed/${studentId}/follows`);
+  revalidatePath("/feed/me");
+  revalidatePath("/feed/me/follows");
   return { ok: true };
 }

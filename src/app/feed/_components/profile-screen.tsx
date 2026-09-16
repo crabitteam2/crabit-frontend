@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { TopButton } from "@/app/wishes/_components/top-button";
 import heroImage from "@/../public/images/feed/profile-hero.png";
 import searchIcon from "@/../public/images/feed/search.svg";
-import arrowLeftIcon from "@/../public/images/wishes/arrow-left.svg";
+import { BackButton } from "@/app/wishes/_components/back-button";
 import type { ProfileWishItem } from "./feed-item";
 import { ProfileWishSection } from "./profile-wish-section";
 
@@ -51,13 +51,10 @@ export function ProfileScreen({
           className="absolute top-[73px] left-1/2 size-[320px] -translate-x-1/2 object-cover"
         />
         <header className="relative flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-4">
-          <Link
-            href={backHref}
-            aria-label="뒤로 가기"
+          <BackButton
+            fallbackHref={backHref}
             className="relative block size-8 shrink-0"
-          >
-            <Image src={arrowLeftIcon} alt="" fill sizes="32px" />
-          </Link>
+          />
           {actions ?? (
             <Link
               href="/feed/search"
