@@ -9,7 +9,7 @@ export default async function FinishedWishesPage() {
 
   return (
     <div className="flex flex-col">
-      <ScreenHeader title="종료된 위시" backHref="/wishes" backToPrevious />
+      <ScreenHeader title="종료된 위시" backHref="/wishes" />
       <PullToRefresh>
         <WishList
           mode="finished"
