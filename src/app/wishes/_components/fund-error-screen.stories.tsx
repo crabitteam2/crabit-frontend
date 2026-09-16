@@ -28,7 +28,7 @@ export const 돈넣기: Story = {
 
 export const 잔액조정: Story = {
   args: {
-    action: "돈 꺼내기",
+    action: "잔액 조정",
     reason: "위시 정보가 바뀌었어요. 새로고침한 뒤 다시 시도해주세요.",
   },
 };
