@@ -9,10 +9,10 @@ vi.mock("next/image", () => ({
   ),
 }));
 
-const push = vi.fn();
+const replace = vi.fn();
 const patchWish = vi.fn();
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 vi.mock("@/hooks/use-keyboard-viewport", () => ({
   useKeyboardViewport: () => null,
 }));
@@ -134,7 +134,7 @@ describe("WishEditForm", () => {
         },
       }),
     );
-    expect(push).toHaveBeenCalledWith("/done");
+    expect(replace).toHaveBeenCalledWith("/done");
   });
   it("patches a changed date in ISO format while omitting unchanged fields", async () => {
     patchWish.mockResolvedValue({ ok: true, data: {} });

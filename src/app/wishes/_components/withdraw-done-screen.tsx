@@ -76,6 +76,7 @@ export function WithdrawDoneScreen({
       <div className="relative mt-auto px-4 pb-[calc(55px+env(safe-area-inset-bottom))]">
         <Link
           href="/"
+          replace
           className="bg-brand-solid text-fg-contrast text-b3 flex h-14 w-full items-center justify-center rounded-xl px-6 font-semibold"
         >
           홈으로
