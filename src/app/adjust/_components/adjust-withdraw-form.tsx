@@ -8,6 +8,7 @@ import { ScreenHeader } from "@/app/wishes/_components/screen-header";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Toast } from "@/components/ui/toast";
+import { FundErrorScreen } from "@/app/wishes/_components/fund-error-screen";
 import { useKeyboardViewport } from "@/hooks/use-keyboard-viewport";
 import { adjustAbandonAction, adjustWithdrawAction } from "../adjust-actions";
 import { AdjustHelpButton } from "./adjust-help-button";
@@ -77,9 +78,7 @@ export function AdjustWithdrawForm({
 
     setIsPending(false);
     if (result.message !== null) {
-      setInputs({});
       setError(result.message);
-      router.refresh();
       return;
     }
 
@@ -130,6 +129,10 @@ export function AdjustWithdrawForm({
         : total > shortage
           ? `필요 금액보다 ${(total - shortage).toLocaleString("ko-KR")}원 많아요.`
           : `${shortage.toLocaleString("ko-KR")}원 꺼내기`;
+
+  if (error !== null) {
+    return <FundErrorScreen action="돈 꺼내기" reason={error} />;
+  }
 
   return (
     <div
@@ -257,10 +260,6 @@ export function AdjustWithdrawForm({
 
       {toast === null ? null : (
         <Toast message={toast} onClose={() => setToast(null)} />
-      )}
-
-      {error === null ? null : (
-        <Toast message={error} tone="danger" onClose={() => setError(null)} />
       )}
     </div>
   );
