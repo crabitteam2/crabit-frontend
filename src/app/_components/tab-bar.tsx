@@ -121,6 +121,7 @@ export function TabBar() {
             <Link
               key={tab.label}
               href={tab.href}
+              replace
               aria-current={isCurrent ? "page" : undefined}
               className={className}
             >
