@@ -78,11 +78,18 @@ test.describe("Wish coin alignment and funding", () => {
             await screenshot(page, testInfo, `${viewport.width}-aligned`);
           await page.clock.runFor(64);
           await expect(coin).toHaveAttribute("data-phase", "holding");
-          await page.clock.runFor(256);
+          await page.clock.runFor(96);
+          await expect(coin).toHaveAttribute("data-phase", "falling");
+          await expect(art).toHaveCSS("transform", "matrix(1, 0, 0, 1, 0, 0)");
+          if (name === "bottom")
+            await screenshot(page, testInfo, `${viewport.width}-early-fall`);
+          await page.clock.runFor(160);
           await expect(coin).toHaveAttribute("data-phase", "falling");
           const shrinking = await art.evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m11);
-          expect(shrinking).toBeGreaterThan(0.44);
-          expect(shrinking).toBeLessThan(1);
+          // Allow one requestAnimationFrame of startup variance while requiring
+          // a visibly larger midpoint than the former roughly 0.55 scale.
+          expect(shrinking).toBeGreaterThan(0.74);
+          expect(shrinking).toBeLessThan(0.82);
           if (name === "bottom")
             await screenshot(page, testInfo, `${viewport.width}-shrinking`);
           await page.clock.runFor(144);

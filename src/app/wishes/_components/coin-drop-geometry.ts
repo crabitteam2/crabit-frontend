@@ -29,13 +29,14 @@ export const FRONT_CLIP = `polygon(0px ${frontEdgeY(BANK.left) - BANK.top}px, ${
 
 export function fallPose(progress: number) {
   const t = Math.max(0, Math.min(progress, 1));
-  // Finish fitting before first contact with the rim, with zero end velocity.
-  const fitting = Math.min(t / 0.68, 1);
+  // Keep the early fall full size, then fit just before first rim contact.
+  // Smoothstep gives both fitting boundaries zero scale/rotation velocity.
+  const fitting = Math.max(0, Math.min((t - 0.2) / 0.58, 1));
   const eased = fitting * fitting * (3 - 2 * fitting);
   return {
     x: ALIGNED.x,
     y: ALIGNED.y + (LANDED.y - ALIGNED.y) * t * t,
-    scale: 1 - 0.56 * eased,
+    scale: 1 - 0.5 * eased,
     rotation: 7.5 * eased,
     turn: -12 * eased,
   };
