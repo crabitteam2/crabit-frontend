@@ -74,7 +74,7 @@ describe("coin drop", () => {
       expect(coin.style.transform).toBe(`translate(${x - 72}px, ${y - 72}px)`);
       expect(coin).toHaveAttribute("data-phase", "aligning");
       expect(
-        coin.parentElement?.querySelector('[aria-hidden="true"]'),
+        coin.parentElement?.querySelector('[data-piggy-bank="foreground"]'),
       ).toBeNull();
       advance(150);
       expect(coin.style.transform).not.toBe(
@@ -96,7 +96,7 @@ describe("coin drop", () => {
       advance(1);
       expect(coin).toHaveAttribute("data-phase", "falling");
       expect(
-        coin.parentElement?.querySelector('[aria-hidden="true"]'),
+        coin.parentElement?.querySelector('[data-piggy-bank="foreground"]'),
       ).not.toBeNull();
       expect(artwork.style.transform).toBe(
         "rotate(0deg) rotateY(0deg) scale(1)",

@@ -3,18 +3,17 @@
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import coinImage from "@/../public/images/wishes/coin.png";
-import piggyBankSmileImage from "@/../public/images/wishes/piggy-bank-smile.png";
-import piggyBankImage from "@/../public/images/wishes/piggy-bank.png";
 
 import {
   ALIGNED,
   BANK,
   COIN,
   COIN_INK,
-  FRONT_CLIP,
   LANDED,
   fallPose,
 } from "./coin-drop-geometry";
+
+import { PiggyBankCharacter } from "./piggy-bank-character";
 
 const HOME = { x: COIN.left, y: COIN.top };
 const ALIGN_MS = 300;
@@ -188,20 +187,7 @@ export function CoinDrop({ onDrop, disabled = false }: CoinDropProps) {
 
   return (
     <div ref={areaRef} className="absolute inset-0">
-      <Image
-        src={isAccepted ? piggyBankSmileImage : piggyBankImage}
-        alt=""
-        width={BANK.width}
-        height={BANK.height}
-        priority
-        className="absolute"
-        style={{
-          left: BANK.left,
-          top: BANK.top,
-          width: BANK.width,
-          height: BANK.height,
-        }}
-      />
+      <PiggyBankCharacter expression={isAccepted ? "smile" : "normal"} />
       <div
         role="button"
         tabIndex={unavailable ? -1 : 0}
@@ -242,26 +228,7 @@ export function CoinDrop({ onDrop, disabled = false }: CoinDropProps) {
         </div>
       </div>
       {phase === "falling" || phase === "landed" ? (
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute overflow-hidden"
-          style={{
-            left: BANK.left,
-            top: BANK.top,
-            width: BANK.width,
-            height: BANK.height,
-            clipPath: FRONT_CLIP,
-          }}
-        >
-          <Image
-            src={piggyBankSmileImage}
-            alt=""
-            width={BANK.width}
-            height={BANK.height}
-            priority
-            style={{ width: BANK.width, height: BANK.height }}
-          />
-        </div>
+        <PiggyBankCharacter expression="smile" foreground />
       ) : null}
     </div>
   );

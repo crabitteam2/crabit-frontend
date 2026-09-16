@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import {
   startWishCoinApplication,
@@ -46,6 +47,15 @@ test.describe("Wish coin alignment and funding", () => {
           const coin = page.getByRole("button", {
             name: "동전을 저금통으로 끌어 넣기",
           });
+          const character = page.locator('[data-piggy-bank="character"]');
+          await expect(character).toHaveAttribute("data-expression", "normal");
+          const normalFrame = await character.boundingBox();
+          const fixedPixels =
+            name === "bottom"
+              ? await fixedCharacterPixels(page, normalFrame)
+              : null;
+          if (name === "bottom")
+            await screenshot(page, testInfo, `${viewport.width}-normal`);
           await coin.evaluate((el) => {
             window.originalCoin = el;
           });
@@ -66,6 +76,14 @@ test.describe("Wish coin alignment and funding", () => {
             await screenshot(page, testInfo, `${viewport.width}-release`);
           await page.clock.runFor(320);
           await expect(coin).toHaveAttribute("data-phase", "holding");
+          await expect(character).toHaveAttribute("data-expression", "smile");
+          expect(await character.boundingBox()).toEqual(normalFrame);
+          if (fixedPixels) {
+            expect(await fixedCharacterPixels(page, normalFrame)).toEqual(
+              fixedPixels,
+            );
+            await screenshot(page, testInfo, `${viewport.width}-smile`);
+          }
           const aligned = await coin.evaluate((el) => {
             const matrix = new DOMMatrix(getComputedStyle(el).transform);
             return { x: matrix.m41, y: matrix.m42 };
@@ -85,7 +103,9 @@ test.describe("Wish coin alignment and funding", () => {
             await screenshot(page, testInfo, `${viewport.width}-early-fall`);
           await page.clock.runFor(160);
           await expect(coin).toHaveAttribute("data-phase", "falling");
-          const shrinking = await art.evaluate((el) => new DOMMatrix(getComputedStyle(el).transform).m11);
+          const shrinking = await art.evaluate(
+            (el) => new DOMMatrix(getComputedStyle(el).transform).m11,
+          );
           // Allow one requestAnimationFrame of startup variance while requiring
           // a visibly larger midpoint than the former roughly 0.55 scale.
           expect(shrinking).toBeGreaterThan(0.74);
@@ -115,6 +135,14 @@ test.describe("Wish coin alignment and funding", () => {
           await expect(page).toHaveURL(
             new RegExp(`/deposit/done\\?event=${EVENT_ID}`),
           );
+          await expect(character).toHaveAttribute("data-expression", "heart");
+          expect(await character.boundingBox()).toEqual(normalFrame);
+          if (fixedPixels) {
+            expect(await fixedCharacterPixels(page, normalFrame)).toEqual(
+              fixedPixels,
+            );
+            await screenshot(page, testInfo, `${viewport.width}-heart`);
+          }
           expect(application.state.requests.at(-1)).toMatchObject({
             body: { amount: 1234, expectedVersion: 7 },
             idempotencyKey: "coin-e2e-key",
@@ -232,4 +260,34 @@ async function screenshot(page, testInfo, name) {
   const path = testInfo.outputPath(`${name}.png`);
   await page.screenshot({ path });
   await testInfo.attach(name, { path, contentType: "image/png" });
+}
+
+// Compare rendered pixels outside the face mask, including ears, slot and
+// silhouette. Matching DOM boxes alone cannot establish artwork continuity.
+async function fixedCharacterPixels(page, frame) {
+  await page
+    .locator('[data-piggy-bank="character"] img')
+    .evaluateAll(async (images) => {
+      await Promise.all(images.map((image) => image.decode()));
+    });
+  const regions = [
+    { x: 0, y: 0, width: 207, height: 155 },
+    { x: 0, y: 252, width: 207, height: 25 },
+    { x: 0, y: 155, width: 13, height: 97 },
+    { x: 163, y: 155, width: 44, height: 97 },
+  ];
+  const pixels = [];
+  for (const region of regions) {
+    pixels.push(
+      createHash("sha256")
+        .update(
+          await page.screenshot({
+            style: "[data-phase] { visibility: hidden !important; }",
+            clip: { ...region, x: frame.x + region.x, y: frame.y + region.y },
+          }),
+        )
+        .digest("hex"),
+    );
+  }
+  return pixels;
 }
