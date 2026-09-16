@@ -73,6 +73,8 @@ export function FollowListScreen(props: FollowListScreenProps) {
   const [unfollowTarget, setUnfollowTarget] = useState<string | null>(null);
   const [mutationError, setMutationError] = useState<string | null>(null);
   const requestVersion = useRef(0);
+  /** 관계를 바꾼 뒤에는 처음 목록이 낡아 다시 조회합니다. */
+  const hasChangedRelation = useRef(false);
 
   const loadRemotePage = useCallback(
     async (cursor?: string, append = false) => {
@@ -112,7 +114,7 @@ export function FollowListScreen(props: FollowListScreenProps) {
 
   useEffect(() => {
     if (initialError !== undefined) return;
-    if (query.trim() === "") {
+    if (query.trim() === "" && !hasChangedRelation.current) {
       ++requestVersion.current;
       setPage(initialPage ?? null);
       setRemoteError(null);
@@ -146,6 +148,7 @@ export function FollowListScreen(props: FollowListScreenProps) {
       return;
     }
     setChanged((current) => ({ ...current, [id]: !isFollowing }));
+    hasChangedRelation.current = true;
     await loadRemotePage();
   };
 
