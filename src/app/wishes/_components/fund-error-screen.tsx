@@ -11,7 +11,7 @@ function toReasonLines(reason: string) {
 }
 
 /** 오류 화면 제목에 들어가는 동작 이름입니다. */
-export type FundErrorAction = "돈 넣기" | "돈 꺼내기";
+export type FundErrorAction = "돈 넣기" | "돈 꺼내기" | "잔액 조정";
 
 interface FundErrorScreenProps {
   /** 실패한 동작이며 제목에 그대로 들어갑니다. */
