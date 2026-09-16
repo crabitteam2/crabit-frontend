@@ -23,6 +23,9 @@ import { MY_STUDENT_ID } from "@/lib/mock/me";
 /** 팔로잉과 팔로워 중 어느 목록을 보고 있는지 나타냅니다. */
 const PAGE_LIMIT = 100;
 
+/** 글자를 입력하는 동안 기다렸다가 한 번만 조회합니다. */
+const DEBOUNCE_MS = 250;
+
 export type FollowTab = "following" | "followers";
 
 const TABS: { value: FollowTab; label: string }[] = [
@@ -120,7 +123,9 @@ export function FollowListScreen(props: FollowListScreenProps) {
       setRemoteError(null);
       return;
     }
-    void loadRemotePage();
+
+    const timer = setTimeout(() => void loadRemotePage(), DEBOUNCE_MS);
+    return () => clearTimeout(timer);
   }, [initialPage, initialError, loadRemotePage, query]);
 
   const items = (page?.items ?? []).map((item) => ({
@@ -148,7 +153,7 @@ export function FollowListScreen(props: FollowListScreenProps) {
       return;
     }
     setChanged((current) => ({ ...current, [id]: !isFollowing }));
-    hasChangedRelation.current = true;
+    if (tab === "following") hasChangedRelation.current = true;
     await loadRemotePage();
   };
 

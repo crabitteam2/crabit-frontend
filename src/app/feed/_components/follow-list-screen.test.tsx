@@ -147,7 +147,9 @@ describe("FollowListScreen", () => {
       const search = screen.getByRole("textbox", { name: "학생 검색" });
 
       fireEvent.change(search, { target: { value: "검색" } });
-      expect(listAcademyStudentFollowing).toHaveBeenCalledTimes(1);
+      await waitFor(() =>
+        expect(listAcademyStudentFollowing).toHaveBeenCalledTimes(1),
+      );
       fireEvent.change(search, { target: { value: "" } });
       expect(screen.getByRole("link", { name: "민지" })).toBeInTheDocument();
 
