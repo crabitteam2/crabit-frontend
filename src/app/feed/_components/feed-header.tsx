@@ -1,11 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import arrowLeftIcon from "@/../public/images/wishes/arrow-left.svg";
 import personIcon from "@/../public/images/feed/person.svg";
 import searchIcon from "@/../public/images/feed/search.svg";
+import { BackButton } from "@/components/ui/back-button";
 
 interface FeedHeaderProps {
   academyName: string;
+  /** 기록이 없을 때 뒤로가기가 갈 경로입니다. */
   backHref: string;
   /** 현재 정렬 기준의 이름입니다. */
   sortLabel: string;
@@ -19,13 +20,10 @@ export function FeedHeader({
   return (
     <header className="bg-layer-default sticky top-0 z-20">
       <div className="border-gray-3 flex items-center justify-between border-b px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-4">
-        <Link
-          href={backHref}
-          aria-label="뒤로 가기"
+        <BackButton
+          fallbackHref={backHref}
           className="relative block size-8 shrink-0"
-        >
-          <Image src={arrowLeftIcon} alt="" fill sizes="32px" />
-        </Link>
+        />
         <div className="flex shrink-0 items-center gap-3">
           <Link
             href="/feed/search"

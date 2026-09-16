@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { TopButton } from "@/app/wishes/_components/top-button";
 import heroImage from "@/../public/images/feed/profile-hero.png";
 import searchIcon from "@/../public/images/feed/search.svg";
-import { BackButton } from "@/app/wishes/_components/back-button";
+import { BackButton } from "@/components/ui/back-button";
 import type { ProfileWishItem } from "./feed-item";
 import { ProfileWishSection } from "./profile-wish-section";
 

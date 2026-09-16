@@ -7,6 +7,10 @@ import {
 } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ back: vi.fn(), replace: vi.fn() }),
+}));
+
 vi.mock("next/image", () => ({
   default: ({ alt }: { alt: string }) => (
     // oxlint-disable-next-line next/no-img-element -- The test mock does not need Next image handling.
