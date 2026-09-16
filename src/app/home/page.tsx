@@ -46,6 +46,7 @@ export default async function HomeTabPage({
           <div className="px-4 pb-5">
             <MyCard
               ownerName={ownerName}
+              cardBalanceAccountId={account.cardBalanceAccountId}
               balance={account.actualCardBalance}
               wishAvailableBalance={account.displayAvailableBalance}
             />
