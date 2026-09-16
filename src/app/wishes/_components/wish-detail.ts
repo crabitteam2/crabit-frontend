@@ -20,6 +20,8 @@ export interface FundMovementItem {
   readonly amount: number;
   /** 이동 직후 위시에 남은 금액입니다. */
   readonly balanceAfter: number;
+  /** 잔액 조정 건과 연결된 이동인지 여부입니다. */
+  readonly isAdjustment: boolean;
 }
 
 const FINISHED_STATES: readonly WishItemState[] = ["COMPLETED", "ABANDONED"];
