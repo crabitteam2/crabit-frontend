@@ -1,4 +1,4 @@
-import { ACADEMY_NAME, NICKNAME } from "@/lib/mock/home";
+import { ACADEMY_NAME } from "@/lib/mock/home";
 import { AcademySection } from "../_components/academy-section";
 import { CharacterArea } from "../_components/character-area";
 import { HomeHeader } from "../_components/home-header";
@@ -13,6 +13,7 @@ import { QuickActions } from "../_components/quick-actions";
 import { RecapSection } from "../_components/recap-section";
 import { ShortageNotice } from "../_components/shortage-notice";
 import { TabBar } from "../_components/tab-bar";
+import { readPersonaDisplayName } from "@/lib/persona/display-name-server";
 import { loadWishlistTab } from "./load-wishlist-tab";
 
 export default async function WishlistTabPage({
@@ -21,6 +22,7 @@ export default async function WishlistTabPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const query = await searchParams;
+  const nickname = await readPersonaDisplayName();
   const { representativeWish, unresolvedShortage, weeklyRecap, monthlyRecap } =
     await loadWishlistTab();
 
@@ -49,7 +51,7 @@ export default async function WishlistTabPage({
           }
         >
           <HomeHeader
-            nickname={NICKNAME}
+            nickname={nickname}
             wishPurpose={representativeWish?.purpose ?? null}
           />
         </CharacterArea>

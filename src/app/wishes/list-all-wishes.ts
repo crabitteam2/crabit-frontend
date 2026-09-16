@@ -7,7 +7,7 @@ import { listWishes } from "@/lib/http/wishes";
 
 const PAGE_LIMIT = 100;
 
-/** 커서가 끝나지 않아도 멈추는 한계이며, 위시 2,000개까지 읽습니다. */
+/** 비정상 응답으로 무한 조회하지 않도록 제한하며, 초과하면 부분 목록 대신 오류를 반환합니다. */
 const MAX_PAGES = 20;
 
 /**
@@ -20,7 +20,8 @@ export async function listAllWishes(
   client: ServerApiClient,
   cardBalanceAccountId: string,
 ): Promise<components["schemas"]["Wish"][]> {
-  const items: components["schemas"]["Wish"][] = [];
+  const items = new Map<string, components["schemas"]["Wish"]>();
+  const cursors = new Set<string>();
   let cursor: string | undefined;
 
   for (let page = 0; page < MAX_PAGES; page += 1) {
@@ -28,13 +29,15 @@ export async function listAllWishes(
       await listWishes(client, {
         cardBalanceAccountId,
         limit: PAGE_LIMIT,
-        cursor,
+        ...(cursor ? { cursor } : {}),
       }),
     );
-    items.push(...result.items);
-    if (result.nextCursor === null) break;
+    for (const wish of result.items) items.set(wish.id, wish);
+    if (result.nextCursor === null) return [...items.values()];
     cursor = result.nextCursor;
+    if (cursors.has(cursor)) throw new Error("Repeated wish cursor");
+    cursors.add(cursor);
   }
 
-  return items;
+  throw new Error("Wish pagination limit exceeded");
 }

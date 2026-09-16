@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import chipCloseIcon from "@/../public/images/feed/chip-close.svg";
 import searchIcon from "@/../public/images/feed/search.svg";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -36,11 +36,22 @@ export function FeedSearch() {
   const [hasError, setHasError] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
-  const version = useRef(0);
 
-  useEffect(() => setRecent(readRecentSearches()), []);
+  const selectedAccount = session?.accounts.find(
+    (account) => account.academyId === session.context.academyId,
+  );
+  const searchScope = selectedAccount
+    ? `${selectedAccount.cardBalanceAccountId}:${selectedAccount.academyId}`
+    : null;
+  useEffect(() => {
+    setRecent(searchScope ? readRecentSearches(searchScope) : []);
+    setQuery("");
+    setResults([]);
+    setHasError(false);
+  }, [searchScope]);
 
   useEffect(() => {
+    let active = true;
     const academyId = session?.context.academyId;
     const nickname = query.trim();
     if (academyId === undefined || nickname === "") {
@@ -51,26 +62,28 @@ export function FeedSearch() {
     }
 
     setIsSearching(true);
-    const current = ++version.current;
     const timer = setTimeout(async () => {
       const result = await searchAcademyStudents(client, {
         academyId,
         nickname,
         limit: PAGE_LIMIT,
       });
-      if (version.current !== current) return;
+      if (!active) return;
 
       setHasError(!result.ok);
       setResults(result.ok ? result.data.items : []);
       setIsSearching(false);
     }, DEBOUNCE_MS);
 
-    return () => clearTimeout(timer);
-  }, [client, query, session?.context.academyId]);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [client, query, session?.context.academyId, session?.context.contextId]);
 
   const remember = (keywords: string[]) => {
     setRecent(keywords);
-    saveRecentSearches(keywords);
+    if (searchScope) saveRecentSearches(keywords, searchScope);
   };
 
   const cancel = () => {

@@ -1,5 +1,5 @@
 import { Skeleton, SkeletonRegion } from "@/components/ui/skeleton";
-import { ACADEMY_NAME, NICKNAME } from "@/lib/mock/home";
+import { ACADEMY_NAME } from "@/lib/mock/home";
 import { AcademySection } from "../_components/academy-section";
 import { CharacterArea } from "../_components/character-area";
 import { HomeHeader } from "../_components/home-header";
@@ -9,7 +9,7 @@ export default function WishlistTabLoading() {
   return (
     <div className="flex flex-col">
       <CharacterArea stage={null}>
-        <HomeHeader nickname={NICKNAME} wishPurpose={null} />
+        <HomeHeader nickname="나" wishPurpose={null} />
       </CharacterArea>
 
       <main className="relative -mt-[17px] flex flex-col px-4">

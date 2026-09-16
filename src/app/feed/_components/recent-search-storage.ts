@@ -7,10 +7,10 @@ const MAX_KEPT = 10;
  *
  * 저장 API가 없어 이 기기에만 남으며, 저장소를 쓸 수 없으면 빈 목록입니다.
  */
-export function readRecentSearches(): string[] {
+export function readRecentSearches(scope: string): string[] {
   try {
     const value: unknown = JSON.parse(
-      localStorage.getItem(STORAGE_KEY) ?? "null",
+      window.localStorage.getItem(`${STORAGE_KEY}:${scope}`) ?? "null",
     );
     if (!Array.isArray(value)) return [];
     return value.filter((item): item is string => typeof item === "string");
@@ -20,10 +20,10 @@ export function readRecentSearches(): string[] {
 }
 
 /** 최근 검색어를 덮어 씁니다. 저장소를 쓸 수 없으면 조용히 넘어갑니다. */
-export function saveRecentSearches(keywords: readonly string[]) {
+export function saveRecentSearches(keywords: readonly string[], scope: string) {
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
+    window.localStorage.setItem(
+      `${STORAGE_KEY}:${scope}`,
       JSON.stringify(keywords.slice(0, MAX_KEPT)),
     );
   } catch {

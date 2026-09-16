@@ -7,40 +7,42 @@ import {
   withRecentSearch,
 } from "./recent-search-storage";
 
-beforeEach(() => localStorage.clear());
+const scope = "grade-4:academy";
+beforeEach(() => window.localStorage.clear());
 
 describe("최근 검색어 저장", () => {
   it("저장한 순서 그대로 읽는다", () => {
-    saveRecentSearches(["아라", "선형"]);
+    saveRecentSearches(["아라", "선형"], scope);
 
-    expect(readRecentSearches()).toEqual(["아라", "선형"]);
+    expect(readRecentSearches(scope)).toEqual(["아라", "선형"]);
   });
 
   it("저장한 적이 없으면 빈 목록이다", () => {
-    expect(readRecentSearches()).toEqual([]);
+    expect(readRecentSearches(scope)).toEqual([]);
   });
 
   it("문자열이 아닌 값이 섞여 있으면 걸러낸다", () => {
-    localStorage.setItem(
-      "crabit:recent-student-searches",
+    window.localStorage.setItem(
+      `crabit:recent-student-searches:${scope}`,
       JSON.stringify(["아라", 3, null]),
     );
 
-    expect(readRecentSearches()).toEqual(["아라"]);
+    expect(readRecentSearches(scope)).toEqual(["아라"]);
   });
 
   it("형식이 깨져 있으면 빈 목록이다", () => {
-    localStorage.setItem("crabit:recent-student-searches", "{");
+    window.localStorage.setItem(`crabit:recent-student-searches:${scope}`, "{");
 
-    expect(readRecentSearches()).toEqual([]);
+    expect(readRecentSearches(scope)).toEqual([]);
   });
 
   it("열 개까지만 남긴다", () => {
     saveRecentSearches(
       Array.from({ length: 12 }, (_, index) => `학생${index}`),
+      scope,
     );
 
-    expect(readRecentSearches()).toHaveLength(10);
+    expect(readRecentSearches(scope)).toHaveLength(10);
   });
 });
 
@@ -61,4 +63,17 @@ describe("최근 검색어 목록 만들기", () => {
 
     expect(withRecentSearch(keywords, "새 검색")).toHaveLength(10);
   });
+});
+
+it("계정과 학원이 다른 검색어를 섞지 않는다", () => {
+  saveRecentSearches(["4학년 검색"], scope);
+  saveRecentSearches(["Owner 검색"], "owner:academy");
+  expect(readRecentSearches(scope)).toEqual(["4학년 검색"]);
+  expect(readRecentSearches("owner:academy")).toEqual(["Owner 검색"]);
+  expect(readRecentSearches("grade-4:other-academy")).toEqual([]);
+  window.localStorage.setItem(
+    "crabit:recent-student-searches",
+    JSON.stringify(["이전 공용 검색"]),
+  );
+  expect(readRecentSearches("new:academy")).toEqual([]);
 });

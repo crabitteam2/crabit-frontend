@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { NICKNAME } from "@/lib/mock/home";
 import { CharacterArea } from "../_components/character-area";
 import { HomeHeader } from "../_components/home-header";
 import { TabBar } from "../_components/tab-bar";
@@ -13,7 +12,7 @@ export default function WishlistTabError({ reset }: { reset: () => void }) {
   return (
     <div className="flex min-h-dvh flex-col">
       <CharacterArea stage={null}>
-        <HomeHeader nickname={NICKNAME} wishPurpose={null} />
+        <HomeHeader nickname="나" wishPurpose={null} />
       </CharacterArea>
 
       <div className="flex flex-1 flex-col items-center justify-center px-4">
