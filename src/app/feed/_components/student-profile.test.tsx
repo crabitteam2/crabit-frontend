@@ -13,6 +13,10 @@ const unfollowStudentAction = vi.fn();
 const blockStudentAction = vi.fn();
 const unblockStudentAction = vi.fn();
 
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ back: vi.fn(), replace: vi.fn() }),
+}));
+
 vi.mock("../follow-actions", () => ({
   followStudentAction: (...args: unknown[]) => followStudentAction(...args),
   unfollowStudentAction: (...args: unknown[]) => unfollowStudentAction(...args),
