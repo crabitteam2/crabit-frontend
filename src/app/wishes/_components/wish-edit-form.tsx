@@ -217,6 +217,7 @@ export function WishEditForm({
         {isCalendarOpen ? (
           <div className="px-[10px]">
             <Calendar
+              blocksPastEnd
               value={range}
               onChange={(range) =>
                 setValue("range", range, {

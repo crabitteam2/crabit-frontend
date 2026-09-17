@@ -64,6 +64,7 @@ export function WishPeriodForm({
       <PullToRefresh>
         <div className="px-[10px]">
           <Calendar
+            blocksPastEnd
             value={range}
             onChange={(range) =>
               setValue("range", range, {

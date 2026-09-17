@@ -17,6 +17,12 @@ export interface DateRange {
 interface CalendarProps {
   value: DateRange;
   onChange: (value: DateRange) => void;
+  /**
+   * 목표일로 오늘 이전 날짜를 고르지 못하게 할지 여부입니다.
+   *
+   * 시작일은 지난 날짜도 고를 수 있고, 그 뒤에 고르는 날짜만 막습니다.
+   */
+  blocksPastEnd?: boolean;
 }
 
 const pad = (value: number) => String(value).padStart(2, "0");
@@ -43,7 +49,11 @@ const buildWeeks = (year: number, month: number) => {
   );
 };
 
-export function Calendar({ value, onChange }: CalendarProps) {
+export function Calendar({
+  value,
+  onChange,
+  blocksPastEnd = false,
+}: CalendarProps) {
   const [view, setView] = useState(() => {
     const base = value.start === null ? new Date() : fromDateKey(value.start);
     return { year: base.getFullYear(), month: base.getMonth() };
@@ -58,6 +68,13 @@ export function Calendar({ value, onChange }: CalendarProps) {
     const moved = new Date(view.year, view.month + step, 1);
     setView({ year: moved.getFullYear(), month: moved.getMonth() });
   };
+
+  /** 시작일이 지난 날짜면 목표일은 오늘부터만 고를 수 있습니다. */
+  const blocksPastDay =
+    blocksPastEnd &&
+    todayKey !== null &&
+    pendingStart !== null &&
+    pendingStart < todayKey;
 
   const select = (day: number) => {
     const key = toDateKey(new Date(view.year, view.month, day));
@@ -141,18 +158,23 @@ export function Calendar({ value, onChange }: CalendarProps) {
                   value.end !== null &&
                   key > value.start &&
                   key < value.end;
+                /** 고른 시작일은 다시 눌러 취소할 수 있어야 하므로 막지 않는다. */
+                const isDisabled =
+                  blocksPastDay && !isEdge && key < (todayKey ?? key);
 
                 return (
                   <button
                     key={key}
                     type="button"
                     onClick={() => select(day)}
+                    disabled={isDisabled}
                     aria-label={`${view.year}년 ${view.month + 1}월 ${day}일`}
                     aria-pressed={isEdge}
                     className={`size-[38px] rounded-full text-[20px] leading-[24px] tracking-[-0.45px] ${dayStyle(
                       isEdge,
                       isBetween,
                       key === todayKey,
+                      isDisabled,
                     )}`}
                   >
                     {day}
@@ -175,8 +197,14 @@ export function Calendar({ value, onChange }: CalendarProps) {
   );
 }
 
-function dayStyle(isEdge: boolean, isBetween: boolean, isToday: boolean) {
+function dayStyle(
+  isEdge: boolean,
+  isBetween: boolean,
+  isToday: boolean,
+  isDisabled: boolean,
+) {
   if (isEdge) return "bg-pink-6 text-white";
+  if (isDisabled) return "text-gray-4";
   if (isBetween) return "bg-pink-6/12 text-pink-6";
   if (isToday) return "bg-neutral-inverted text-fg-neutral-inverted";
   return "text-fg-neutral";
