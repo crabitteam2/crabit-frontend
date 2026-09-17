@@ -38,7 +38,13 @@ export function isCalendarDate(value: string) {
   return day <= [31, leap ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1]!;
 }
 export interface Period { start: string | null; end: string | null }
-export function periodError(range: Period): string | undefined {
+/** 달력이 쓰는 `2026.09.17` 형식으로 오늘 날짜를 만듭니다. */
+export function toTodayKey(today: Date = new Date()) {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${today.getFullYear()}.${pad(today.getMonth() + 1)}.${pad(today.getDate())}`;
+}
+export function periodError(range: Period, today: string = toTodayKey()): string | undefined {
   if ((range.start !== null && !isCalendarDate(range.start)) || (range.end !== null && !isCalendarDate(range.end))) return "실제 존재하는 날짜를 선택해주세요.";
   if (range.start !== null && range.end !== null && range.start > range.end) return "시작일은 목표일보다 늦을 수 없어요.";
+  if (range.end !== null && range.end < today) return "목표일은 오늘 이전으로 정할 수 없어요.";
 }
