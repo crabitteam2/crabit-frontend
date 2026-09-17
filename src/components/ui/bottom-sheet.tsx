@@ -92,7 +92,7 @@ export function BottomSheet({
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
-          className={`pb-safe relative mt-auto flex w-full flex-col items-center rounded-t-[20px] bg-white px-4 pt-2 transition-transform duration-300 ease-out motion-reduce:transition-none ${
+          className={`relative mt-auto flex w-full flex-col items-center rounded-t-[20px] bg-white px-4 pt-2 transition-transform duration-300 ease-out motion-reduce:transition-none ${
             isRaised ? "translate-y-0" : "translate-y-full"
           }`}
         >
