@@ -22,6 +22,8 @@ interface ScreenHeaderProps {
    * 입력한 값을 주소에 실어 되돌아가는 단계 화면에서 씁니다.
    */
   backToHref?: boolean;
+  /** 주면 뒤로가기가 기록 대신 이것을 실행합니다. */
+  onBack?: () => void;
   spacing?: ScreenHeaderSpacing;
   action?: ReactNode;
 }
@@ -30,6 +32,7 @@ export function ScreenHeader({
   title,
   backHref,
   backToHref = false,
+  onBack,
   spacing = "default",
   action,
 }: ScreenHeaderProps) {
@@ -41,6 +44,7 @@ export function ScreenHeader({
         <BackButton
           fallbackHref={backHref}
           usesHref={backToHref}
+          onBack={onBack}
           className={BACK_STYLE}
         />
       )}
