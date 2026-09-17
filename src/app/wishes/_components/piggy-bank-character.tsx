@@ -54,6 +54,7 @@ export function PiggyBankCharacter({
         src={smileImage}
         alt=""
         width={BANK.width}
+        sizes={`${BANK.width}px`}
         height={BANK.height}
         priority
         draggable={false}
@@ -70,6 +71,7 @@ export function PiggyBankCharacter({
             src={face.image}
             alt=""
             width={BANK.width}
+            sizes={`${BANK.width}px`}
             height={BANK.height}
             priority
             draggable={false}

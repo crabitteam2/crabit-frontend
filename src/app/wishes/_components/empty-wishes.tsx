@@ -14,6 +14,7 @@ export function EmptyWishes() {
           src={emptyImage}
           alt=""
           width={310}
+          sizes="310px"
           height={310}
           priority
           className="size-[310px]"

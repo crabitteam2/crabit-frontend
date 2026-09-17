@@ -25,6 +25,7 @@ export function AcademySection({ academyName }: AcademySectionProps) {
           src={bannerImage}
           alt=""
           width={174}
+          sizes="174px"
           height={174}
           className="size-[174px] max-w-none shrink-0 object-cover"
         />

@@ -62,6 +62,7 @@ export function WishHeroContent({
                 src={character.src}
                 alt=""
                 width={character.width}
+                sizes={`${character.width}px`}
                 height={character.height}
                 priority
                 className="size-full object-contain object-bottom"
@@ -71,6 +72,7 @@ export function WishHeroContent({
                 src={character.src}
                 alt=""
                 width={character.crop.size}
+                sizes={`${character.crop.size}px`}
                 height={character.crop.size}
                 priority
                 className="absolute max-w-none"

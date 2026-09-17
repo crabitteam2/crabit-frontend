@@ -220,6 +220,7 @@ export function CoinDrop({ onDrop, disabled = false }: CoinDropProps) {
             src={coinImage}
             alt=""
             width={COIN.size}
+            sizes={`${COIN.size}px`}
             height={COIN.size}
             priority
             draggable={false}
