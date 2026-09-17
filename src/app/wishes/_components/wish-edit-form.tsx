@@ -238,9 +238,7 @@ export function WishEditForm({
 
       {isKeyboardOpen ? null : <div className="flex-1" />}
 
-      <div
-        className={`shrink-0 px-4 ${isKeyboardOpen ? "pb-5" : "pb-[calc(55px+env(safe-area-inset-bottom))]"}`}
-      >
+      <div className={`shrink-0 px-4 ${isKeyboardOpen ? "pb-5" : "pb-action"}`}>
         <Button
           size="xlarge"
           variant={isSkippingPeriod ? "weak" : "fill"}

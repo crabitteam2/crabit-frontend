@@ -95,7 +95,7 @@ export function WishPeriodForm({
 
       <div className="flex-1" />
 
-      <div className="px-4 pb-[calc(55px+env(safe-area-inset-bottom))]">
+      <div className="pb-action px-4">
         <Button
           variant={hasPeriod ? "fill" : "weak"}
           size="xlarge"

@@ -257,9 +257,7 @@ export function AdjustWithdrawForm({
         </ul>
       </div>
 
-      <div
-        className={`shrink-0 px-4 ${isKeyboardOpen ? "pb-5" : "pb-[calc(55px+env(safe-area-inset-bottom))]"}`}
-      >
+      <div className={`shrink-0 px-4 ${isKeyboardOpen ? "pb-5" : "pb-action"}`}>
         <Button
           variant={isReady ? "fill" : "weak"}
           size="xlarge"

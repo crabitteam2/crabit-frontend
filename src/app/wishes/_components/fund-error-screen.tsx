@@ -53,7 +53,7 @@ export function FundErrorScreen({
         </p>
       </div>
 
-      <div className="mt-auto px-4 pb-[calc(55px+env(safe-area-inset-bottom))]">
+      <div className="pb-action mt-auto px-4">
         <Link
           href={exit?.href ?? "/"}
           replace

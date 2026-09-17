@@ -26,7 +26,7 @@ export function DepositDoneScreen({ amount }: DepositDoneScreenProps) {
 
       <PiggyBankCharacter expression="heart" />
 
-      <div className="relative mt-auto px-4 pb-[calc(55px+env(safe-area-inset-bottom))]">
+      <div className="pb-action relative mt-auto px-4">
         <Link
           href="/"
           replace
