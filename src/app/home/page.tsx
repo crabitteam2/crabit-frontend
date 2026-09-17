@@ -8,7 +8,6 @@ import { refreshCardBalanceAction } from "@/app/wishes/wish-actions";
 import { loadAccountContext } from "@/app/wishes/load-account";
 import { HomeToast } from "../_components/home-toast";
 import { PullToRefresh } from "../_components/pull-to-refresh";
-import { TabBar } from "../_components/tab-bar";
 import { HomeTabHeader } from "./_components/home-tab-header";
 import { LinkRow } from "./_components/link-row";
 import { MyCard } from "./_components/my-card";
@@ -65,8 +64,6 @@ export default async function HomeTabPage({
           </div>
         </main>
       </PullToRefresh>
-
-      <TabBar />
     </div>
   );
 }

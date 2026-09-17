@@ -4,6 +4,8 @@ import { readBffEnvironment } from "@/config/env";
 import { readPersonaTokenConfiguration } from "@/config/persona-tokens";
 import { DEMO_GRADE_PERSONAS } from "@/lib/persona/persona";
 import { resolveRequestPersona } from "@/lib/persona/cookies";
+import { ScreenTransition } from "./_components/screen-transition";
+import { TabBar } from "./_components/tab-bar";
 import { DemoPersonaSelector } from "./_components/demo-persona-selector";
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
@@ -61,8 +63,9 @@ export default async function RootLayout({
               </Link>
             </main>
           ) : (
-            children
+            <ScreenTransition>{children}</ScreenTransition>
           )}
+          <TabBar />
         </div>
       </body>
     </html>

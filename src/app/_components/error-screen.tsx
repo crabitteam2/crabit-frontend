@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { ScreenHeader } from "@/app/wishes/_components/screen-header";
 import { Button } from "@/components/ui/button";
-import { TabBar } from "./tab-bar";
 
 interface ErrorScreenProps {
   /** 헤더에 쓸 화면 이름이며, 주지 않으면 뒤로가기만 그립니다. */
@@ -23,7 +22,7 @@ interface ErrorScreenProps {
    * `홈으로` 버튼을 그립니다.
    */
   reset?: () => void;
-  /** 탭 바를 함께 그릴지 여부입니다. */
+  /** 탭 바가 있는 화면인지 여부이며, 버튼 아래 여백을 넓힙니다. */
   hasTabBar?: boolean;
   /** 화면 배경처럼 바깥 상자에 더할 클래스입니다. */
   className?: string;
@@ -77,8 +76,6 @@ export function ErrorScreen({
           </Button>
         )}
       </div>
-
-      {hasTabBar ? <TabBar /> : null}
     </div>
   );
 }

@@ -4,7 +4,6 @@ import Image, { type StaticImageData } from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import collectIcon from "@/../public/images/home/tab-collect.svg";
 import homeActiveIcon from "@/../public/images/home/tab-home-active.svg";
 import homeIcon from "@/../public/images/home/tab-home.svg";
 import starActiveIcon from "@/../public/images/home/tab-star-active.svg";
@@ -13,11 +12,31 @@ import starIcon from "@/../public/images/home/tab-star.svg";
 const COLLAPSE_AFTER = 120;
 const SCROLL_THRESHOLD = 8;
 
+/**
+ * 펼쳤을 때 탭 바를 가운데로 보내는 거리입니다.
+ *
+ * 왼쪽 끝을 `left-4`로 고정해 두고 이 값만큼만 옮깁니다. 가로 위치와 이동 값을
+ * 함께 바꾸면 접었다 펼칠 때 오른쪽으로 밀렸다 돌아오므로 이동 하나만 씁니다.
+ */
+const CENTER_SHIFT =
+  "translate-x-[calc((min(100vw,var(--container-app))-100%)/2-16px)]";
+
+/** 탭 바 좌우 안쪽 여백입니다. `px-[6px]`와 같은 값을 씁니다. */
+const NAV_PADDING = 6;
+/** 펼쳤을 때 탭 하나의 너비입니다. `w-[102px]`와 같은 값을 씁니다. */
+const TAB_WIDTH = 102;
+/** 접었을 때 남는 탭의 너비입니다. `w-10`과 같은 값을 씁니다. */
+const COLLAPSED_TAB_WIDTH = 40;
+/** 탭끼리 겹치는 너비입니다. `-mr-2`와 같은 값을 씁니다. */
+const TAB_OVERLAP = 8;
+/** 선택 표시가 탭보다 좌우로 더 나오는 너비입니다. */
+const INDICATOR_BLEED = 2;
+
 interface Tab {
   label: string;
   icon: StaticImageData;
   activeIcon: StaticImageData;
-  href: string | null;
+  href: string;
   matches: (pathname: string) => boolean;
 }
 
@@ -36,14 +55,10 @@ const TABS: Tab[] = [
     href: "/",
     matches: (pathname) => pathname === "/" || pathname.startsWith("/wishes"),
   },
-  {
-    label: "모으기",
-    icon: collectIcon,
-    activeIcon: collectIcon,
-    href: null,
-    matches: () => false,
-  },
 ];
+
+/** 탭 바를 그리는 화면이며 탭에 놓인 순서와 같습니다. */
+export const TAB_BAR_PATHS = TABS.map((tab) => tab.href);
 
 export function TabBar() {
   const pathname = usePathname();
@@ -63,14 +78,34 @@ export function TabBar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  if (!TAB_BAR_PATHS.includes(pathname)) return null;
+
+  const currentIndex = TABS.findIndex((tab) => tab.matches(pathname));
+  const currentLeft = isCollapsed
+    ? NAV_PADDING
+    : NAV_PADDING + Math.max(currentIndex, 0) * (TAB_WIDTH - TAB_OVERLAP);
+
   return (
     <div className="max-w-app pointer-events-none fixed inset-x-0 bottom-0 z-10 mx-auto h-0 w-full">
       <nav
         aria-label="주요 화면"
-        className={`pointer-events-auto absolute bottom-[max(25px,env(safe-area-inset-bottom))] flex rounded-full bg-white/65 px-[6px] py-1 shadow-[0_8px_40px_rgba(0,0,0,0.12)] backdrop-blur-xl transition-all duration-300 motion-reduce:transition-none ${
-          isCollapsed ? "left-4 translate-x-0" : "left-1/2 -translate-x-1/2"
+        className={`pointer-events-auto absolute bottom-[max(25px,env(safe-area-inset-bottom))] left-4 flex rounded-full bg-white/50 px-[6px] py-1 shadow-[0_8px_40px_rgba(0,0,0,0.12)] ring-1 ring-white/50 backdrop-blur-2xl backdrop-saturate-150 transition-transform duration-300 motion-reduce:transition-none ${
+          isCollapsed ? "translate-x-0" : CENTER_SHIFT
         }`}
       >
+        <span
+          aria-hidden="true"
+          style={{
+            left: currentLeft - INDICATOR_BLEED,
+            width:
+              (isCollapsed ? COLLAPSED_TAB_WIDTH : TAB_WIDTH) +
+              INDICATOR_BLEED * 2,
+          }}
+          className={`pointer-events-none absolute top-1 bottom-[3.5px] rounded-full bg-black/[0.06] shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-white/60 backdrop-blur-sm transition-all duration-300 motion-reduce:transition-none ${
+            currentIndex === -1 ? "opacity-0" : "opacity-100"
+          }`}
+        />
+
         {TABS.map((tab, index) => {
           const isCurrent = tab.matches(pathname);
           const className = `relative flex flex-col items-center justify-center gap-px pt-[6px] pb-[7px] transition-all duration-300 motion-reduce:transition-none ${
@@ -85,12 +120,6 @@ export function TabBar() {
 
           const content = (
             <>
-              {isCurrent ? (
-                <span
-                  aria-hidden="true"
-                  className="absolute -inset-x-[2px] top-0 -bottom-[0.5px] rounded-full bg-[#ededed]"
-                />
-              ) : null}
               <span className="relative block size-6 shrink-0">
                 <Image
                   src={isCurrent ? tab.activeIcon : tab.icon}
@@ -108,14 +137,6 @@ export function TabBar() {
               </span>
             </>
           );
-
-          if (tab.href === null) {
-            return (
-              <span key={tab.label} className={className}>
-                {content}
-              </span>
-            );
-          }
 
           return (
             <Link

@@ -12,7 +12,6 @@ import { PullToRefresh } from "../_components/pull-to-refresh";
 import { QuickActions } from "../_components/quick-actions";
 import { RecapSection } from "../_components/recap-section";
 import { ShortageNotice } from "../_components/shortage-notice";
-import { TabBar } from "../_components/tab-bar";
 import { loadWishlistTab } from "./load-wishlist-tab";
 
 export default async function WishlistTabPage({
@@ -77,7 +76,6 @@ export default async function WishlistTabPage({
 
         <div className="h-[182px]" />
       </PullToRefresh>
-      <TabBar />
     </div>
   );
 }
