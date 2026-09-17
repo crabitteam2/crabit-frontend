@@ -88,7 +88,11 @@ export function AdjustWithdrawForm({
 
     setIsPending(false);
     if (result.message !== null) {
-      setError(result.message);
+      setError(
+        result.withdrawn > 0
+          ? `${result.withdrawn.toLocaleString("ko-KR")}원만 꺼내기에 성공했어요. 남은 돈도 꺼내려면 다시 시도해주세요.`
+          : result.message,
+      );
       return;
     }
 
@@ -142,7 +146,13 @@ export function AdjustWithdrawForm({
         : `${total.toLocaleString("ko-KR")}원 꺼내기`;
 
   if (error !== null) {
-    return <FundErrorScreen action="잔액 조정" reason={error} />;
+    return (
+      <FundErrorScreen
+        action="잔액 조정"
+        reason={error}
+        exit={{ href: "/adjust", label: "잔액 조정으로 돌아가기" }}
+      />
+    );
   }
 
   return (

@@ -13,20 +13,26 @@ function toReasonLines(reason: string) {
 /** 오류 화면 제목에 들어가는 동작 이름입니다. */
 export type FundErrorAction = "돈 넣기" | "돈 꺼내기" | "잔액 조정";
 
+/** 화면을 나가는 버튼의 문구와 경로입니다. */
+interface FundErrorExit {
+  readonly href: string;
+  readonly label: string;
+}
+
 interface FundErrorScreenProps {
   /** 실패한 동작이며 제목에 그대로 들어갑니다. */
   action: FundErrorAction;
   /** 사유 줄에 적을 문구입니다. */
   reason: string;
-  /** 돌아갈 위시 상세 경로입니다. 주지 않으면 홈으로 보냅니다. */
-  wishHref?: string;
+  /** 돌아갈 곳이며, 주지 않으면 홈으로 보냅니다. */
+  exit?: FundErrorExit;
 }
 
 /** 자금을 옮기지 못했을 때 사유와 함께 보여주는 화면입니다. */
 export function FundErrorScreen({
   action,
   reason,
-  wishHref,
+  exit,
 }: FundErrorScreenProps) {
   return (
     <div className="bg-pink-1 flex min-h-dvh flex-col">
@@ -49,11 +55,11 @@ export function FundErrorScreen({
 
       <div className="mt-auto px-4 pb-[calc(55px+env(safe-area-inset-bottom))]">
         <Link
-          href={wishHref ?? "/"}
+          href={exit?.href ?? "/"}
           replace
           className="bg-brand-solid text-fg-contrast text-b3 flex h-14 w-full items-center justify-center rounded-xl px-6 font-semibold"
         >
-          {wishHref === undefined ? "홈으로" : "위시로 돌아가기"}
+          {exit?.label ?? "홈으로"}
         </Link>
       </div>
     </div>
