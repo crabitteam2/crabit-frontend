@@ -12,7 +12,8 @@ const spacingStyles: Record<ScreenHeaderSpacing, string> = {
 const BACK_STYLE = "relative block size-8 shrink-0";
 
 interface ScreenHeaderProps {
-  title: string;
+  /** 화면 이름이며, 주지 않으면 헤더에 제목을 두지 않습니다. */
+  title?: string;
   /** 기록이 없을 때 뒤로가기가 갈 경로입니다. */
   backHref?: string;
   /**
@@ -43,7 +44,9 @@ export function ScreenHeader({
           className={BACK_STYLE}
         />
       )}
-      <h1 className="text-t1 text-fg-neutral font-bold">{title}</h1>
+      {title === undefined ? null : (
+        <h1 className="text-t1 text-fg-neutral font-bold">{title}</h1>
+      )}
       {action ? <div className="ml-auto flex shrink-0">{action}</div> : null}
     </header>
   );

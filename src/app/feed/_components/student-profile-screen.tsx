@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { ErrorScreen } from "@/app/_components/error-screen";
 import { createBrowserApiClient } from "@/lib/http/browser";
 import { listAcademyStudentFollowing } from "@/lib/http/follows";
 import type { CrabitApiClient } from "@/lib/http/follows";
@@ -111,14 +112,12 @@ export function StudentProfileScreen({ studentId }: StudentProfileScreenProps) {
 
   if (hasError) {
     return (
-      <p
-        role="alert"
-        className="text-fg-neutral-muted px-4 py-10 text-center text-[20px] leading-7 font-medium tracking-[-0.3px]"
-      >
-        프로필을 불러오지 못했어요
-        <br />
-        잠시 후 다시 시도해 주세요
-      </p>
+      <ErrorScreen
+        title="프로필"
+        backHref="/feed"
+        message="프로필을 불러오지 못했어요"
+        reset={() => setReloadKey((key) => key + 1)}
+      />
     );
   }
 

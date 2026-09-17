@@ -89,7 +89,7 @@ export function WithdrawLoadingScreen({
       <FundErrorScreen
         action="돈 꺼내기"
         reason={error}
-        wishHref={`/wishes/${wishId}`}
+        exit={{ href: `/wishes/${wishId}`, label: "위시로 돌아가기" }}
       />
     );
   }

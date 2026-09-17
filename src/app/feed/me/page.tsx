@@ -23,16 +23,7 @@ export default async function MyProfilePage() {
   ]);
 
   if (!cardsResult.ok) {
-    return (
-      <p
-        role="alert"
-        className="text-fg-neutral-muted px-4 py-10 text-center text-[20px] leading-7 font-medium tracking-[-0.3px]"
-      >
-        프로필을 불러오지 못했어요
-        <br />
-        잠시 후 다시 시도해 주세요
-      </p>
-    );
+    throw new Error("Failed to load my profile cards");
   }
 
   const { inProgress, finished } = toProfileWishes(cardsResult.data.items);

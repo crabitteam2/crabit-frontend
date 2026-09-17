@@ -9,6 +9,7 @@ import { ACADEMY_NAME } from "@/lib/mock/home";
 import { behaviorRead, useBehaviorSession } from "./behavior-session";
 import { EmptyFeed } from "./empty-feed";
 import { FeedCard } from "./feed-card";
+import { ErrorScreen } from "@/app/_components/error-screen";
 import { FeedHeader } from "./feed-header";
 import { toFeedCardItem } from "./feed-item";
 import { FeedSkeleton } from "./feed-skeleton";
@@ -68,6 +69,22 @@ export function FeedScreen() {
 
   const cards = result?.items ?? [];
   if (!isLoading && !hasError && cards.length === 0) return <EmptyFeed />;
+
+  if (hasError && cards.length === 0) {
+    return (
+      <ErrorScreen
+        header={
+          <FeedHeader
+            academyName={ACADEMY_NAME}
+            backHref="/"
+            sortLabel="추천순"
+          />
+        }
+        message="피드를 불러오지 못했어요"
+        reset={() => void load()}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col">
