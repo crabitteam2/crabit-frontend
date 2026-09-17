@@ -25,7 +25,7 @@ export function EmptyWishes() {
         </p>
       </div>
       <div className="flex-1" />
-      <div className="pb-[calc(55px+env(safe-area-inset-bottom))]">
+      <div className="pb-action">
         <Link
           href="/wishes/new"
           className="bg-brand-solid text-fg-contrast text-b3 flex h-14 w-full items-center justify-center rounded-xl px-6 font-semibold"

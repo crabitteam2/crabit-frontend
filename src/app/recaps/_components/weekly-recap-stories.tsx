@@ -88,7 +88,7 @@ export function WeeklyRecapStories({
         ))}
       </div>
 
-      <div className="mt-auto px-4 pt-5 pb-[calc(55px+env(safe-area-inset-bottom))]">
+      <div className="pb-action mt-auto px-4 pt-5">
         <Link
           href={feedHref}
           className="bg-brand-solid text-fg-contrast flex h-14 items-center justify-center rounded-xl px-6 text-[15px] leading-5 font-semibold tracking-[-0.3px]"

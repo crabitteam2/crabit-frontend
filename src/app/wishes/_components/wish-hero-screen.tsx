@@ -158,9 +158,7 @@ export function WishHeroScreen({
 
       <div className="flex-1" />
 
-      <div className="px-4 pb-[calc(55px+env(safe-area-inset-bottom))]">
-        {children}
-      </div>
+      <div className="pb-action px-4">{children}</div>
     </div>
   );
 }

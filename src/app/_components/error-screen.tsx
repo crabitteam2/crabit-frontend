@@ -53,7 +53,7 @@ export function ErrorScreen({
       </div>
 
       <div
-        className={`px-4 ${hasTabBar ? "pb-[calc(96px+env(safe-area-inset-bottom))]" : "pb-[calc(55px+env(safe-area-inset-bottom))]"}`}
+        className={`px-4 ${hasTabBar ? "pb-[calc(96px+env(safe-area-inset-bottom))]" : "pb-action"}`}
       >
         {reset === undefined ? (
           <Link
