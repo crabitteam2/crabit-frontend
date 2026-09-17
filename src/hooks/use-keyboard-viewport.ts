@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useBodyScrollLock } from "./use-body-scroll-lock";
 
 const KEYBOARD_THRESHOLD = 120;
 
@@ -38,15 +39,11 @@ export function useKeyboardViewport(): KeyboardViewport | null {
 
   const isKeyboardOpen = box?.isKeyboardOpen ?? false;
 
+  useBodyScrollLock(isKeyboardOpen);
+
   useEffect(() => {
     if (!isKeyboardOpen) return;
-
-    const { overflow } = document.body.style;
-    document.body.style.overflow = "hidden";
     window.scrollTo(0, 0);
-    return () => {
-      document.body.style.overflow = overflow;
-    };
   }, [isKeyboardOpen]);
 
   return box;
