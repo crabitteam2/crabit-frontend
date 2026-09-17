@@ -2,19 +2,32 @@ import { describe, expect, it } from "vitest";
 import { toWishDisplayAmount } from "./wish-display-amount";
 
 describe("위시 표시 금액", () => {
-  it("진행중과 완료 위시는 현재 금액을 사용한다", () => {
+  it("진행중과 목표 도달 위시는 현재 금액을 사용한다", () => {
     expect(
       toWishDisplayAmount({
         state: "IN_PROGRESS",
         amount: 7_000,
         abandonmentAmount: null,
+        targetAmount: 30_000,
       }),
     ).toBe(7_000);
     expect(
       toWishDisplayAmount({
-        state: "COMPLETED",
+        state: "AMOUNT_REACHED",
         amount: 30_000,
         abandonmentAmount: null,
+        targetAmount: 30_000,
+      }),
+    ).toBe(30_000);
+  });
+
+  it("완료 위시는 현재 0원이 아니라 목표 금액을 사용한다", () => {
+    expect(
+      toWishDisplayAmount({
+        state: "COMPLETED",
+        amount: 0,
+        abandonmentAmount: null,
+        targetAmount: 30_000,
       }),
     ).toBe(30_000);
   });
@@ -25,6 +38,7 @@ describe("위시 표시 금액", () => {
         state: "ABANDONED",
         amount: 0,
         abandonmentAmount: 12_000,
+        targetAmount: 30_000,
       }),
     ).toBe(12_000);
   });
@@ -35,6 +49,7 @@ describe("위시 표시 금액", () => {
         state: "ABANDONED",
         amount: 0,
         abandonmentAmount: 0,
+        targetAmount: 30_000,
       }),
     ).toBe(0);
   });
@@ -45,6 +60,7 @@ describe("위시 표시 금액", () => {
         state: "ABANDONED",
         amount: 0,
         abandonmentAmount: null,
+        targetAmount: 30_000,
       }),
     ).toThrow("ABANDONED Wish must have an abandonmentAmount");
     expect(() =>
@@ -52,6 +68,7 @@ describe("위시 표시 금액", () => {
         state: "AMOUNT_REACHED",
         amount: 10_000,
         abandonmentAmount: 5_000,
+        targetAmount: 30_000,
       }),
     ).toThrow("Non-abandoned Wish must not have an abandonmentAmount");
   });

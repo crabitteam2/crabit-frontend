@@ -5,6 +5,7 @@ import { ScreenHeader } from "../../../_components/screen-header";
 import { WishHeroContent } from "../../../_components/wish-hero-screen";
 import { toSavingPeriodLabel } from "../../../_components/wish-period-format";
 import { getWishShareLook } from "../../../_components/wish-share-theme";
+import { toWishDisplayAmount } from "@/app/wishes/_components/wish-display-amount";
 import { WishShareWriteForm } from "../../../_components/wish-share-write-form";
 
 export default async function WishShareWritePage({
@@ -20,6 +21,7 @@ export default async function WishShareWritePage({
   const isShared = wish.visibility !== "PRIVATE";
 
   const look = getWishShareLook(wish);
+  const displayAmount = toWishDisplayAmount(wish);
   const period = toSavingPeriodLabel({
     start: wish.startDate,
     end: wish.targetDate,
@@ -40,11 +42,11 @@ export default async function WishShareWritePage({
           headline={look.headline}
           headlinePaddingTop={look.headlinePaddingTop}
           headlinePaddingBottom={look.headlinePaddingBottom}
-          percent={toProgressPercent(wish.amount, wish.targetAmount)}
+          percent={toProgressPercent(displayAmount, wish.targetAmount)}
           theme={look.theme}
           purpose={wish.purpose}
           period={period === "" ? null : period}
-          amount={wish.amount}
+          amount={displayAmount}
           targetAmount={wish.targetAmount}
           showAmount={false}
         />
