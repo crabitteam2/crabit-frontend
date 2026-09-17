@@ -4,7 +4,7 @@ import { BackButton } from "@/components/ui/back-button";
 type ScreenHeaderSpacing = "tight" | "default" | "loose";
 
 const spacingStyles: Record<ScreenHeaderSpacing, string> = {
-  tight: "pb-2",
+  tight: "pb-3",
   default: "pb-4",
   loose: "pb-10",
 };
