@@ -24,7 +24,6 @@ const PURPOSE_FIELD_MIN_HEIGHT = 161;
 interface WishGoalFormProps {
   backHref: string;
   nextPath: string;
-  available: number | null;
   cardBalanceAccountId: string;
   /** 이전 단계에서 돌아왔을 때 되살릴 위시 이름입니다. */
   initialPurpose?: string;
@@ -37,7 +36,6 @@ interface WishGoalFormProps {
 export function WishGoalForm({
   backHref,
   nextPath,
-  available,
   cardBalanceAccountId,
   initialPurpose = "",
   initialAmount = "",
@@ -85,7 +83,7 @@ export function WishGoalForm({
       }
     >
       <ScreenHeader
-        title="위시를 입력해주세요."
+        title="위시 정보를 입력해주세요."
         backHref={backHref}
         spacing="loose"
       />
@@ -101,7 +99,8 @@ export function WishGoalForm({
             style={{ minHeight: PURPOSE_FIELD_MIN_HEIGHT }}
           >
             <Input
-              label="위시"
+              label="위시 이름을 지어주세요."
+              placeholder="저축, 부모님 선물, 운동화"
               variant="filled"
               {...register("purpose", {
                 validate: (value) => purposeError(value) ?? true,
@@ -115,7 +114,7 @@ export function WishGoalForm({
 
           <div className="flex flex-col items-start px-4">
             <Input
-              label="위시 금액"
+              label="얼마를 모아볼까요?"
               variant="filled"
               {...register("amount", {
                 validate: (value) => amountError(value) ?? true,
@@ -127,11 +126,6 @@ export function WishGoalForm({
               enterKeyHint="done"
               error={errors.amount?.message}
             />
-            <span className="text-e1 text-gray-5 py-2">
-              {available === null
-                ? "사용 가능한 금액을 확인해주세요."
-                : `현재 사용 가능한 금액 : ${available.toLocaleString("ko-KR")}원`}
-            </span>
           </div>
         </PullToRefresh>
       </div>
