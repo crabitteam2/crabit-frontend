@@ -22,7 +22,6 @@ export default async function NewWishPage({
       initialPurpose={values?.purpose ?? ""}
       initialAmount={values === null ? "" : String(values.targetAmount)}
       initialRange={values?.range ?? { start: null, end: null }}
-      available={account.displayAvailableBalance}
       cardBalanceAccountId={cardBalanceAccountId}
     />
   );

@@ -14,7 +14,6 @@ const setup = () => {
       cardBalanceAccountId="account"
       backHref="/"
       nextPath="/period"
-      available={20}
     />,
   );
   return userEvent.setup();
@@ -22,7 +21,9 @@ const setup = () => {
 describe("goal form", () => {
   it("shows errors after blur, clears on correction and focuses first invalid field", async () => {
     const user = setup();
-    const purpose = screen.getByRole("textbox", { name: "위시" });
+    const purpose = screen.getByRole("textbox", {
+      name: "위시 이름을 지어주세요.",
+    });
     expect(screen.queryByRole("alert")).toBeNull();
     await user.click(purpose);
     await user.tab();
@@ -33,14 +34,18 @@ describe("goal form", () => {
     );
     await user.click(screen.getByRole("button", { name: "다음" }));
     await waitFor(() =>
-      expect(screen.getByRole("textbox", { name: "위시 금액" })).toHaveFocus(),
+      expect(
+        screen.getByRole("textbox", { name: "얼마를 모아볼까요?" }),
+      ).toHaveFocus(),
     );
     expect(replace).not.toHaveBeenCalled();
   });
   it("moves focus on Enter, protects IME, preserves invalid paste and allows targets above cash", async () => {
     const user = setup();
-    const purpose = screen.getByRole("textbox", { name: "위시" });
-    const amount = screen.getByRole("textbox", { name: "위시 금액" });
+    const purpose = screen.getByRole("textbox", {
+      name: "위시 이름을 지어주세요.",
+    });
+    const amount = screen.getByRole("textbox", { name: "얼마를 모아볼까요?" });
     await user.type(purpose, "선물");
     fireEvent.keyDown(purpose, { key: "Enter", isComposing: true });
     expect(purpose).toHaveFocus();
