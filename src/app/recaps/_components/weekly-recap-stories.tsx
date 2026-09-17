@@ -77,6 +77,7 @@ export function WeeklyRecapStories({
                   src={completedCharacter}
                   alt=""
                   width={67}
+                  sizes="67px"
                   height={52}
                   className="absolute top-[5px] left-[-4px] h-[52px] w-[67px] max-w-none object-bottom"
                 />

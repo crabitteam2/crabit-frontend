@@ -108,6 +108,7 @@ export function AmountForm({
                 src={heroImage}
                 alt=""
                 width={358}
+                sizes="358px"
                 height={239}
                 priority
                 className="h-[239px] w-full rounded-[20px] object-cover"

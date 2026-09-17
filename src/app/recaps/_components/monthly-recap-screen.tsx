@@ -92,6 +92,7 @@ export function MonthlyRecapContent({
           src={theme.character}
           alt=""
           width={CHARACTER_WIDTH}
+          sizes={`${CHARACTER_WIDTH}px`}
           height={characterHeight}
           className="block"
           style={{ marginLeft: theme.characterBox.left }}

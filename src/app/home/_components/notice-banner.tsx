@@ -10,6 +10,7 @@ export function NoticeBanner() {
           src={bannerImage}
           alt="기말고사 대비 특별 관리 시스템 안내"
           width={317}
+          sizes="317px"
           height={122}
           className="absolute top-[-24px] left-[-47.5px] max-w-none"
         />
