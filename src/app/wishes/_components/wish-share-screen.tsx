@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { toProgressPercent } from "@/app/_components/progress-stage";
 import type { WishDetail } from "./wish-detail";
+import { toWishDisplayAmount } from "./wish-display-amount";
 import { WishHeroScreen } from "./wish-hero-screen";
 import { toSavingPeriodLabel } from "./wish-period-format";
 import type { WishPhotoUrls } from "./wish-photo";
@@ -20,6 +21,7 @@ export function WishShareScreen({
   writeHref,
 }: WishShareScreenProps) {
   const look = getWishShareLook(wish);
+  const displayAmount = toWishDisplayAmount(wish);
   const period = toSavingPeriodLabel({
     start: wish.startDate,
     end: wish.targetDate,
@@ -33,11 +35,11 @@ export function WishShareScreen({
       headline={look.headline}
       headlinePaddingTop={look.headlinePaddingTop}
       headlinePaddingBottom={look.headlinePaddingBottom}
-      percent={toProgressPercent(wish.amount, wish.targetAmount)}
+      percent={toProgressPercent(displayAmount, wish.targetAmount)}
       theme={look.theme}
       purpose={wish.purpose}
       period={period === "" ? null : period}
-      amount={wish.amount}
+      amount={displayAmount}
       targetAmount={wish.targetAmount}
     >
       <Link
