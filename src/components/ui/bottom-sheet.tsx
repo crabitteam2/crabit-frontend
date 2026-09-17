@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 import closeIcon from "@/../public/images/wishes/close-32.svg";
 
 const TRANSITION_MS = 300;
@@ -54,6 +55,8 @@ export function BottomSheet({
     };
   }, [isMounted, isOpen]);
 
+  useBodyScrollLock(isMounted);
+
   useEffect(() => {
     if (!isMounted) return;
 
@@ -63,13 +66,10 @@ export function BottomSheet({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
     };
-    const { overflow } = document.body.style;
-    document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKeyDown);
 
     return () => {
       window.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = overflow;
       previouslyFocused.current?.focus();
     };
   }, [isMounted, onClose]);
