@@ -1,8 +1,11 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { TAB_BAR_PATHS } from "./tab-bar";
+
+const useBeforePaint =
+  typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 const DURATION = 240;
 /** 들어오는 화면이 미끄러지는 거리입니다. */
@@ -19,7 +22,7 @@ export function ScreenTransition({ children }: { children: ReactNode }) {
   const previous = useRef(pathname);
   const screen = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  useBeforePaint(() => {
     const from = previous.current;
     previous.current = pathname;
 

@@ -8,7 +8,7 @@ export default function WishlistTabLoading() {
   return (
     <div className="flex flex-col">
       <CharacterArea stage={null}>
-        <HomeHeader nickname={NICKNAME} wishPurpose={null} />
+        <HomeHeader nickname={NICKNAME} wishPurpose={null} isLoading />
       </CharacterArea>
 
       <main className="relative -mt-[17px] flex flex-col px-4">
@@ -16,8 +16,8 @@ export default function WishlistTabLoading() {
           label="위시리스트를 불러오는 중"
           className="flex flex-col"
         >
-          <Skeleton className="h-[52px]" />
-          <Skeleton className="mt-10 h-[152px]" />
+          <Skeleton className="h-[75px]" />
+          <Skeleton className="mt-10 h-[172px]" />
         </SkeletonRegion>
         <div className="pt-[68px]">
           <AcademySection academyName={ACADEMY_NAME} />
