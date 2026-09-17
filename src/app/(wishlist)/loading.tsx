@@ -3,7 +3,6 @@ import { ACADEMY_NAME, NICKNAME } from "@/lib/mock/home";
 import { AcademySection } from "../_components/academy-section";
 import { CharacterArea } from "../_components/character-area";
 import { HomeHeader } from "../_components/home-header";
-import { TabBar } from "../_components/tab-bar";
 
 export default function WishlistTabLoading() {
   return (
@@ -43,7 +42,6 @@ export default function WishlistTabLoading() {
       </main>
 
       <div className="h-[182px]" />
-      <TabBar />
     </div>
   );
 }

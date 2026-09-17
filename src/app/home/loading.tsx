@@ -1,6 +1,5 @@
 import { Skeleton, SkeletonRegion } from "@/components/ui/skeleton";
 import { ACADEMY_NAME } from "@/lib/mock/home";
-import { TabBar } from "../_components/tab-bar";
 import { HomeTabHeader } from "./_components/home-tab-header";
 
 export default function HomeTabLoading() {
@@ -18,7 +17,6 @@ export default function HomeTabLoading() {
       </SkeletonRegion>
 
       <div className="h-[182px]" />
-      <TabBar />
     </div>
   );
 }
