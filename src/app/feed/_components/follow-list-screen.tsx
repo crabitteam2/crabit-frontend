@@ -4,9 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import searchIcon from "@/../public/images/feed/search.svg";
+import { ErrorScreen } from "@/app/_components/error-screen";
 import { BackButton } from "@/components/ui/back-button";
 import { Button } from "@/components/ui/button";
 import { Skeleton, SkeletonRegion } from "@/components/ui/skeleton";
+import { Toast } from "@/components/ui/toast";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { components } from "@/lib/http/generated/crabit-backend";
 import {
@@ -164,6 +166,17 @@ export function FollowListScreen(props: FollowListScreenProps) {
     setUnfollowTarget(null);
   };
 
+  if (remoteError === "failed" && page === null) {
+    return (
+      <ErrorScreen
+        title="팔로우"
+        backHref={backHref}
+        message="목록을 불러오지 못했어요"
+        reset={() => void loadRemotePage()}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col">
       <header className="border-gray-3 flex items-center border-b px-4 pt-[calc(env(safe-area-inset-top)+12px)] pb-4">
@@ -211,14 +224,6 @@ export function FollowListScreen(props: FollowListScreenProps) {
         </div>
       </div>
 
-      {remoteError === "failed" ? (
-        <p
-          role="alert"
-          className="text-fg-neutral-muted px-4 py-10 text-center text-[16px] leading-[23px]"
-        >
-          목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.
-        </p>
-      ) : null}
       {mutationError === null ? null : (
         <p
           role="alert"
@@ -286,6 +291,14 @@ export function FollowListScreen(props: FollowListScreenProps) {
         onSecondary={() => setUnfollowTarget(null)}
         onDismiss={() => setUnfollowTarget(null)}
       />
+
+      {remoteError === "failed" && page !== null ? (
+        <Toast
+          message="목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요."
+          tone="danger"
+          onClose={() => setRemoteError(null)}
+        />
+      ) : null}
     </div>
   );
 }
