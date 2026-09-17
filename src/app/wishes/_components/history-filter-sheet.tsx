@@ -84,7 +84,7 @@ export function HistoryFilterSheet({
         ))}
       </div>
 
-      <div className="flex w-full items-center gap-4 pt-12 pb-5">
+      <div className="flex w-full items-center gap-4 pt-12 pb-[calc(20px+env(safe-area-inset-bottom))]">
         <button
           type="button"
           onClick={onReset}
