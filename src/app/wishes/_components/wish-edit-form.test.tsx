@@ -89,7 +89,7 @@ describe("WishEditForm", () => {
     expect(screen.getByRole("textbox", { name: "위시" })).toHaveValue("");
     expect(screen.getByRole("button", { name: "다음" })).toHaveAttribute(
       "type",
-      "submit",
+      "button",
     );
   });
   it("patches normalized fields and clears dates explicitly", async () => {
@@ -154,7 +154,7 @@ describe("WishEditForm", () => {
     await user.click(screen.getByRole("textbox", { name: "위시 기간" }));
     await user.click(screen.getByRole("button", { name: "2026년 9월 11일" }));
     await user.click(screen.getByRole("button", { name: "2026년 9월 20일" }));
-    await user.click(screen.getByRole("button", { name: "다음" }));
+    await user.click(screen.getByRole("button", { name: "확인" }));
     await user.click(screen.getByRole("button", { name: "다음" }));
     await waitFor(() =>
       expect(patchWish).toHaveBeenCalledWith(expect.anything(), {
@@ -163,5 +163,28 @@ describe("WishEditForm", () => {
         body: { expectedVersion: 3, startDate: "2026-09-11" },
       }),
     );
+  });
+
+  it("keeps the calendar step from submitting on the first press", async () => {
+    patchWish.mockResolvedValue({ ok: true, data: {} });
+    const user = userEvent.setup();
+    render(
+      <WishEditForm
+        backHref="/"
+        donePath="/done"
+        purpose="선물"
+        targetAmount={10000}
+        period="26.09.10 - 26.09.20"
+        cardBalanceAccountId="account"
+        wishId="wish"
+        version={3}
+      />,
+    );
+    await user.click(screen.getByRole("textbox", { name: "위시 기간" }));
+    await user.click(screen.getByRole("button", { name: "2026년 9월 11일" }));
+    await user.click(screen.getByRole("button", { name: "2026년 9월 20일" }));
+    await user.click(screen.getByRole("button", { name: "확인" }));
+    expect(patchWish).not.toHaveBeenCalled();
+    expect(screen.getByRole("textbox", { name: "위시" })).toBeVisible();
   });
 });
