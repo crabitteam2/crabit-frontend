@@ -18,7 +18,7 @@
 
 ## 계약 출처
 
-백엔드 확인 commit: `0c8d6b802076ab826be5bf2e4a0b9e7111858fd7`.
+백엔드 확인 commit: `2c1e39806892a668ea04ff2b17fe90e3a612d90c`.
 
 원본: `api/openapi.yaml`, SHA-256 `f060a17c394678fa512d059be745be3f9d3991582d65168a0e2365cec1305adb`.
 
