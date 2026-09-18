@@ -249,8 +249,12 @@ export function WishEditForm({
           size="xlarge"
           variant={isSkippingPeriod ? "weak" : "fill"}
           className="w-full"
-          type={isCalendarOpen ? "button" : "submit"}
-          onClick={isCalendarOpen ? () => setIsCalendarOpen(false) : undefined}
+          type="button"
+          onClick={
+            isCalendarOpen
+              ? () => setIsCalendarOpen(false)
+              : () => void submit()
+          }
           isLoading={isSubmitting}
           disabled={
             !isCalendarOpen &&
@@ -260,7 +264,7 @@ export function WishEditForm({
           }
           onPointerDown={(event) => event.preventDefault()}
         >
-          {isSkippingPeriod ? "넘어가기" : "다음"}
+          {isSkippingPeriod ? "넘어가기" : isCalendarOpen ? "확인" : "다음"}
         </Button>
       </div>
     </form>
