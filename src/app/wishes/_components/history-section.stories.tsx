@@ -29,6 +29,7 @@ export const 여러달_기록: Story = {
         kind: "DEPOSIT",
         amount: 1_500,
         balanceAfter: 12_000,
+        isAdjustment: false,
       },
       {
         id: "m2",
@@ -36,6 +37,7 @@ export const 여러달_기록: Story = {
         kind: "WITHDRAWAL",
         amount: 500,
         balanceAfter: 10_500,
+        isAdjustment: false,
       },
       {
         id: "m3",
@@ -43,6 +45,7 @@ export const 여러달_기록: Story = {
         kind: "DEPOSIT",
         amount: 3_000,
         balanceAfter: 11_000,
+        isAdjustment: false,
       },
       {
         id: "m4",
@@ -50,6 +53,7 @@ export const 여러달_기록: Story = {
         kind: "DEPOSIT",
         amount: 8_000,
         balanceAfter: 8_000,
+        isAdjustment: false,
       },
     ],
   },

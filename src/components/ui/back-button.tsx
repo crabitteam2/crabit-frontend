@@ -13,6 +13,8 @@ interface BackButtonProps {
    * 입력한 값을 주소에 실어 되돌아가는 단계 화면에서 씁니다.
    */
   usesHref?: boolean;
+  /** 주면 기록으로 돌아가지 않고 이것을 실행합니다. */
+  onBack?: () => void;
   className: string;
 }
 
@@ -20,6 +22,7 @@ interface BackButtonProps {
 export function BackButton({
   fallbackHref,
   usesHref = false,
+  onBack,
   className,
 }: BackButtonProps) {
   const goBack = useGoBack(fallbackHref, usesHref);
@@ -28,7 +31,7 @@ export function BackButton({
     <button
       type="button"
       aria-label="뒤로 가기"
-      onClick={goBack}
+      onClick={onBack ?? goBack}
       className={className}
     >
       <Image src={arrowLeftIcon} alt="" fill sizes="32px" />

@@ -108,6 +108,7 @@ export function AmountForm({
                 src={heroImage}
                 alt=""
                 width={358}
+                sizes="358px"
                 height={239}
                 priority
                 className="h-[239px] w-full rounded-[20px] object-cover"
@@ -146,9 +147,7 @@ export function AmountForm({
 
       {isKeyboardOpen ? null : <div className="flex-1" />}
 
-      <div
-        className={`shrink-0 px-4 ${isKeyboardOpen ? "pb-5" : "pb-[calc(55px+env(safe-area-inset-bottom))]"}`}
-      >
+      <div className={`shrink-0 px-4 ${isKeyboardOpen ? "pb-5" : "pb-action"}`}>
         <Button
           size="xlarge"
           className="w-full"

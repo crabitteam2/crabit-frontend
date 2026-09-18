@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { abandonWish, withdrawFromWish } from "@/lib/http/wishes";
+import { abandonWish, completeWish, withdrawFromWish } from "@/lib/http/wishes";
 import { loadAccountContext } from "@/app/wishes/load-account";
 import { toActionMessage } from "@/app/wishes/action-message";
 
@@ -14,9 +14,9 @@ export interface AdjustWithdrawal {
   readonly idempotencyKey: string;
 }
 
-/** 포기한 결과이며, 남은 부족액으로 다음 화면을 정합니다. */
-export interface AdjustAbandonResult {
-  /** 포기한 뒤 남은 부족액이며, 실패하면 null입니다. */
+/** 위시를 종료한 결과이며, 남은 부족액으로 다음 화면을 정합니다. */
+export interface AdjustCloseResult {
+  /** 종료한 뒤 남은 부족액이며, 실패하면 null입니다. */
   readonly shortage: number | null;
   /** 실패했으면 화면에 보여줄 문구입니다. */
   readonly message: string | null;
@@ -72,9 +72,29 @@ function revalidateAdjust(withdrawals: readonly AdjustWithdrawal[]) {
 export async function adjustAbandonAction(
   wishId: string,
   expectedVersion: number,
-): Promise<AdjustAbandonResult> {
+): Promise<AdjustCloseResult> {
+  return closeWish(abandonWish, wishId, expectedVersion);
+}
+
+/**
+ * 모은 돈을 이미 쓴 위시를 완료해 모은 금액을 카드로 되돌립니다.
+ *
+ * 목표 금액에 도달하지 않은 위시는 백엔드가 완료를 허용할 때까지 거부합니다.
+ */
+export async function adjustCompleteAction(
+  wishId: string,
+  expectedVersion: number,
+): Promise<AdjustCloseResult> {
+  return closeWish(completeWish, wishId, expectedVersion);
+}
+
+async function closeWish(
+  close: typeof abandonWish,
+  wishId: string,
+  expectedVersion: number,
+): Promise<AdjustCloseResult> {
   const { client, cardBalanceAccountId } = await loadAccountContext();
-  const result = await abandonWish(client, {
+  const result = await close(client, {
     cardBalanceAccountId,
     wishId,
     idempotencyKey: crypto.randomUUID(),

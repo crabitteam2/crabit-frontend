@@ -129,6 +129,7 @@ export function LoadingScreen({
           src={stage.image}
           alt=""
           width={stage.width}
+          sizes={`${stage.width}px`}
           height={Math.round(stage.height)}
           priority
           style={{ width: stage.width, height: stage.height }}

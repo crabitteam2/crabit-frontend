@@ -29,7 +29,6 @@ export default async function WishDetailPage({
       <ScreenHeader
         title="모은 돈 기록"
         backHref="/wishes"
-        spacing="tight"
         action={isFinished ? undefined : <WishDetailActions wish={wish} />}
       />
 

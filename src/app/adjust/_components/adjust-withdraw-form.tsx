@@ -8,8 +8,13 @@ import { ScreenHeader } from "@/app/wishes/_components/screen-header";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Toast } from "@/components/ui/toast";
+import { FundErrorScreen } from "@/app/wishes/_components/fund-error-screen";
 import { useKeyboardViewport } from "@/hooks/use-keyboard-viewport";
-import { adjustAbandonAction, adjustWithdrawAction } from "../adjust-actions";
+import {
+  adjustAbandonAction,
+  adjustCompleteAction,
+  adjustWithdrawAction,
+} from "../adjust-actions";
 import { AdjustHelpButton } from "./adjust-help-button";
 import { putAdjustReceipt } from "./adjust-receipt";
 
@@ -21,6 +26,12 @@ export interface AdjustWish {
   readonly amount: number;
   /** 쓰기 요청에 필요한 위시 스냅샷 버전입니다. */
   readonly version: number;
+}
+
+/** 확인 창을 띄운 위시와 그 위시를 종료하는 방법입니다. */
+interface ClosingWish {
+  readonly wish: AdjustWish;
+  readonly intent: "use" | "abandon";
 }
 
 interface AdjustWithdrawFormProps {
@@ -43,8 +54,8 @@ export function AdjustWithdrawForm({
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [abandonTarget, setAbandonTarget] = useState<AdjustWish | null>(null);
-  const [isAbandoning, setIsAbandoning] = useState(false);
+  const [closing, setClosing] = useState<ClosingWish | null>(null);
+  const [isClosing, setIsClosing] = useState(false);
   const box = useKeyboardViewport();
   const isKeyboardOpen = box?.isKeyboardOpen ?? false;
 
@@ -52,7 +63,7 @@ export function AdjustWithdrawForm({
     (sum, wish) => sum + toAmount(inputs[wish.id] ?? ""),
     0,
   );
-  const isReady = total === shortage;
+  const isReady = total >= shortage && total > 0;
 
   const withdraw = async () => {
     if (isPending || !isReady) return;
@@ -77,9 +88,11 @@ export function AdjustWithdrawForm({
 
     setIsPending(false);
     if (result.message !== null) {
-      setInputs({});
-      setError(result.message);
-      router.refresh();
+      setError(
+        result.withdrawn > 0
+          ? `${result.withdrawn.toLocaleString("ko-KR")}원만 꺼내기에 성공했어요. 남은 돈도 꺼내려면 다시 시도해주세요.`
+          : result.message,
+      );
       return;
     }
 
@@ -93,14 +106,17 @@ export function AdjustWithdrawForm({
     router.replace("/adjust/done");
   };
 
-  const abandon = async () => {
-    if (abandonTarget === null || isAbandoning) return;
-    setIsAbandoning(true);
+  const close = async () => {
+    if (closing === null || isClosing) return;
+    setIsClosing(true);
 
-    const target = abandonTarget;
-    const result = await adjustAbandonAction(target.id, target.version);
-    setIsAbandoning(false);
-    setAbandonTarget(null);
+    const { wish: target, intent } = closing;
+    const result =
+      intent === "use"
+        ? await adjustCompleteAction(target.id, target.version)
+        : await adjustAbandonAction(target.id, target.version);
+    setIsClosing(false);
+    setClosing(null);
 
     if (result.shortage === null) {
       setError(result.message);
@@ -127,9 +143,17 @@ export function AdjustWithdrawForm({
       ? "위시를 선택해주세요."
       : total < shortage
         ? `${(shortage - total).toLocaleString("ko-KR")}원이 더 필요해요.`
-        : total > shortage
-          ? `필요 금액보다 ${(total - shortage).toLocaleString("ko-KR")}원 많아요.`
-          : `${shortage.toLocaleString("ko-KR")}원 꺼내기`;
+        : `${total.toLocaleString("ko-KR")}원 꺼내기`;
+
+  if (error !== null) {
+    return (
+      <FundErrorScreen
+        action="잔액 조정"
+        reason={error}
+        exit={{ href: "/adjust", label: "잔액 조정으로 돌아가기" }}
+      />
+    );
+  }
 
   return (
     <div
@@ -201,9 +225,20 @@ export function AdjustWithdrawForm({
                   />
                 </label>
 
+                <div className="pt-4">
+                  <Button
+                    variant="fill"
+                    size="xlarge"
+                    className="w-full"
+                    onClick={() => setClosing({ wish, intent: "use" })}
+                  >
+                    모은 돈을 위시에 사용했어요.
+                  </Button>
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => setAbandonTarget(wish)}
+                  onClick={() => setClosing({ wish, intent: "abandon" })}
                   className="text-e1 text-fg-neutral-muted py-4 text-center underline"
                 >
                   이 위시 포기하기
@@ -222,9 +257,7 @@ export function AdjustWithdrawForm({
         </ul>
       </div>
 
-      <div
-        className={`shrink-0 px-4 ${isKeyboardOpen ? "pb-5" : "pb-[calc(55px+env(safe-area-inset-bottom))]"}`}
-      >
+      <div className={`shrink-0 px-4 ${isKeyboardOpen ? "pb-5" : "pb-action"}`}>
         <Button
           variant={isReady ? "fill" : "weak"}
           size="xlarge"
@@ -238,7 +271,25 @@ export function AdjustWithdrawForm({
       </div>
 
       <ConfirmDialog
-        isOpen={abandonTarget !== null}
+        isOpen={closing?.intent === "use"}
+        title="위시 금액을 모두 모았어요 🎉"
+        description={
+          <>
+            올바른 저축 습관을 위해
+            <br />
+            모은 돈을 실제로 사용한 경우 선택해주세요.
+          </>
+        }
+        primaryLabel="모은 돈을 사용했어요."
+        secondaryLabel="아직이에요."
+        onPrimary={() => void close()}
+        onSecondary={() => setClosing(null)}
+        onDismiss={() => setClosing(null)}
+        loadingButton={isClosing ? "primary" : undefined}
+      />
+
+      <ConfirmDialog
+        isOpen={closing?.intent === "abandon"}
         title="위시를 정말 포기할까요?"
         description={
           <>
@@ -249,18 +300,14 @@ export function AdjustWithdrawForm({
         }
         primaryLabel="아니요"
         secondaryLabel="포기하기"
-        onPrimary={() => setAbandonTarget(null)}
-        onSecondary={() => void abandon()}
-        onDismiss={() => setAbandonTarget(null)}
-        loadingButton={isAbandoning ? "secondary" : undefined}
+        onPrimary={() => setClosing(null)}
+        onSecondary={() => void close()}
+        onDismiss={() => setClosing(null)}
+        loadingButton={isClosing ? "secondary" : undefined}
       />
 
       {toast === null ? null : (
         <Toast message={toast} onClose={() => setToast(null)} />
-      )}
-
-      {error === null ? null : (
-        <Toast message={error} tone="danger" onClose={() => setError(null)} />
       )}
     </div>
   );

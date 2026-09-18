@@ -92,6 +92,7 @@ export function MonthlyRecapContent({
           src={theme.character}
           alt=""
           width={CHARACTER_WIDTH}
+          sizes={`${CHARACTER_WIDTH}px`}
           height={characterHeight}
           className="block"
           style={{ marginLeft: theme.characterBox.left }}
@@ -205,7 +206,7 @@ function RecapHighlight({
       </div>
 
       <p
-        className={`text-fg-neutral absolute top-1/2 left-1/2 text-center tracking-[-0.3px] ${toTextSize(message)}`}
+        className={`text-fg-neutral absolute top-1/2 left-1/2 text-center tracking-[-0.3px] break-keep ${toTextSize(message)}`}
         style={{
           width: placement.textWidth,
           transform: `translate(-50%, -50%) rotate(${placement.textRotate}deg)`,

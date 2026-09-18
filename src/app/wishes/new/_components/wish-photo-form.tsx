@@ -408,7 +408,7 @@ export function WishPhotoForm({
         <Toast message={error} tone="danger" onClose={() => setError(null)} />
       )}
 
-      <div className="px-4 pb-[calc(55px+env(safe-area-inset-bottom))]">
+      <div className="pb-action px-4">
         <Button
           variant={
             previewUrl === null && pendingPhoto === null ? "weak" : "fill"

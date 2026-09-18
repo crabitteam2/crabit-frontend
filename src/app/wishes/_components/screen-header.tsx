@@ -4,7 +4,7 @@ import { BackButton } from "@/components/ui/back-button";
 type ScreenHeaderSpacing = "tight" | "default" | "loose";
 
 const spacingStyles: Record<ScreenHeaderSpacing, string> = {
-  tight: "pb-2",
+  tight: "pb-3",
   default: "pb-4",
   loose: "pb-10",
 };
@@ -12,7 +12,8 @@ const spacingStyles: Record<ScreenHeaderSpacing, string> = {
 const BACK_STYLE = "relative block size-8 shrink-0";
 
 interface ScreenHeaderProps {
-  title: string;
+  /** 화면 이름이며, 주지 않으면 헤더에 제목을 두지 않습니다. */
+  title?: string;
   /** 기록이 없을 때 뒤로가기가 갈 경로입니다. */
   backHref?: string;
   /**
@@ -21,6 +22,8 @@ interface ScreenHeaderProps {
    * 입력한 값을 주소에 실어 되돌아가는 단계 화면에서 씁니다.
    */
   backToHref?: boolean;
+  /** 주면 뒤로가기가 기록 대신 이것을 실행합니다. */
+  onBack?: () => void;
   spacing?: ScreenHeaderSpacing;
   action?: ReactNode;
 }
@@ -29,6 +32,7 @@ export function ScreenHeader({
   title,
   backHref,
   backToHref = false,
+  onBack,
   spacing = "default",
   action,
 }: ScreenHeaderProps) {
@@ -40,10 +44,13 @@ export function ScreenHeader({
         <BackButton
           fallbackHref={backHref}
           usesHref={backToHref}
+          onBack={onBack}
           className={BACK_STYLE}
         />
       )}
-      <h1 className="text-t1 text-fg-neutral font-bold">{title}</h1>
+      {title === undefined ? null : (
+        <h1 className="text-t1 text-fg-neutral font-bold">{title}</h1>
+      )}
       {action ? <div className="ml-auto flex shrink-0">{action}</div> : null}
     </header>
   );

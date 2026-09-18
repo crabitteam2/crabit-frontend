@@ -85,6 +85,7 @@ export function CharacterArea({ stage, href, children }: CharacterAreaProps) {
             src={character.src}
             alt=""
             width={character.imageSize}
+            sizes={`${character.imageSize}px`}
             height={character.imageSize}
             priority
             className="absolute max-w-none"

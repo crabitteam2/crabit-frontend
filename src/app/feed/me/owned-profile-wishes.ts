@@ -1,4 +1,8 @@
 import type { components } from "@/lib/http/generated/crabit-backend";
+import {
+  toDisplayPercent,
+  toProgressPercent,
+} from "@/app/_components/progress-stage";
 import { fromIsoDate } from "@/app/wishes/_components/wish-period-format";
 import type { ProfileWishItem } from "../_components/feed-item";
 
@@ -18,10 +22,7 @@ export function toOwnedProfileWishes(wishes: components["schemas"]["Wish"][]) {
       const percent =
         wish.state === "COMPLETED" || wish.state === "AMOUNT_REACHED"
           ? 100
-          : Math.min(
-              wish.state === "IN_PROGRESS" ? 99 : 100,
-              Math.floor((amount * 100) / wish.targetAmount),
-            );
+          : toDisplayPercent(toProgressPercent(amount, wish.targetAmount));
       return {
         id: wish.id,
         purpose: wish.purpose,

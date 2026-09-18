@@ -115,9 +115,9 @@ export function WishShareWriteForm({
         ))}
       </div>
 
-      <div className="h-[calc(131px+env(safe-area-inset-bottom))]" />
+      <div className="h-[calc(96px+env(safe-area-inset-bottom))]" />
 
-      <div className="max-w-app fixed inset-x-0 bottom-0 z-10 mx-auto w-full bg-white px-4 pt-5 pb-[calc(55px+env(safe-area-inset-bottom))]">
+      <div className="max-w-app pb-action fixed inset-x-0 bottom-0 z-10 mx-auto w-full bg-white px-4 pt-5">
         <Button size="xlarge" className="w-full" type="submit">
           {submitLabel}
         </Button>

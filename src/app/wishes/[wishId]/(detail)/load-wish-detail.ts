@@ -71,6 +71,7 @@ function toFundMovementItem(
     kind: movement.wishAmountDelta > 0 ? "DEPOSIT" : "WITHDRAWAL",
     amount: Math.abs(movement.wishAmountDelta),
     balanceAfter: movement.wishAmountAfter,
+    isAdjustment: movement.balanceAdjustment !== null,
   };
 }
 

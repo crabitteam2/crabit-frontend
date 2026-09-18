@@ -98,7 +98,7 @@ export function AdjustDoneScreen({ balance }: AdjustDoneScreenProps) {
         </div>
       </div>
 
-      <div className="relative mt-auto px-4 pt-10 pb-[calc(55px+env(safe-area-inset-bottom))]">
+      <div className="pb-action relative mt-auto px-4 pt-10">
         <Link
           href="/"
           replace

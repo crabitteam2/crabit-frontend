@@ -19,6 +19,7 @@ export const Default: Story = {
         kind: "DEPOSIT",
         amount: 1_500,
         balanceAfter: 4_500,
+        isAdjustment: false,
       },
       {
         id: "m2",
@@ -26,6 +27,7 @@ export const Default: Story = {
         kind: "WITHDRAWAL",
         amount: 500,
         balanceAfter: 3_000,
+        isAdjustment: false,
       },
       {
         id: "m3",
@@ -33,6 +35,7 @@ export const Default: Story = {
         kind: "DEPOSIT",
         amount: 1_000,
         balanceAfter: 3_500,
+        isAdjustment: false,
       },
     ],
   },

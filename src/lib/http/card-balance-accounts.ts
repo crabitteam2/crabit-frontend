@@ -47,3 +47,23 @@ export function refreshCardBalance(
     ),
   );
 }
+
+export interface AccountFundMovementOptions extends GetCardBalanceAccountOptions {
+  readonly cursor?: string;
+  readonly limit?: number;
+  readonly from?: string;
+  readonly to?: string;
+  readonly q?: string;
+  readonly sort?: "asc" | "desc";
+}
+
+/** 선택한 계정의 전체 원장에서 조건을 적용한 뒤 한 페이지를 조회합니다. */
+export function listAccountFundMovements(
+  client: CrabitApiClient,
+  { cardBalanceAccountId, ...query }: AccountFundMovementOptions,
+): Promise<ApiResult<components["schemas"]["AccountFundMovementPage"]>> {
+  return apiResult(() => client.GET(
+    "/v1/card-balance-accounts/{cardBalanceAccountId}/fund-movements",
+    { params: { path: { cardBalanceAccountId }, query } },
+  ));
+}

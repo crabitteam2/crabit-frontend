@@ -74,14 +74,15 @@ export function WishEditForm({
     values.purpose.trim() === "" ? null : normalizePurpose(values.purpose);
   const nextAmount =
     values.amount.trim() === "" ? null : parseKrw(values.amount);
+  const isPeriodEdited =
+    range.start !== initialRange.start || range.end !== initialRange.end;
   const canSubmit =
     !editedPurposeError(values.purpose) &&
     !editedAmountError(values.amount, currentAmount) &&
-    !periodError(range) &&
+    (!isPeriodEdited || !periodError(range)) &&
     ((nextPurpose !== null && nextPurpose !== normalizePurpose(purpose)) ||
       (nextAmount !== null && nextAmount !== targetAmount) ||
-      range.start !== initialRange.start ||
-      range.end !== initialRange.end);
+      isPeriodEdited);
 
   const submit = handleSubmit(async (values) => {
     if (!canSubmit || busy.current) return;
@@ -146,6 +147,7 @@ export function WishEditForm({
       <ScreenHeader
         title="수정할 정보를 입력해주세요."
         backHref={backHref}
+        onBack={isCalendarOpen ? () => setIsCalendarOpen(false) : undefined}
         spacing="loose"
       />
 
@@ -197,7 +199,11 @@ export function WishEditForm({
           <Input
             ref={
               register("range", {
-                validate: (value) => periodError(value) ?? true,
+                validate: (value) =>
+                  (value.start === initialRange.start &&
+                  value.end === initialRange.end
+                    ? undefined
+                    : periodError(value)) ?? true,
               }).ref
             }
             error={errors.range?.message}
@@ -217,6 +223,7 @@ export function WishEditForm({
         {isCalendarOpen ? (
           <div className="px-[10px]">
             <Calendar
+              blocksPastEnd
               value={range}
               onChange={(range) =>
                 setValue("range", range, {
@@ -237,9 +244,7 @@ export function WishEditForm({
 
       {isKeyboardOpen ? null : <div className="flex-1" />}
 
-      <div
-        className={`shrink-0 px-4 ${isKeyboardOpen ? "pb-5" : "pb-[calc(55px+env(safe-area-inset-bottom))]"}`}
-      >
+      <div className={`shrink-0 px-4 ${isKeyboardOpen ? "pb-5" : "pb-action"}`}>
         <Button
           size="xlarge"
           variant={isSkippingPeriod ? "weak" : "fill"}

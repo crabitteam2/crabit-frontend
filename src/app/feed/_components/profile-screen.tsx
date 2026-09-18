@@ -46,6 +46,7 @@ export function ProfileScreen({
           src={heroImage}
           alt=""
           width={320}
+          sizes="320px"
           height={320}
           priority
           className="absolute top-[73px] left-1/2 size-[320px] -translate-x-1/2 object-cover"

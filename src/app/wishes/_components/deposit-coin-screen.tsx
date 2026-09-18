@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import closeIcon from "@/../public/images/wishes/close-32.svg";
-import { Toast } from "@/components/ui/toast";
 import { depositToWishAction, transferWishFundsAction } from "../wish-actions";
 import { CoinDrop } from "./coin-drop";
 import type { FundCounterpartRef } from "./fund-counterpart";
+import { FundErrorScreen } from "./fund-error-screen";
 import { peekFundTicket, type FundTicket } from "./fund-ticket";
 
 const DOT_PATTERN =
@@ -33,7 +33,6 @@ export function DepositCoinScreen({
 }: DepositCoinScreenProps) {
   const router = useRouter();
   const [ticket, setTicket] = useState<FundTicket | null>(null);
-  const [attempt, setAttempt] = useState(0);
   const pendingRef = useRef(false);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -78,14 +77,22 @@ export function DepositCoinScreen({
         router.replace("/adjust");
         return;
       }
-      pendingRef.current = false;
       setError(result.message);
-      setAttempt((count) => count + 1);
       return;
     }
 
     router.replace(`/wishes/${wishId}/deposit/done?event=${result.eventId}`);
   };
+
+  if (error !== null) {
+    return (
+      <FundErrorScreen
+        action="돈 넣기"
+        reason={error}
+        exit={{ href: `/wishes/${wishId}`, label: "위시로 돌아가기" }}
+      />
+    );
+  }
 
   return (
     <div
@@ -96,11 +103,7 @@ export function DepositCoinScreen({
         backgroundPosition: "0 -5px",
       }}
     >
-      <CoinDrop
-        key={attempt}
-        onDrop={drop}
-        disabled={ticket === null || isPending}
-      />
+      <CoinDrop onDrop={drop} disabled={ticket === null || isPending} />
 
       <div className="pointer-events-none relative">
         <div className="flex justify-end px-4 pt-[calc(env(safe-area-inset-top)+12px)]">
@@ -119,10 +122,6 @@ export function DepositCoinScreen({
           저금통에 넣어보세요
         </h1>
       </div>
-
-      {error === null ? null : (
-        <Toast message={error} tone="danger" onClose={() => setError(null)} />
-      )}
     </div>
   );
 }

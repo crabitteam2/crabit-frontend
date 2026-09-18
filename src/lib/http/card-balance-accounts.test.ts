@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   getCardBalanceAccount,
+  listAccountFundMovements,
   listMyCardBalanceAccounts,
 } from "./card-balance-accounts";
 import type { paths } from "./generated/crabit-backend";
@@ -128,3 +129,16 @@ function jsonResponse(status: number, value: unknown) {
     headers: { "Content-Type": "application/json; charset=utf-8" },
   });
 }
+
+
+describe("account history filtering transport", () => {
+  it("sends exact account, frozen bounds, server search and cursor together", async () => {
+    let captured: Request | undefined;
+    const client = createClient<paths>({ baseUrl: "https://backend.test", fetch: async request => { captured = request; return jsonResponse(200, { items: [], nextCursor: null }); } });
+    const result = await listAccountFundMovements(client, { cardBalanceAccountId: accountId, from: "2026-06-16T15:00:00Z", to: "2026-09-17T15:00:00Z", q: "옛 자전거", sort: "asc", cursor: "opaque+cursor", limit: 30 });
+    expect(result).toEqual({ ok: true, data: { items: [], nextCursor: null } });
+    const url = new URL(captured!.url);
+    expect(url.pathname).toBe(`/v1/card-balance-accounts/${accountId}/fund-movements`);
+    expect(Object.fromEntries(url.searchParams)).toEqual({ from: "2026-06-16T15:00:00Z", to: "2026-09-17T15:00:00Z", q: "옛 자전거", sort: "asc", cursor: "opaque+cursor", limit: "30" });
+  });
+});

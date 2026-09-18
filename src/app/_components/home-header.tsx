@@ -6,10 +6,16 @@ interface HomeHeaderProps {
   nickname: string;
   /** 대표 위시 목적이며, 없으면 빈 상태 문구를 표시합니다. */
   wishPurpose: string | null;
+  /** 아직 불러오는 중이면 문구 자리를 비워 둡니다. */
+  isLoading?: boolean;
 }
 
 /** 닉네임과 대표 위시 목적을 캐릭터 영역 위에 표시합니다. */
-export function HomeHeader({ nickname, wishPurpose }: HomeHeaderProps) {
+export function HomeHeader({
+  nickname,
+  wishPurpose,
+  isLoading = false,
+}: HomeHeaderProps) {
   return (
     <header className="flex flex-col gap-2 px-4 pt-[max(78px,calc(env(safe-area-inset-top)+18px))]">
       <div className="flex items-center gap-[10px]">
@@ -19,7 +25,11 @@ export function HomeHeader({ nickname, wishPurpose }: HomeHeaderProps) {
         <Badge className="bg-pink-2 text-pink-5">대표</Badge>
       </div>
       <p className="text-t1 text-static-white font-bold [text-shadow:0_4px_8px_rgba(0,0,0,0.15)]">
-        {wishPurpose ?? "대표위시가 비어있어요."}
+        {isLoading ? (
+          <span className="invisible">대표위시가 비어있어요.</span>
+        ) : (
+          (wishPurpose ?? "대표위시가 비어있어요.")
+        )}
       </p>
     </header>
   );

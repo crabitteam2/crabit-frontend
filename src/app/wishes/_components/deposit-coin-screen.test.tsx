@@ -94,15 +94,13 @@ it("guards duplicate callbacks while pending and preserves card payload and even
   });
   expect(deposit).toHaveBeenCalledTimes(1);
 });
-it("preserves both transfer versions and retries an ordinary error with the same ticket", async () => {
+it("preserves both transfer versions and shows the error screen for an ordinary error", async () => {
   ticket();
-  transfer
-    .mockResolvedValueOnce({
-      ok: false,
-      message: "다시 시도해 주세요",
-      code: "TEMPORARY",
-    })
-    .mockResolvedValueOnce({ ok: true, eventId: "transfer-event" });
+  transfer.mockResolvedValue({
+    ok: false,
+    message: "다시 시도해 주세요",
+    code: "TEMPORARY",
+  });
   render(
     <DepositCoinScreen
       {...props}
@@ -110,9 +108,11 @@ it("preserves both transfer versions and retries an ordinary error with the same
     />,
   );
   fireEvent.click(screen.getByRole("button"));
-  await screen.findByText("다시 시도해 주세요");
-  fireEvent.click(screen.getByRole("button", { name: "drop" }));
-  await waitFor(() => expect(transfer).toHaveBeenCalledTimes(2));
+  expect(
+    await screen.findByText("돈 넣기 중 오류가 발생했어요."),
+  ).toBeInTheDocument();
+  expect(screen.getByText("다시 시도해 주세요")).toBeInTheDocument();
+  expect(transfer).toHaveBeenCalledTimes(1);
   expect(transfer.mock.calls[0][0]).toEqual({
     sourceWishId: "source",
     destinationWishId: "destination",
@@ -121,12 +121,7 @@ it("preserves both transfer versions and retries an ordinary error with the same
     destinationExpectedVersion: 7,
     idempotencyKey: "same-ticket-key",
   });
-  expect(transfer.mock.calls[1][0]).toEqual(transfer.mock.calls[0][0]);
-  await waitFor(() =>
-    expect(replace).toHaveBeenCalledWith(
-      "/wishes/destination/deposit/done?event=transfer-event",
-    ),
-  );
+  expect(replace).not.toHaveBeenCalled();
 });
 it("routes balance mismatch to adjustment and retains the lock", async () => {
   ticket();

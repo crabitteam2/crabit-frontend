@@ -1,15 +1,14 @@
 import { Skeleton, SkeletonRegion } from "@/components/ui/skeleton";
-import { ACADEMY_NAME } from "@/lib/mock/home";
+import { ACADEMY_NAME, NICKNAME } from "@/lib/mock/home";
 import { AcademySection } from "../_components/academy-section";
 import { CharacterArea } from "../_components/character-area";
 import { HomeHeader } from "../_components/home-header";
-import { TabBar } from "../_components/tab-bar";
 
 export default function WishlistTabLoading() {
   return (
     <div className="flex flex-col">
       <CharacterArea stage={null}>
-        <HomeHeader nickname="나" wishPurpose={null} />
+        <HomeHeader nickname={NICKNAME} wishPurpose={null} isLoading />
       </CharacterArea>
 
       <main className="relative -mt-[17px] flex flex-col px-4">
@@ -17,8 +16,8 @@ export default function WishlistTabLoading() {
           label="위시리스트를 불러오는 중"
           className="flex flex-col"
         >
-          <Skeleton className="h-[52px]" />
-          <Skeleton className="mt-10 h-[152px]" />
+          <Skeleton className="h-[75px]" />
+          <Skeleton className="mt-10 h-[172px]" />
         </SkeletonRegion>
         <div className="pt-[68px]">
           <AcademySection academyName={ACADEMY_NAME} />
@@ -43,7 +42,6 @@ export default function WishlistTabLoading() {
       </main>
 
       <div className="h-[182px]" />
-      <TabBar />
     </div>
   );
 }

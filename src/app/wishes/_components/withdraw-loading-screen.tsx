@@ -2,14 +2,14 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Toast } from "@/components/ui/toast";
 import {
   transferWishFundsAction,
   withdrawFromWishAction,
   type FundActionResult,
 } from "../wish-actions";
 import type { FundCounterpartRef } from "./fund-counterpart";
-import { takeFundTicket } from "./fund-ticket";
+import { FundErrorScreen } from "./fund-error-screen";
+import { clearFundTicket, peekFundTicket, putFundTicket } from "./fund-ticket";
 import { LoadingScreen } from "./loading-screen";
 
 interface WithdrawLoadingScreenProps {
@@ -40,18 +40,32 @@ export function WithdrawLoadingScreen({
     if (startedRef.current) return;
     startedRef.current = true;
 
-    const ticket = takeFundTicket(ticketName);
+    // 표를 남겨두어 새로고침해도 같은 요청으로 결과를 다시 받아온다.
+    const ticket = peekFundTicket(ticketName);
     if (ticket === null) {
       router.replace(amountHref);
       return;
     }
 
     const { amount, idempotencyKey } = ticket;
+    // 처음 보낼 때 쓴 버전을 남겨, 새로고침해도 같은 요청이 되게 한다.
+    const sourceVersion = ticket.sourceVersion ?? expectedVersion;
+    const destinationVersion =
+      ticket.destinationVersion ??
+      (destination.kind === "card" ? undefined : destination.version);
+    if (ticket.sourceVersion === undefined) {
+      putFundTicket(ticketName, {
+        ...ticket,
+        sourceVersion,
+        destinationVersion,
+      });
+    }
+
     const run =
       destination.kind === "card"
         ? withdrawFromWishAction({
             wishId,
-            expectedVersion,
+            expectedVersion: sourceVersion,
             amount,
             idempotencyKey,
           })
@@ -59,8 +73,9 @@ export function WithdrawLoadingScreen({
             sourceWishId: wishId,
             destinationWishId: destination.wishId,
             amount,
-            sourceExpectedVersion: expectedVersion,
-            destinationExpectedVersion: destination.version,
+            sourceExpectedVersion: sourceVersion,
+            destinationExpectedVersion:
+              destinationVersion ?? destination.version,
             idempotencyKey,
           });
 
@@ -69,6 +84,9 @@ export function WithdrawLoadingScreen({
 
   useEffect(() => {
     if (result === null || !isAnimationDone) return;
+
+    // 결과가 나왔으면 표를 쓸 일이 없다.
+    clearFundTicket(ticketName);
 
     if (!result.ok && result.code === "BALANCE_MISMATCH_LOCKED") {
       router.replace("/adjust");
@@ -82,22 +100,23 @@ export function WithdrawLoadingScreen({
       return;
     }
     setError(result.message);
-  }, [doneHref, isAnimationDone, result, router]);
+  }, [doneHref, isAnimationDone, result, router, ticketName]);
+
+  if (error !== null) {
+    return (
+      <FundErrorScreen
+        action="돈 꺼내기"
+        reason={error}
+        exit={{ href: `/wishes/${wishId}`, label: "위시로 돌아가기" }}
+      />
+    );
+  }
 
   return (
-    <>
-      <LoadingScreen
-        label="돈 꺼내는 중"
-        isComplete={result !== null}
-        onFinish={() => setIsAnimationDone(true)}
-      />
-      {error === null ? null : (
-        <Toast
-          message={error}
-          tone="danger"
-          onClose={() => router.replace(amountHref)}
-        />
-      )}
-    </>
+    <LoadingScreen
+      label="돈 꺼내는 중"
+      isComplete={result !== null}
+      onFinish={() => setIsAnimationDone(true)}
+    />
   );
 }

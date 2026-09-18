@@ -60,6 +60,7 @@ export function WeeklyRecapGrowth({
               src={growthCharacter}
               alt=""
               width={186}
+              sizes="186px"
               height={186}
               className="absolute top-[-10px] left-0 h-[186px] w-[186px] max-w-none"
             />

@@ -7,6 +7,7 @@ import chipCloseIcon from "@/../public/images/feed/chip-close.svg";
 import searchIcon from "@/../public/images/feed/search.svg";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Skeleton, SkeletonRegion } from "@/components/ui/skeleton";
+import { Toast } from "@/components/ui/toast";
 import { createBrowserApiClient } from "@/lib/http/browser";
 import { searchAcademyStudents } from "@/lib/http/follows";
 import type { components } from "@/lib/http/generated/crabit-backend";
@@ -133,15 +134,6 @@ export function FeedSearch() {
         </button>
       </header>
 
-      {hasError ? (
-        <p
-          role="alert"
-          className="text-gray-7 px-4 pb-10 text-center text-[16px] leading-[23px] font-medium tracking-[-0.3px]"
-        >
-          검색하지 못했어요. 잠시 후 다시 시도해주세요.
-        </p>
-      ) : null}
-
       {isSearching ? (
         <SkeletonRegion
           label="학생을 찾는 중"
@@ -235,6 +227,14 @@ export function FeedSearch() {
         onSecondary={() => setIsDeleteOpen(false)}
         onDismiss={() => setIsDeleteOpen(false)}
       />
+
+      {hasError ? (
+        <Toast
+          message="검색하지 못했어요. 잠시 후 다시 시도해주세요."
+          tone="danger"
+          onClose={() => setHasError(false)}
+        />
+      ) : null}
     </div>
   );
 }
