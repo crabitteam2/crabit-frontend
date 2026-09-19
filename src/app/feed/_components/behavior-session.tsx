@@ -30,6 +30,15 @@ const SessionContext = createContext<Session | null>(null);
 export function useBehaviorSession() {
   return useContext(SessionContext);
 }
+export class BehaviorReadError extends Error {
+  constructor(
+    readonly status: number,
+    readonly code?: string,
+  ) {
+    super(code ?? String(status));
+    this.name = "BehaviorReadError";
+  }
+}
 export async function behaviorRead<T>(
   context: CollectionContext,
   path: string,
@@ -48,19 +57,28 @@ export async function behaviorRead<T>(
     },
   );
   if (!response.ok) {
-    if (response.status === 409) {
-      const error = await response
-        .clone()
-        .json()
-        .catch(() => null);
-      if (error?.code === "BEHAVIOR_CONTEXT_MISMATCH")
-        window.dispatchEvent(
-          new CustomEvent("crabit-context-invalid", {
-            detail: context.contextId,
-          }),
-        );
+    const envelope = await response
+      .clone()
+      .json()
+      .catch(() => null);
+    const code =
+      typeof envelope?.error?.code === "string"
+        ? envelope.error.code
+        : typeof envelope?.code === "string"
+          ? envelope.code
+          : undefined;
+    if (
+      response.status === 409 &&
+      code === "BEHAVIOR_CONTEXT_MISMATCH" &&
+      !init.signal?.aborted
+    ) {
+      window.dispatchEvent(
+        new CustomEvent("crabit-context-invalid", {
+          detail: context.contextId,
+        }),
+      );
     }
-    throw new Error(String(response.status));
+    throw new BehaviorReadError(response.status, code);
   }
   return response.json();
 }

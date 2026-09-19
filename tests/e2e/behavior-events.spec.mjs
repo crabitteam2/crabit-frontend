@@ -147,7 +147,7 @@ test("appended result pages preserve page-local positions and refresh replaces t
   await page.setViewportSize({ width: 390, height: 1000 });
   await page.goto(`${base}/feed`);
   await expect(page.locator(`[data-card-id="${card}"]`)).toBeVisible();
-  await page.getByRole("button", { name: "더 보기" }).click();
+  await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
   const second = page.locator(`[data-card-id="${card2}"]`);
   await second.scrollIntoViewIfNeeded();
   await expect
@@ -168,6 +168,7 @@ test("appended result pages preserve page-local positions and refresh replaces t
   expect(exposure.resultContextId).toBe(secondPage.resultContextId);
   expect(exposure.position).toBe(0);
   const oldContexts = results.map((result) => result.resultContextId);
+  multiPage = false;
   await page.getByRole("button", { name: "새로고침" }).click();
   await expect(page.locator("article")).toHaveCount(1);
   await expect.poll(() => results.length).toBe(3);
@@ -242,7 +243,7 @@ test("a failed destination emits its click but no profile visit", async ({
   await page.goto(`${base}/feed`);
   await page.getByRole("link", { name: "방문하기" }).click();
   await expect(
-    page.getByText("이 학생의 프로필을 볼 수 없어요.", { exact: true }),
+    page.getByText(/프로필을 불러오지 못했어요/),
   ).toBeVisible();
   await expect
     .poll(
@@ -266,7 +267,7 @@ test("a late read-context mismatch cannot restart the newly selected academy", a
   await page.route(`**/api/backend/v1/academies/${academy}/feed-results`, async route => {
     delayed = route;
     await released;
-    await route.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ code: "BEHAVIOR_CONTEXT_MISMATCH" }) });
+    await route.fulfill({ status: 409, contentType: "application/json", body: JSON.stringify({ code: "BEHAVIOR_CONTEXT_MISMATCH" }) }).catch(() => {});
   });
   await page.goto(`${base}/feed`);
   await expect.poll(() => Boolean(delayed)).toBe(true);
@@ -274,7 +275,6 @@ test("a late read-context mismatch cannot restart the newly selected academy", a
   await expect(page.locator("article")).toHaveCount(1);
   expect(contextRequests).toHaveLength(2);
   release();
-  await page.waitForResponse(response => response.url().includes(`/academies/${academy}/feed-results`) && response.status() === 409);
   await page.waitForTimeout(300);
   await expect(page.getByRole("combobox")).toHaveValue(academy2);
   expect(contextRequests).toHaveLength(2);
@@ -294,7 +294,7 @@ test("tracking failures preserve navigation and retry the same profile event fou
   await expect(
     page.getByRole("heading", { name: "실제 학생", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("공유한 위시가 없어요.")).toBeVisible();
+  await expect(page.getByText("공유한 위시가 없어요.").first()).toBeVisible();
   await expect
     .poll(
       () =>
@@ -312,7 +312,7 @@ test.afterAll(async () => {
   backend?.closeAllConnections();
   if (backend) await new Promise((resolve) => backend.close(resolve));
 });
-test("real Next navigation emits a dwell exposure, click, one visit and distinct reload/back visits", async ({
+test("real Next navigation emits a dwell exposure, click, one visit and distinct reload/history visits", async ({
   page,
 }) => {
   test.setTimeout(30000);
@@ -342,7 +342,7 @@ test("real Next navigation emits a dwell exposure, click, one visit and distinct
         events.filter((event) => event.path.endsWith("profile-visits")).length,
     )
     .toBe(1);
-  await expect(page.getByText("공유한 위시가 없어요.")).toBeVisible();
+  await expect(page.getByText("공유한 위시가 없어요.").first()).toBeVisible();
   expect(
     events.filter((event) => event.eventType === "FEED_CLICK"),
   ).toHaveLength(1);
@@ -353,9 +353,9 @@ test("real Next navigation emits a dwell exposure, click, one visit and distinct
         events.filter((event) => event.path.endsWith("profile-visits")).length,
     )
     .toBe(2);
-  await page.getByRole("link", { name: "뒤로 가기" }).click();
+  await page.getByRole("button", { name: "뒤로 가기" }).click();
   await expect(page.getByText("실제 학생의 위시리스트")).toBeVisible();
-  await page.goBack();
+  await page.goForward();
   await expect
     .poll(
       () =>

@@ -16,6 +16,70 @@ tags:
     description: "학원에 공개되는 공유 카드(Shared Card) 조회를 다룹니다."
   - name: Student Relationships
     description: "같은 학원 학생 간 학생 관계(Student Relationships)의 검색, 방향성 팔로우·언팔로우, 팔로잉·팔로워 목록과 전역 차단을 다룹니다."
+x-wish-photo-delivery-policy:
+  scope:
+    - "WishPhotoService.view를 사용하는 신규 업로드 성공 응답과 업로드 멱등 재생"
+    - "현재 사진을 포함하는 Wish 신규 변경 성공 응답과 일치하는 mutation 재생"
+    - "Wish 목록·상세 및 공유 카드 목록·상세"
+    - "GET 또는 POST feed 조회와 같은 cursor의 재생"
+    - "현재 권한으로 사진을 보강하는 recap story"
+  wire_contract:
+    request: "endpoint, method, authentication scheme, request body, query, header 및 idempotency key 형식을 변경하지 않는다. 캐시 키나 캐시 제어용 공개 매개변수를 추가하지 않는다. 프론트엔드의 limit 10 사용은 기존 허용 범위 내 선택이며 서버 기본값·상한을 변경하지 않는다."
+    response: "WishPhoto의 required id, variants, expiresAt과 additionalProperties false를 보존한다. variants.small, medium, large 및 nullable photo 규칙을 보존한다. 캐시 상태·서명 시간·저장소 경로·서명자 정보를 응답에 추가하지 않는다."
+    authentication: "기존 인증 주체와 endpoint별 접근 검사를 유지한다. 사진 identity나 URL은 인증 또는 API 조회 권한을 대신하지 않는다. 캐시는 URL 서명 결과만 저장하고 인가 결정·현재 DB projection·receipt 판정을 저장하지 않는다."
+  fresh_signing: "새 발급은 기존 SigningWindow와 동일하게 발급 기준 시각을 정수 초로 절삭하고 그 시각부터 정확히 300초 뒤를 세 URL의 공통 expiresAt으로 사용한다. 실제 서명에 사용한 만료 시각과 응답 expiresAt이 일치해야 한다."
+  reuse_boundary: "사진 서비스가 결과를 호출자에게 반환하기 직전에 실제 clock.instant()로 평가한 잔여시간이 30초 이상이면 재사용할 수 있다. 정확히 30초는 포함하며 30초 미만은 재사용하지 않는다. 비교 시 잔여시간을 정수 초로 반올림하거나 절삭하지 않는다."
+  preserved_expiry: "재사용 시 원래 small, medium, large URL과 원래 expiresAt을 함께 반환한다. 조회·재생·캐시 접근 시각을 기준으로 만료를 연장하거나 expiresAt만 다시 계산하지 않는다. 클라이언트는 매 응답에서 새 URL이나 추가 5분 수명을 기대해서는 안 된다."
+  completion_check: "새 서명 완료 후와 공유 작업 대기 완료 후에도 같은 30초 경계를 다시 검사한다. 대기 시작 시점에만 유효했던 결과를 반환하지 않는다. 유효기간이 부족한 결과는 성공 캐시로 보관하지 않으며 해당 요청의 남은 예산 안에서만 새 발급을 시도할 수 있다. 유효한 완전한 결과를 확보하지 못하면 PHOTO_DELIVERY_UNAVAILABLE로 실패한다. HTTP 전송 완료 또는 클라이언트 수신 시점의 30초 수명을 별도로 보장하지 않는다."
+  complete_set: "동일한 사진 identity와 immutable objectPrefix에 결속된 small, medium, large 세 URL 및 공통 실제 expiresAt 전체만 재사용한다. 누락 variant, 부분 성공, 만료 또는 유효기간 미달 결과와 예외를 성공 결과로 캐시하지 않는다."
+  authorization_order: "endpoint별 현재 viewer·owner 학원 소속, 열린 계정, 공개 범위, 방향성 팔로우, 양방향 차단, 삭제·게시 상태 및 현재 ATTACHED 사진 검사를 먼저 수행한다. 기존 owner 예외와 비공개 리소스 숨김 경계를 그대로 유지한다. 캐시 조회가 기존 권한·사진 상태 검사를 생략하는 경로를 만들면 안 된다."
+  revocation: "교체·삭제·첨부 해제·접근 철회 후 새 API 응답에서 이전 사진을 캐시로 되살리지 않는다. 이미 사용자에게 전달된 URL은 원래 실제 만료까지만 접근 가능할 수 있으며 최대 수명 300초를 늘리지 않는다. 즉시 object URL 폐기를 새로 보장하지 않는다."
+  runtime_and_outage: "기존 사진 런타임 활성화 검사는 캐시 적중에도 유지한다. 런타임이 활성화되어 있고 현재 권한 및 유효한 캐시 결과가 있으면 외부 서명 호출 없이 성공할 수 있다. 외부 서명 장애 자체가 유효한 캐시 적중을 실패시키지는 않는다. 런타임 비활성화에 대한 기존 경로별 PHOTO_PROCESSING_UNAVAILABLE 또는 PHOTO_DELIVERY_UNAVAILABLE 매핑은 변경하지 않는다."
+  implementation_constraints:
+    - "성공 결과와 진행 중 작업을 각각 제한하며 무제한 성장·대기를 허용하지 않는다."
+    - "동일 키의 진행 중 서명만 공유하고 서로 다른 사진의 외부 서명을 전역 잠금으로 직렬화하지 않는다."
+    - "캐시는 service/storage 인스턴스 범위이며 서로 다른 저장소나 서명자 설정을 섞지 않는다."
+    - "기존 요청 전체 8초 예산과 RPC 시작 전 최소 2초 기준을 보존한다."
+    - "공유 대기자는 자기 요청 예산을 지키며 한 대기자의 timeout이 다른 요청의 공유 작업을 취소하지 않는다."
+    - "실패·과부하·시간 초과 시 기존 PHOTO_DELIVERY_UNAVAILABLE 경계를 사용하며 새 공개 오류 코드는 추가하지 않는다."
+  freshTtlSeconds: 300
+  minimumReusableSeconds: 30
+  reuseBoundaryInclusive: true
+  replay_policy:
+    upload:
+      decision: "공통 재사용 정책을 적용한다."
+      checks: "현재 인증 학생으로 범위를 정한 owner·Idempotency-Key·콘텐츠 지문·retainUntil· ACTIVE_SUCCESS receipt와 정확한 photoId를 먼저 확인한다. photo row의 owner 일치와 현재 PENDING 또는 ATTACHED 상태를 검증하고, PENDING이면 원래 pending 만료 전인지 확인한다. 업로드 재생은 ATTACHED만 허용하도록 좁히지 않는다. REVOKED_SUCCESS, DELETE_PENDING, 사라진 사진 및 만료된 PENDING은 기존 409 경계를 유지한다."
+      preserved: "성공은 같은 photoId와 공통 정책에 따른 URL 세트를 원래 201로 반환한다. 변환·안전성 검사·저장·quota 소비를 반복하지 않으며 24시간 receipt 보존 기간을 연장하지 않는다. 재사용 또는 새 서명은 receipt에 signed URL이나 URL expiry를 저장하지 않는다."
+    wish_mutation:
+      decision: "모든 기존 mutation replay의 ACTIVE_PHOTO에 공통 재사용 정책을 적용한다."
+      checks: "기존 receipt 및 namespace 잠금 순서를 유지하고 현재 인증 owner, 캡처한 정확한 photoId, 정확한 원래 Wish attachment 및 ATTACHED 상태를 확인한 뒤만 캐시 결과를 사용한다. 현재 다른 사진으로 대체하지 않는다."
+      states:
+        NO_PHOTO: "이후 현재 사진과 무관하게 최초 null 결과를 유지하며 사진을 조회하거나 대체하지 않는다."
+        ACTIVE_PHOTO: "현재 검증된 정확한 사진의 완전한 URL 세트를 재사용하거나 새 발급한다."
+        PHOTO_REVOKED: "성공 본문과 capability 없이 기존 409 WISH_PHOTO_EXPIRED를 반환한다."
+      transfer: "두 캡처 상태의 자격을 URL 준비 전에 함께 판정한다. 한쪽이라도 revoke되었으면 전체 재생을 실패시키고 다른 쪽 캐시 URL도 반환하지 않는다. 필요한 URL 세트 하나라도 확보하지 못하면 부분 transfer 본문 없이 503으로 실패한다."
+      preserved: "원래 domain snapshot, status 200 또는 201, version, event identity, occurrence time 및 recorded time을 유지한다. 기존 원자적 redaction·revocation·cleanup guard·잠금 순서를 변경하지 않는다. 성공 재생에만 Idempotency-Replayed true를 반환하며 409 또는 503에는 이를 생략한다. 재생 delivery 실패는 receipt를 변경하거나 삭제하지 않는다."
+    feed:
+      decision: "동일 cursor 재생도 현재 인가 후 공통 재사용 정책을 적용한다."
+      preserved: "기존 transition identity, successor, limit binding 및 현재 접근 불가 항목 제거 규칙을 유지한다. 성공 POST의 실제 반환 배열에 대한 별도 resultContextId와 position을 유지한다. photo delivery 실패 시 부분 페이지를 반환하거나 cursor를 소비하거나 latest fallback으로 성공 처리하지 않는다."
+  statuses_and_errors:
+    - "기존 성공 status 200·201과 endpoint별 인증·인가·404 숨김 경계를 보존한다."
+    - "유효한 재사용 결과가 없고 완전한 URL 세트를 준비할 수 없으면 기존 retryable 503 PHOTO_DELIVERY_UNAVAILABLE을 반환한다."
+    - "현재 ATTACHED 사진이 없는 경우의 null과 사진 delivery 실패를 구분하며 delivery 실패를 null·생략·부분 200으로 숨기지 않는다."
+    - "업로드 지문 불일치 409 IDEMPOTENCY_KEY_REUSED와 재생 사진 무효화 409 WISH_PHOTO_EXPIRED를 유지한다."
+    - "feed의 400 MALFORMED_REQUEST와 410 RECOMMENDATION_CURSOR_EXPIRED를 유지하고 자동 restart를 추가하지 않는다."
+    - "공개 오류 envelope에 photoId·URL·object path·receipt·provider 세부 정보를 추가하지 않는다."
+    - "기존 해당 API 성공·오류의 Cache-Control no-store와 이미지 object의 private 캐시 정책을 각각 유지한다."
+  compatibility:
+    - "응답 shape와 생성 타입은 유지 가능하지만 새 URL 및 응답부터 5분 수명 보장은 철회되는 의미적 계약 변경이다."
+    - "클라이언트는 expiresAt을 권위 있는 실제 만료로 사용하고 URL 문자열 변경을 응답 최신성이나 domain 변경의 신호로 사용하지 않는다."
+    - "URL 수명 연장·공개 버킷·CDN·새 사진 endpoint·DB migration은 도입하지 않는다."
+    - "canonical OpenAPI bytes가 바뀌므로 후속 frontend snapshot·provenance·생성 타입 동기화와 검증은 필요하다."
+  boundaryExamples:
+    - {"name": "fresh", "signingBase": "2026-09-18T06:00:00Z", "evaluatedAt": "2026-09-18T06:00:00.700Z", "expiresAt": "2026-09-18T06:05:00Z", "reusable": true}
+    - {"name": "reusable", "signingBase": "2026-09-18T06:00:00Z", "evaluatedAt": "2026-09-18T06:04:00Z", "expiresAt": "2026-09-18T06:05:00Z", "reusable": true}
+    - {"name": "inclusive-boundary", "signingBase": "2026-09-18T06:00:00Z", "evaluatedAt": "2026-09-18T06:04:30Z", "expiresAt": "2026-09-18T06:05:00Z", "reusable": true}
+    - {"name": "below-boundary", "signingBase": "2026-09-18T06:00:00Z", "evaluatedAt": "2026-09-18T06:04:30.001Z", "expiresAt": "2026-09-18T06:05:00Z", "reusable": false}
 x-recap-retrieval-policy:
   authentication:
     scheme: "SyntheticBearer"
@@ -46,7 +110,7 @@ x-recap-retrieval-policy:
     ordering: "저장 후보 순서와 최대 다섯 건 제한을 유지하며 제외한 후보를 재정렬하거나 다른 후보로 채우지 않습니다."
     omission: "접근 불가 또는 잘못된 UUID 후보만 생략하고 기존 생략 요약을 유지합니다. 저장 stories가 원래 비어 있으면 원래 요약을 보존합니다. viewer 학원 소속 부재도 같은 생략 경로이며 새 리캡 상태를 만들지 않습니다."
     enrichment: "wishId와 nullable typeTitle은 저장값을 보존합니다. 현재 표시 정보 보강은 저장된 Python view·request JSON, 다른 페이지의 과거 계산, algorithmVersion, generationVersion, generatedAt, 후보 선택과 contentUpdatedAt을 변경하지 않습니다."
-    photo: "현재 ATTACHED 사진이 없을 때만 null입니다. 권한 확인 뒤 기존 WishPhoto의 id, small·medium·large variants와 expiresAt을 사용하며 매 조회마다 정수 초 기준 공통 만료 시각의 300초 서명 URL을 발급합니다. 사진 런타임 비활성 PHOTO_PROCESSING_UNAVAILABLE 또는 URL·variant·서명 실패 PHOTO_DELIVERY_UNAVAILABLE는 전체 조회를 retryable 503과 Cache-Control no-store로 실패시키며 null, story 생략, 부분 200으로 숨기지 않습니다."
+    photo: "현재 ATTACHED 사진이 없을 때만 null입니다. 권한 확인 뒤 기존 WishPhoto의 id, small·medium·large variants와 expiresAt을 사용하며 x-wish-photo-delivery-policy에 따라 유효한 완전한 URL 세트를 재사용하거나 새 발급합니다. 사진 런타임 비활성 PHOTO_PROCESSING_UNAVAILABLE 또는 유효한 완전한 URL 세트 확보 실패 PHOTO_DELIVERY_UNAVAILABLE는 전체 조회를 retryable 503과 Cache-Control no-store로 실패시키며 null, story 생략, 부분 200으로 숨기지 않습니다."
     forbiddenFields: [wishTitle, privateContent, ledgerRows, peerIdentity]
   compatibility:
     recommendationV3: "추천 schema v3, acknowledgement, endpoint, credential, feature flag, metrics와 package는 byte 및 의미상 변경하지 않습니다."
@@ -68,7 +132,7 @@ x-wish-mutation-photo-replay:
       ACTIVE_PHOTO:
         retainedFields: [kind, photoId]
         meaning: "최초 성공 스냅샷에 포함된 정확한 사진 identity가 아직 유효합니다."
-        replay: "동일한 인증 학생 소유이고 캡처된 정확한 위시에 ATTACHED 상태인 같은 photoId를 재검증한 뒤 새 5분 small, medium, large URL을 모두 발급합니다."
+        replay: "동일한 인증 학생 소유이고 캡처된 정확한 위시에 ATTACHED 상태인 같은 photoId를 재검증한 뒤 x-wish-photo-delivery-policy에 따라 small, medium, large URL과 원래 expiresAt을 함께 재사용하거나 새 발급합니다."
       PHOTO_REVOKED:
         retainedFields: [kind]
         meaning: "최초 성공 스냅샷의 사진이 더 이상 유효하지 않으며 삭제된 identity는 제거되었습니다."
@@ -84,10 +148,10 @@ x-wish-mutation-photo-replay:
     transfer: "sourcePhotoReplayState와 destinationPhotoReplayState를 출발·도착 snapshot에 각각 결속해 이체 결과와 원자적으로 저장합니다."
     delete: "첨부 사진을 먼저 redaction·revocation한 뒤 성공 응답을 캡처하므로 deleteWish 결과는 항상 NO_PHOTO입니다."
   replay:
-    validActivePhoto: "원래 상태·version·event identity·occurrence time을 유지하고 같은 photoId와 새 5분 URL만 재구성하여 원래 201 또는 200 status로 반환합니다."
+    validActivePhoto: "원래 상태·version·event identity·occurrence time을 유지하고 같은 photoId와 x-wish-photo-delivery-policy의 유효한 완전한 URL 세트를 구성하여 원래 201 또는 200 status로 반환합니다."
     noPhoto: "현재 attachment를 조회하거나 대체하지 않고 원래 photo null 성공 결과를 반환합니다."
     revokedPhoto: "409 WISH_PHOTO_EXPIRED, retryable false, 표준 비공개 ErrorEnvelope만 반환하고 Idempotency-Replayed를 생략합니다."
-    deliveryFailure: "모든 상태가 NO_PHOTO 또는 유효한 ACTIVE_PHOTO이지만 필요한 새 URL 하나라도 발급하지 못하면 503 PHOTO_DELIVERY_UNAVAILABLE, retryable true를 반환하고 부분 성공 본문과 Idempotency-Replayed를 생략하며 receipt를 바꾸지 않습니다."
+    deliveryFailure: "모든 상태가 NO_PHOTO 또는 유효한 ACTIVE_PHOTO이지만 x-wish-photo-delivery-policy에 따른 유효한 완전한 URL 세트를 하나라도 확보하지 못하면 503 PHOTO_DELIVERY_UNAVAILABLE, retryable true를 반환하고 부분 성공 본문과 Idempotency-Replayed를 생략하며 receipt를 바꾸지 않습니다."
     transferAtomicity: "두 캡처 상태를 URL 발급 전에 함께 평가합니다. 한쪽이라도 PHOTO_REVOKED이면 전체 재생을 WISH_PHOTO_EXPIRED로 실패시키고 다른 쪽 URL이나 부분 본문을 반환하지 않습니다."
     successHeaders: "성공한 일치 재생에만 Idempotency-Replayed true와 Cache-Control no-store를 반환합니다."
   atomicRedaction:
@@ -103,7 +167,7 @@ x-wish-mutation-photo-replay:
     invariant: "mutation receipt photo state, upload receipt, photo row를 함께 다루는 모든 경로는 receipt 또는 receipt namespace를 먼저 잠그며 photo를 잠근 뒤 receipt를 잠그지 않습니다."
     discoveryAndRevalidation: "cancel, detach, replacement, expiry, cleanup은 소유자와 key 발견에 non-locking read를 사용할 수 있지만 정해진 잠금을 얻은 뒤 owner, photoId, state, attachment, replay-state match, retainUntil을 다시 검증합니다."
     linearizedOutcomes:
-      replayFirst: "재생이 owner receipt namespace lock을 먼저 얻고 ACTIVE_PHOTO가 유효하면 원래 identity와 새 5분 URL로 성공합니다. 뒤따르는 revocation은 사진 상태를 바꾸기 전에 모든 일치 참조를 PHOTO_REVOKED로 redaction합니다."
+      replayFirst: "재생이 owner receipt namespace lock을 먼저 얻고 ACTIVE_PHOTO가 유효하면 원래 identity와 x-wish-photo-delivery-policy에 따른 URL 세트로 성공합니다. 뒤따르는 revocation은 사진 상태를 바꾸기 전에 모든 일치 참조를 PHOTO_REVOKED로 redaction합니다."
       revocationFirst: "취소, 교체, 제거, 만료, Wish 삭제 또는 cleanup이 먼저 잠그면 upload receipt와 모든 Wish mutation replay state를 먼저 revoke·redact하고 뒤따르는 재생은 WISH_PHOTO_EXPIRED입니다."
       failureBoundary: "어느 순서도 PostgreSQL deadlock, current-photo substitution, deleted photoId retention, partial transfer capability 또는 문서화되지 않은 응답을 만들 수 없습니다."
   privacy:
@@ -421,9 +485,9 @@ x-feed-ranking-v1:
       malformed: "변조·무서명·미지원 cursor, viewer/academy/operation/filter mismatch, 이미 소비한 cursor의 다른 limit replay는 400 MALFORMED_REQUEST와 cursor field error입니다."
       expired: "인증된 v2 cursor가 5분 expiry 이상이거나 필수 context를 잃으면 부분 페이지 없이 410 RECOMMENDATION_CURSOR_EXPIRED입니다. 클라이언트는 cursor를 제거해 명시적으로 새 feed를 요청할 수 있으며 자동 restart/rerank하지 않습니다."
       contextUnavailable: "durable context 생성·전이를 안전하게 commit할 수 없거나 storage admission을 거부하면 부분 페이지와 cursor 소비 없이 503 RECOMMENDATION_CONTEXT_UNAVAILABLE입니다. latest fallback이 아닙니다."
-      preserved: "인가·source database·photo signing 실패는 기존 오류를 유지하며 service fallback으로 성공 처리하지 않습니다."
+      preserved: "인가·source database·photo 유효한 완전한 URL 세트 확보 실패는 기존 오류를 유지하며 service fallback으로 성공 처리하지 않습니다."
       cacheControl: "성공과 오류 모두 Cache-Control: no-store입니다."
-    compatibility: "검사한 frontend는 limit 100 첫 페이지를 response 순서로 렌더링하고 metadata를 무시하며 refresh 때 cursor 없는 새 요청을 하므로 변경이 필요 없습니다. 이는 모든 외부 cursor consumer가 410을 자동 처리한다는 증거는 아닙니다."
+    compatibility: "기준 revision 31215da816431303cb8afd61f74f01f723364de0에서 검사한 frontend가 limit 100 첫 페이지만 렌더링하고 metadata를 무시했다는 역사적 관찰입니다. feed-infinite-scroll-photo-signing-cache의 frontend 변경은 기존 계약에 따라 limit 10과 nextCursor를 사용하며 서버 기본값·상한과 cursor·behavior schema를 바꾸지 않습니다. 이는 모든 외부 cursor consumer가 410을 자동 처리한다는 증거는 아닙니다."
   pagination:
     contextTtlSeconds: 300
     candidateLimit: 100
@@ -446,7 +510,7 @@ x-feed-ranking-v1:
     scanning: "제외되거나 새로 접근 불가가 된 row도 검사한 latest boundary를 전진시킵니다. 반환 identity는 변하는 sort tuple과 별도로 보존합니다. boundary 위로 이동한 새·수정 row는 refresh가 필요할 수 있습니다."
     guarantees: "successor chain은 contentUpdatedAt이 바뀌어도 ID를 반복하지 않습니다. 새 successor cursor에서는 limit을 바꿀 수 있지만 Python과 ranked composition은 다시 실행하지 않습니다."
     replay: "한 input-state ID의 transition 생성은 직렬화합니다. 최초 성공이 limit, page IDs, successor를 고정합니다. 같은 cursor/limit 동시·후속 replay는 같은 transition을 읽고, 같은 cursor의 다른 limit은 400입니다. GET/POST가 transition을 공유해도 각 성공 POST는 별도 behavior result context를 만듭니다."
-    replayPrivacy: "replay마다 현재 권한을 재검증하고 새 photo URL을 발급합니다. 접근 불가 ID는 backfill이나 successor 변경 없이 제거하고 실제 배열 위치로 behavior position을 다시 계산합니다."
+    replayPrivacy: "replay마다 현재 권한을 재검증한 뒤 x-wish-photo-delivery-policy에 따라 photo URL과 원래 expiresAt을 함께 재사용하거나 새 발급합니다. 접근 불가 ID는 backfill이나 successor 변경 없이 제거하고 실제 배열 위치로 behavior position을 다시 계산합니다."
     authorization: "두 segment 모두 최종 일관된 projection transaction에서 membership, account eligibility, visibility, directional follow, bilateral block, deletion, publication을 확인하고 privacy mutation과 같은 lock ordering을 사용합니다."
     persistence: "ranking HTTP 중 DB transaction을 열지 않습니다. complete projection/photo 준비 뒤 final IDs와 POST result positions를 원자적으로 저장합니다. 실패한 page는 cursor를 소비하지 않고 live context를 capacity 확보 목적으로 퇴출하지 않습니다. expiry index와 bounded cleanup을 사용하며 정확한 expiry 순간부터 410입니다."
     legacy: "기존 v1 cursor는 기존 latest-only traversal을 계속합니다. no-duplicate, expiry, replay/limit 강화 규칙은 새 v2 context에 적용합니다."
@@ -1391,7 +1455,7 @@ paths:
       tags: [Recaps]
       operationId: getWeeklyRecap
       summary: "소유한 계정의 완료된 주간 리캡 조회"
-      description: "인증된 학생이 소유한 활성 카드 잔액 계정에서 Asia/Seoul 기준으로 완료된 주간 리캡 하나를 조회합니다. weekStart를 생략하면 가장 최근 완료된 월요일~다음 월요일 기간을 선택합니다. 제공한 값은 월요일이어야 하고 미래 또는 진행 중인 주, 반복되거나 알 수 없는 쿼리 매개 변수는 400 MALFORMED_REQUEST입니다. 생성 이력이 없거나 진행 중이거나 최종 실패한 경우도 200 상태 리소스로 반환하며, 활동이 0인 성공 결과는 SUCCEEDED입니다. 재생성이 진행 중이거나 실패했더라도 이전 current 성공이 있으면 그 불변 버전을 SUCCEEDED로 계속 반환합니다. 성공 story는 저장된 wishId와 nullable typeTitle을 보존하고 x-recap-retrieval-policy.storyAuthorization에 따라 viewer·owner의 현재 학원 소속, 열린 owner 계정, 비삭제 COMPLETED 위시와 COMPLETION 카드, 명시적 completedAt, ACADEMY·FOLLOWERS 공개, viewer에서 owner로의 팔로우, 양방향 차단과 본인 제외를 검증한 뒤 현재 완료 카드의 16개 공개 필드를 반환합니다. 후보 순서와 최대 다섯 건을 유지하며 접근 불가·잘못된 UUID 후보만 생략하고 보충 후보를 찾지 않습니다. viewer 소속이 없어도 같은 생략 경로를 사용하며 원래 빈 stories의 요약은 보존합니다. 사진 조회·서명은 권한 확인 뒤 수행하고 ATTACHED 사진이 없을 때만 photo null입니다. 기존 300초 공통 만료 URL을 새로 발급하며 사진 런타임 또는 서명 실패는 PHOTO_PROCESSING_UNAVAILABLE 또는 PHOTO_DELIVERY_UNAVAILABLE인 전체 retryable 503으로 반환합니다. 저장 view·request, 과거 계산, 다른 페이지와 생성 메타데이터는 변경하지 않으며 모든 응답은 Cache-Control no-store입니다."
+      description: "인증된 학생이 소유한 활성 카드 잔액 계정에서 Asia/Seoul 기준으로 완료된 주간 리캡 하나를 조회합니다. weekStart를 생략하면 가장 최근 완료된 월요일~다음 월요일 기간을 선택합니다. 제공한 값은 월요일이어야 하고 미래 또는 진행 중인 주, 반복되거나 알 수 없는 쿼리 매개 변수는 400 MALFORMED_REQUEST입니다. 생성 이력이 없거나 진행 중이거나 최종 실패한 경우도 200 상태 리소스로 반환하며, 활동이 0인 성공 결과는 SUCCEEDED입니다. 재생성이 진행 중이거나 실패했더라도 이전 current 성공이 있으면 그 불변 버전을 SUCCEEDED로 계속 반환합니다. 성공 story는 저장된 wishId와 nullable typeTitle을 보존하고 x-recap-retrieval-policy.storyAuthorization에 따라 viewer·owner의 현재 학원 소속, 열린 owner 계정, 비삭제 COMPLETED 위시와 COMPLETION 카드, 명시적 completedAt, ACADEMY·FOLLOWERS 공개, viewer에서 owner로의 팔로우, 양방향 차단과 본인 제외를 검증한 뒤 현재 완료 카드의 16개 공개 필드를 반환합니다. 후보 순서와 최대 다섯 건을 유지하며 접근 불가·잘못된 UUID 후보만 생략하고 보충 후보를 찾지 않습니다. viewer 소속이 없어도 같은 생략 경로를 사용하며 원래 빈 stories의 요약은 보존합니다. 사진 조회·서명은 권한 확인 뒤 수행하고 ATTACHED 사진이 없을 때만 photo null입니다. x-wish-photo-delivery-policy에 따라 유효한 완전한 URL 세트를 확보하며 사진 런타임 또는 유효한 완전한 URL 세트 확보 실패는 PHOTO_PROCESSING_UNAVAILABLE 또는 PHOTO_DELIVERY_UNAVAILABLE인 전체 retryable 503으로 반환합니다. 저장 view·request, 과거 계산, 다른 페이지와 생성 메타데이터는 변경하지 않으며 모든 응답은 Cache-Control no-store입니다."
       security: [{SyntheticBearer: []}]
       parameters:
         - name: weekStart
@@ -1630,7 +1694,7 @@ paths:
       tags: [Wishes]
       operationId: uploadWishPhoto
       summary: "위시에 첨부할 비공개 사진 업로드"
-      description: "인증된 학생 소유의 Pending 사진을 동기적으로 만듭니다. 정확히 하나의 photo 파트만 허용하고 5 MiB보다 큰 바이트 스트림은 디코딩 전에 중단합니다. 실제 JPEG 1080x1080 이미지만 디코딩한 뒤 EXIF·위치 메타데이터를 제거하고 1080x1080, 720x720, 360x360 JPEG로 재인코딩합니다. adult, racy, violence가 LIKELY 또는 VERY_LIKELY이면 PHOTO_CONTENT_NOT_ALLOWED로 거부하지만 medical 또는 spoof가 POSSIBLE인 것만으로는 거부하지 않습니다. 요청 지문은 multipart framing·boundary·filename을 제외한, 변환 전 수신 photo 파트 정확한 바이트의 SHA-256입니다. 소유자와 Idempotency-Key로 범위가 정해진 최소 receipt는 최초 receipt 생성 업로드가 시작된 시점부터 정확히 24시간 동안만 효력이 있습니다. 보존 중인 같은 지문의 ACTIVE_SUCCESS는 변환·검사·저장·quota 소비를 반복하지 않고 같은 photoId와 새 5분 signed URL을 201로 재생합니다. 새 URL 발급만 실패하면 receipt를 바꾸지 않고 503 PHOTO_DELIVERY_UNAVAILABLE을 반환합니다. 같은 지문의 REVOKED_SUCCESS 또는 이미 재생할 수 없는 사진은 사진·URL·receipt 세부 정보 없이 409 WISH_PHOTO_EXPIRED를 반환하고, 다른 지문은 처리 전에 409 IDEMPOTENCY_KEY_REUSED를 반환합니다. 보존한 결정적 거부는 원래 status와 안정적 code를 재생하되 자유 형식 message는 보존하지 않습니다. request time이 retainUntil에 도달하면 이전 receipt는 논리적으로 없으며 같은 key를 새 업로드에 재사용할 수 있습니다. 첨부 자체와 완료·포기는 성공 receipt를 폐기하지 않지만 Pending 취소·만료, 교체·명시적 제거, Wish 삭제, DELETE_PENDING 전환, hard cleanup은 파괴적 정리 전에 REVOKED_SUCCESS로 바꾸고 retainUntil까지 receipt를 남깁니다. 학생별 미첨부 Pending 사진은 최대 3개이고 rolling 1시간의 새 처리 시도는 최대 20회입니다. 파일 이름은 신뢰하지 않고 업로더 identity는 인증 주체에서만 결정합니다."
+      description: "인증된 학생 소유의 Pending 사진을 동기적으로 만듭니다. 정확히 하나의 photo 파트만 허용하고 5 MiB보다 큰 바이트 스트림은 디코딩 전에 중단합니다. 실제 JPEG 1080x1080 이미지만 디코딩한 뒤 EXIF·위치 메타데이터를 제거하고 1080x1080, 720x720, 360x360 JPEG로 재인코딩합니다. adult, racy, violence가 LIKELY 또는 VERY_LIKELY이면 PHOTO_CONTENT_NOT_ALLOWED로 거부하지만 medical 또는 spoof가 POSSIBLE인 것만으로는 거부하지 않습니다. 요청 지문은 multipart framing·boundary·filename을 제외한, 변환 전 수신 photo 파트 정확한 바이트의 SHA-256입니다. 소유자와 Idempotency-Key로 범위가 정해진 최소 receipt는 최초 receipt 생성 업로드가 시작된 시점부터 정확히 24시간 동안만 효력이 있습니다. 보존 중인 같은 지문의 ACTIVE_SUCCESS는 변환·검사·저장·quota 소비를 반복하지 않고 같은 photoId와 x-wish-photo-delivery-policy에 따른 URL 세트를 201로 재생합니다. 유효한 완전한 URL 세트 확보가 실패하면 receipt를 바꾸지 않고 503 PHOTO_DELIVERY_UNAVAILABLE을 반환합니다. 같은 지문의 REVOKED_SUCCESS 또는 이미 재생할 수 없는 사진은 사진·URL·receipt 세부 정보 없이 409 WISH_PHOTO_EXPIRED를 반환하고, 다른 지문은 처리 전에 409 IDEMPOTENCY_KEY_REUSED를 반환합니다. 보존한 결정적 거부는 원래 status와 안정적 code를 재생하되 자유 형식 message는 보존하지 않습니다. request time이 retainUntil에 도달하면 이전 receipt는 논리적으로 없으며 같은 key를 새 업로드에 재사용할 수 있습니다. 첨부 자체와 완료·포기는 성공 receipt를 폐기하지 않지만 Pending 취소·만료, 교체·명시적 제거, Wish 삭제, DELETE_PENDING 전환, hard cleanup은 파괴적 정리 전에 REVOKED_SUCCESS로 바꾸고 retainUntil까지 receipt를 남깁니다. 학생별 미첨부 Pending 사진은 최대 3개이고 rolling 1시간의 새 처리 시도는 최대 20회입니다. 파일 이름은 신뢰하지 않고 업로더 identity는 인증 주체에서만 결정합니다."
       security: [{SyntheticBearer: []}]
       parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
       requestBody:
@@ -1643,7 +1707,7 @@ paths:
                 contentType: image/jpeg
       responses:
         '201':
-          description: "검증·안전성 검사·비공개 변형 저장이 완료된 미첨부 Pending 사진입니다. 멱등 재생은 같은 사진 identity에 새 5분 signed URL을 발급합니다."
+          description: "검증·안전성 검사·비공개 변형 저장이 완료된 미첨부 Pending 사진입니다. 신규 성공과 재생 모두 x-wish-photo-delivery-policy를 적용합니다. 멱등 재생은 같은 사진 identity에 x-wish-photo-delivery-policy에 따른 유효한 완전한 URL 세트를 제공합니다."
           headers:
             Idempotency-Replayed: {$ref: '#/components/headers/IdempotencyReplayed'}
             Cache-Control: {$ref: '#/components/headers/CacheControlNoStore'}
@@ -1694,7 +1758,7 @@ paths:
           - "quota 계산·변환·안전성 검사·저장·객체 쓰기 전에 인증 소유자와 key의 미만료 receipt를 lock합니다."
           - "receipt가 없으면 새 업로드와 terminal receipt 생성을 원자적으로 처리합니다."
           - "다른 digest의 receipt는 새 처리 전에 IDEMPOTENCY_KEY_REUSED입니다."
-          - "같은 digest의 유효한 ACTIVE_SUCCESS는 같은 photoId와 새 5분 URL을 201로 반환합니다. URL 발급 실패는 receipt를 바꾸지 않고 PHOTO_DELIVERY_UNAVAILABLE입니다."
+          - "같은 digest의 유효한 ACTIVE_SUCCESS는 같은 photoId와 x-wish-photo-delivery-policy에 따른 URL 세트를 201로 반환합니다. 유효한 완전한 URL 세트 확보 실패는 receipt를 바꾸지 않고 PHOTO_DELIVERY_UNAVAILABLE입니다."
           - "같은 digest의 REVOKED_SUCCESS 또는 재생 불가능한 ACTIVE_SUCCESS는 URL과 receipt 세부 정보 없이 WISH_PHOTO_EXPIRED입니다."
           - "결정적 거부 outcome은 원래 status와 code의 현재 canonical message를 재생하고 처리를 반복하지 않습니다."
         validSuccessStates: [unexpired-unattached-PENDING, ATTACHED-including-after-COMPLETED-or-ABANDONED]
@@ -1732,7 +1796,7 @@ paths:
       tags: [Wishes]
       operationId: listWishes
       summary: "계정이 소유한 삭제되지 않은 위시 목록 조회"
-      description: "불투명 커서를 사용하며 createdAt DESC, id DESC 순으로 정렬합니다. 각 위시는 카드 잔액 계정의 조회 시점 OPEN 잔액 조정 상태를 반환합니다. 첨부 사진이 하나라도 있으면 모든 항목의 새 5분 비공개 URL을 발급한 뒤에만 전체 페이지를 반환하며, signing 실패는 부분 페이지나 거짓 null 없이 503입니다."
+      description: "불투명 커서를 사용하며 createdAt DESC, id DESC 순으로 정렬합니다. 각 위시는 카드 잔액 계정의 조회 시점 OPEN 잔액 조정 상태를 반환합니다. 첨부 사진이 하나라도 있으면 x-wish-photo-delivery-policy에 따라 모든 항목의 유효한 완전한 비공개 URL 세트를 확보한 뒤에만 전체 페이지를 반환하며, 유효한 완전한 URL 세트 확보 실패는 부분 페이지나 거짓 null 없이 503입니다."
       security: [{SyntheticBearer: []}]
       parameters:
         - $ref: '#/components/parameters/Cursor'
@@ -1765,7 +1829,7 @@ paths:
       tags: [Wishes]
       operationId: createWish
       summary: "초기 적립금이 0인 비공개 위시 생성"
-      description: "잔액 정보가 UNKNOWN이거나 OPEN 잔액 불일치가 없을 때 amount 0, state IN_PROGRESS, visibility PRIVATE인 위시를 생성합니다. startDate와 targetDate는 각각 생략하거나 null로 지정할 수 있고, 둘 다 날짜이면 startDate가 targetDate보다 늦지 않아야 합니다. 역전된 날짜 범위는 새 멱등 기록이나 위시 변경을 만들기 전에 거부합니다. photoId가 생략되거나 null이면 사진 없이 만들고, UUID이면 인증된 학생 소유의 만료되지 않은 미첨부 Pending 사진을 새 위시에 원자적으로 첨부합니다. 성공한 첨부는 사진 업로드 receipt의 ACTIVE_SUCCESS를 유지하며 24시간 retainUntil을 소비·연장·교체하지 않습니다. 첨부 실패 시 위시와 attachment 모두 생성하지 않습니다. 새로 캡처하는 멱등 요청 식별에는 정규화된 startDate의 명시적 null 또는 ISO 달력 날짜와 photoId의 명시적 null 또는 UUID가 포함되므로, 같은 Idempotency-Key를 다른 startDate 또는 photoId와 사용하면 409 IDEMPOTENCY_KEY_REUSED입니다. 기능 도입 전에 성공한 키는 startDate가 null인 재시도 중 photoId도 동일한 경우에만 이전 식별 방식으로 재생하며, 이전 스냅샷에 startDate가 없어도 응답에는 startDate null을 명시합니다. 일치하는 Idempotency-Key의 이전 성공 결과는 현재 불일치 방어 조건보다 먼저 재생됩니다. 최초 성공에 사진이 있으면 private ACTIVE_PHOTO 상태가 그 정확한 photoId를 유효한 동안만 보존하고 재생 때 소유권과 같은 위시 attachment를 재검증하여 새 5분 URL을 발급합니다. 최초 성공에 사진이 없던 NO_PHOTO는 이후 현재 사진이 붙어도 대체하지 않고 photo null을 반환합니다. 원래 사진이 교체·제거·revocation·Wish 삭제·cleanup으로 무효화되면 식별자 없는 PHOTO_REVOKED가 되어 Wish 성공 본문 없이 409 WISH_PHOTO_EXPIRED를 반환합니다. 새 URL 발급만 실패하면 receipt를 바꾸지 않고 부분 성공 본문 없이 503 PHOTO_DELIVERY_UNAVAILABLE을 반환합니다. 성공 재생에만 Idempotency-Replayed true를 보냅니다. 응답 capability 발급은 commit 전에 완료하므로 signing 실패가 비멱등 commit을 모호하게 만들지 않습니다. 그 밖의 경우 OPEN 잔액 조정 건이 있으면 새 위시를 저장하기 전에 409 BALANCE_MISMATCH_LOCKED로 생성을 거부합니다."
+      description: "잔액 정보가 UNKNOWN이거나 OPEN 잔액 불일치가 없을 때 amount 0, state IN_PROGRESS, visibility PRIVATE인 위시를 생성합니다. startDate와 targetDate는 각각 생략하거나 null로 지정할 수 있고, 둘 다 날짜이면 startDate가 targetDate보다 늦지 않아야 합니다. 역전된 날짜 범위는 새 멱등 기록이나 위시 변경을 만들기 전에 거부합니다. photoId가 생략되거나 null이면 사진 없이 만들고, UUID이면 인증된 학생 소유의 만료되지 않은 미첨부 Pending 사진을 새 위시에 원자적으로 첨부합니다. 성공한 첨부는 사진 업로드 receipt의 ACTIVE_SUCCESS를 유지하며 24시간 retainUntil을 소비·연장·교체하지 않습니다. 첨부 실패 시 위시와 attachment 모두 생성하지 않습니다. 새로 캡처하는 멱등 요청 식별에는 정규화된 startDate의 명시적 null 또는 ISO 달력 날짜와 photoId의 명시적 null 또는 UUID가 포함되므로, 같은 Idempotency-Key를 다른 startDate 또는 photoId와 사용하면 409 IDEMPOTENCY_KEY_REUSED입니다. 기능 도입 전에 성공한 키는 startDate가 null인 재시도 중 photoId도 동일한 경우에만 이전 식별 방식으로 재생하며, 이전 스냅샷에 startDate가 없어도 응답에는 startDate null을 명시합니다. 일치하는 Idempotency-Key의 이전 성공 결과는 현재 불일치 방어 조건보다 먼저 재생됩니다. 최초 성공에 사진이 있으면 private ACTIVE_PHOTO 상태가 그 정확한 photoId를 유효한 동안만 보존하고 재생 때 소유권과 같은 위시 attachment를 재검증하여 x-wish-photo-delivery-policy에 따라 유효한 완전한 URL 세트를 제공합니다. 최초 성공에 사진이 없던 NO_PHOTO는 이후 현재 사진이 붙어도 대체하지 않고 photo null을 반환합니다. 원래 사진이 교체·제거·revocation·Wish 삭제·cleanup으로 무효화되면 식별자 없는 PHOTO_REVOKED가 되어 Wish 성공 본문 없이 409 WISH_PHOTO_EXPIRED를 반환합니다. 유효한 완전한 URL 세트 확보가 실패하면 receipt를 바꾸지 않고 부분 성공 본문 없이 503 PHOTO_DELIVERY_UNAVAILABLE을 반환합니다. 성공 재생에만 Idempotency-Replayed true를 보냅니다. 응답 capability 발급은 commit 전에 완료하므로 유효한 완전한 URL 세트 확보 실패가 비멱등 commit을 모호하게 만들지 않습니다. 그 밖의 경우 OPEN 잔액 조정 건이 있으면 새 위시를 저장하기 전에 409 BALANCE_MISMATCH_LOCKED로 생성을 거부합니다."
       security: [{SyntheticBearer: []}]
       parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
       requestBody:
@@ -1786,7 +1850,7 @@ paths:
                   targetDate: '2027-02-28'
       responses:
         '201':
-          description: "위시가 생성되었습니다. 동일 요청 재생은 최초 domain 결과와 ACTIVE_PHOTO의 정확한 photoId 또는 NO_PHOTO의 null을 유지하고, 유효한 ACTIVE_PHOTO의 ephemeral URL만 새로 발급합니다."
+          description: "위시가 생성되었습니다. 동일 요청 재생은 최초 domain 결과와 ACTIVE_PHOTO의 정확한 photoId 또는 NO_PHOTO의 null을 유지하고, 유효한 ACTIVE_PHOTO의 ephemeral URL과 원래 expiresAt을 x-wish-photo-delivery-policy에 따라 함께 재사용하거나 새 발급합니다. 신규 성공에도 같은 정책을 적용합니다."
           headers:
             Idempotency-Replayed: {$ref: '#/components/headers/IdempotencyReplayed'}
             Cache-Control: {$ref: '#/components/headers/CacheControlNoStore'}
@@ -1818,7 +1882,7 @@ paths:
       tags: [Wishes]
       operationId: getWish
       summary: "소유한 삭제되지 않은 위시 조회"
-      description: "위시가 속한 카드 잔액 계정의 조회 시점 OPEN 잔액 조정 상태를 반환합니다. OPEN 잔액 조정 건이 있어도 이 조회를 차단하지 않습니다. 사진이 있으면 현재 소유권을 다시 확인하고 새 5분 비공개 URL을 모두 발급한 뒤 반환하며 signing 실패는 거짓 null 없이 503입니다."
+      description: "위시가 속한 카드 잔액 계정의 조회 시점 OPEN 잔액 조정 상태를 반환합니다. OPEN 잔액 조정 건이 있어도 이 조회를 차단하지 않습니다. 사진이 있으면 현재 소유권을 다시 확인하고 x-wish-photo-delivery-policy에 따라 유효한 완전한 비공개 URL 세트를 확보한 뒤 반환하며 유효한 완전한 URL 세트 확보 실패는 거짓 null 없이 503입니다."
       security: [{SyntheticBearer: []}]
       responses:
         '200':
@@ -1903,7 +1967,7 @@ paths:
       tags: [Wishes]
       operationId: depositToWish
       summary: "카드 잔액 계정 자금을 위시에 적립"
-      description: "내부에서 PRE_DEPOSIT 조회를 수행합니다. 외부 제공자 조회가 실패하면 위시는 변경되지 않습니다. 저장된 불일치 관측 결과는 이 입금 작업만 잠그고 거부합니다. 일치하는 멱등 재생은 최초 Wish snapshot의 NO_PHOTO를 그대로 null로 유지하거나, 유효한 ACTIVE_PHOTO의 정확한 photoId에만 새 5분 URL을 발급합니다. 원래 사진이 PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, URL 발급만 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다."
+      description: "내부에서 PRE_DEPOSIT 조회를 수행합니다. 외부 제공자 조회가 실패하면 위시는 변경되지 않습니다. 저장된 불일치 관측 결과는 이 입금 작업만 잠그고 거부합니다. 일치하는 멱등 재생은 최초 Wish snapshot의 NO_PHOTO를 그대로 null로 유지하거나, 유효한 ACTIVE_PHOTO의 정확한 photoId에만 x-wish-photo-delivery-policy에 따라 유효한 완전한 URL 세트를 제공합니다. 원래 사진이 PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, 유효한 완전한 URL 세트 확보가 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다."
       security: [{SyntheticBearer: []}]
       parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
       requestBody:
@@ -1928,7 +1992,7 @@ paths:
       tags: [Wishes]
       operationId: withdrawFromWish
       summary: "위시에서 자금 인출"
-      description: "일치하는 멱등 재생은 최초 Wish snapshot의 identity·상태·version·event identity를 유지합니다. NO_PHOTO는 이후 현재 attachment가 있어도 null이고, ACTIVE_PHOTO는 캡처된 정확한 photoId가 같은 소유자와 위시에 유효하게 ATTACHED인 경우에만 새 5분 URL로 성공합니다. PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, 유효한 사진의 URL 발급만 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다."
+      description: "일치하는 멱등 재생은 최초 Wish snapshot의 identity·상태·version·event identity를 유지합니다. NO_PHOTO는 이후 현재 attachment가 있어도 null이고, ACTIVE_PHOTO는 캡처된 정확한 photoId가 같은 소유자와 위시에 유효하게 ATTACHED인 경우에만 x-wish-photo-delivery-policy에 따른 URL 세트로 성공합니다. PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, 유효한 사진의 유효한 완전한 URL 세트 확보가 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다."
       security: [{SyntheticBearer: []}]
       parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
       requestBody:
@@ -1951,7 +2015,7 @@ paths:
       tags: [Wishes]
       operationId: transferWishFunds
       summary: "동일 계정의 두 위시 간 자금 원자적 이체"
-      description: "출발·도착 Wish snapshot과 각각의 private photo replay state를 이체 성공 결과와 함께 원자적으로 캡처합니다. 일치 재생은 두 상태를 URL 발급 전에 함께 평가합니다. 각 NO_PHOTO는 이후 현재 attachment와 무관하게 null을 유지하고, 각 ACTIVE_PHOTO는 캡처된 정확한 photoId가 같은 소유자와 정확한 위시에 유효하게 ATTACHED인 경우에만 새 5분 URL을 받습니다. 어느 한쪽이라도 PHOTO_REVOKED이면 다른 쪽 URL을 발급하거나 부분 본문을 반환하지 않고 전체 재생이 409 WISH_PHOTO_EXPIRED로 실패합니다. 모든 필요한 URL 중 하나라도 발급하지 못하면 receipt를 바꾸지 않고 전체 재생이 503 PHOTO_DELIVERY_UNAVAILABLE로 실패합니다. 성공 재생에만 Idempotency-Replayed true를 보냅니다."
+      description: "출발·도착 Wish snapshot과 각각의 private photo replay state를 이체 성공 결과와 함께 원자적으로 캡처합니다. 일치 재생은 두 상태를 URL 발급 전에 함께 평가합니다. 각 NO_PHOTO는 이후 현재 attachment와 무관하게 null을 유지하고, 각 ACTIVE_PHOTO는 캡처된 정확한 photoId가 같은 소유자와 정확한 위시에 유효하게 ATTACHED인 경우에만 x-wish-photo-delivery-policy에 따른 URL 세트를 받습니다. 어느 한쪽이라도 PHOTO_REVOKED이면 다른 쪽 캐시 URL을 반환하거나 새 발급하거나 부분 본문을 반환하지 않고 전체 재생이 409 WISH_PHOTO_EXPIRED로 실패합니다. 모든 필요한 URL 세트 중 하나라도 유효하고 완전하게 확보하지 못하면 receipt를 바꾸지 않고 전체 재생이 503 PHOTO_DELIVERY_UNAVAILABLE로 실패합니다. 성공 재생에만 Idempotency-Replayed true를 보냅니다."
       security: [{SyntheticBearer: []}]
       parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
       requestBody:
@@ -1961,7 +2025,7 @@ paths:
             schema: {$ref: '#/components/schemas/WishTransferRequest'}
       responses:
         '200':
-          description: "원자적 이체가 완료되었습니다. 동일 요청 재생은 출발·도착의 최초 domain 결과와 각 ACTIVE_PHOTO의 정확한 photoId 또는 NO_PHOTO의 null을 유지하고, 양쪽을 모두 검증한 뒤 ephemeral photo URL만 새로 발급합니다."
+          description: "원자적 이체가 완료되었습니다. 동일 요청 재생은 출발·도착의 최초 domain 결과와 각 ACTIVE_PHOTO의 정확한 photoId 또는 NO_PHOTO의 null을 유지하고, 양쪽을 모두 검증한 뒤 x-wish-photo-delivery-policy에 따라 ephemeral photo URL과 원래 expiresAt을 함께 재사용하거나 새 발급합니다. 신규 성공에도 같은 정책을 적용합니다."
           headers:
             Idempotency-Replayed: {$ref: '#/components/headers/IdempotencyReplayed'}
             Cache-Control: {$ref: '#/components/headers/CacheControlNoStore'}
@@ -1982,8 +2046,8 @@ paths:
     post:
       tags: [Wishes]
       operationId: completeWish
-      summary: "목표 금액에 도달한 위시 완료"
-      description: "OPEN 잔액 조정 건이 있어도 완료를 차단하지 않습니다. 첨부 사진은 보존되지만 이후 사진 변경은 허용하지 않습니다. 일치하는 멱등 재생은 최초 완료 snapshot의 NO_PHOTO를 그대로 null로 유지하거나 유효한 ACTIVE_PHOTO의 정확한 photoId에만 새 5분 URL을 발급합니다. 이후 Wish 삭제 등으로 원래 사진이 PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, URL 발급만 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다. 반환된 위시는 변경 커밋 후의 잔액 조정 플래그를 담고 응답 capability는 commit 전에 발급합니다."
+      summary: "목표 금액 달성 여부와 관계없이 활성 위시 사용완료"
+      description: "소유자는 IN_PROGRESS 또는 AMOUNT_REACHED 상태의 위시를 목표 금액 달성 여부와 관계없이 사용완료할 수 있습니다. 목표 미달 금액과 0원 배정도 허용합니다. 완료 시 state는 COMPLETED, amount는 0이 되고 completedAt과 closedAt을 설정합니다. 완료 직전 배정액이 양수이면 그 금액 전체를 반환하는 WISH_COMPLETION_RETURN 원장 이벤트 하나를 생성하고 eventId를 반환합니다. 완료 직전 배정액이 0원이면 원장 이벤트와 위시 원장 효과를 생성하지 않고 계정 원장 순번을 증가시키지 않으며 eventId는 null입니다. 두 경우 모두 위시 버전, 공유 카드와 대표 위시를 기존 규칙에 따라 같은 트랜잭션에서 갱신합니다. 새로운 요청으로 COMPLETED 또는 ABANDONED 위시를 완료할 수 없으며 삭제된 위시는 기존 WISH_NOT_FOUND 규칙을 따릅니다. 일치하는 멱등 재생은 최초 완료 결과를 유지합니다. OPEN 잔액 조정 건이 있어도 완료를 차단하지 않습니다. 첨부 사진은 보존되지만 이후 사진 변경은 허용하지 않습니다. 일치하는 멱등 재생은 최초 완료 snapshot의 NO_PHOTO를 그대로 null로 유지하거나 유효한 ACTIVE_PHOTO의 정확한 photoId에만 x-wish-photo-delivery-policy에 따라 유효한 완전한 URL 세트를 제공합니다. 이후 Wish 삭제 등으로 원래 사진이 PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, 유효한 완전한 URL 세트 확보가 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다. 반환된 위시는 변경 커밋 후의 잔액 조정 플래그를 담고 응답 capability는 commit 전에 발급합니다."
       security: [{SyntheticBearer: []}]
       parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
       requestBody:
@@ -1991,6 +2055,7 @@ paths:
         content:
           application/json:
             schema: {$ref: '#/components/schemas/WishVersionCommand'}
+            example: {expectedVersion: 2}
       responses:
         '200': {$ref: '#/components/responses/WishMutationSuccess'}
         '400': {$ref: '#/components/responses/MalformedOrIdempotencyRequired'}
@@ -2014,7 +2079,7 @@ paths:
       tags: [Wishes]
       operationId: abandonWish
       summary: "위시를 포기하고 영구 비공개로 전환"
-      description: "OPEN 잔액 조정 건이 있어도 포기를 차단하지 않습니다. 첨부 사진은 보존되지만 이후 사진 변경은 허용하지 않습니다. 일치하는 멱등 재생은 최초 포기 snapshot의 NO_PHOTO를 그대로 null로 유지하거나 유효한 ACTIVE_PHOTO의 정확한 photoId에만 새 5분 URL을 발급합니다. 이후 Wish 삭제 등으로 원래 사진이 PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, URL 발급만 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다. 반환된 위시는 변경 커밋 후의 잔액 조정 플래그를 담고 응답 capability는 commit 전에 발급합니다."
+      description: "OPEN 잔액 조정 건이 있어도 포기를 차단하지 않습니다. 첨부 사진은 보존되지만 이후 사진 변경은 허용하지 않습니다. 일치하는 멱등 재생은 최초 포기 snapshot의 NO_PHOTO를 그대로 null로 유지하거나 유효한 ACTIVE_PHOTO의 정확한 photoId에만 x-wish-photo-delivery-policy에 따라 유효한 완전한 URL 세트를 제공합니다. 이후 Wish 삭제 등으로 원래 사진이 PHOTO_REVOKED이면 성공 본문 없이 409 WISH_PHOTO_EXPIRED이고, 유효한 완전한 URL 세트 확보가 실패하면 503 PHOTO_DELIVERY_UNAVAILABLE입니다. 반환된 위시는 변경 커밋 후의 잔액 조정 플래그를 담고 응답 capability는 commit 전에 발급합니다."
       security: [{SyntheticBearer: []}]
       parameters: [{$ref: '#/components/parameters/IdempotencyKey'}]
       requestBody:
@@ -2074,7 +2139,7 @@ paths:
         unfiltered: "cursor 없는 요청은 최대 100개 후보를 한 번 ranking하고 ranked 최대 20개 뒤에 전체 latest traversal을 잇는 v2 context를 생성합니다."
         ownerFiltered: "ownerId가 있으면 기존 latest-only traversal이며 ranking을 요청하지 않습니다."
         continuation: "GET과 POST feed-results가 같은 transition을 사용하고 replay·privacy·expiry는 최상위 x-feed-ranking-v1을 따릅니다."
-      description: "조회할 때마다 학원 소속, 위시 visibility, 방향성 팔로우 관계, 양방향 차단을 다시 평가하고 ownerId를 생략하면 소유자 본인은 제외합니다. ownerId를 명시하면 해당 학생의 허용된 카드만 반환하며, 본인을 지정하면 현재 공개 중인 자기 카드도 조회합니다. PRIVATE 카드는 포함하지 않습니다. photoId, object key, 과거 signed URL은 이 권한 검사를 대신하지 않습니다. PRIVATE 위시는 카드를 생성하지 않으며 비공개 또는 과거 비공개 상태에서 포기한 위시는 소유자가 FOLLOWERS 또는 ACADEMY로 명시적으로 공개할 때까지 카드를 만들지 않습니다. 첨부 사진이 하나라도 있으면 모든 항목의 새 5분 비공개 URL을 발급한 뒤에만 전체 페이지를 반환하며 signing 실패는 부분 페이지나 거짓 null 없이 503입니다. 임시 정렬은 contentUpdatedAt DESC, sharedCardId DESC 순입니다. 현재는 정렬 매개변수를 지원하지 않습니다. 이 임시 정책에서는 콘텐츠 또는 게시 상태가 바뀔 때만 카드 순서가 달라집니다. ownerId 없는 첫 페이지는 x-feed-ranking-v1에 따라 Python 추천을 한 번만 적용한 ranked segment 뒤에 전체 latest traversal을 이어 붙이며 ownerId가 있으면 기존 latest-only 정렬을 유지합니다. FOLLOWERS는 선택 학원의 현재 viewer → owner 팔로우가 있어야 비소유자에게 공개됩니다. owner → viewer만으로는 공개되지 않으며 상호 팔로우는 필요하지 않습니다. 진행·완료·포기 공유 카드의 목록·상세에 동일하게 적용합니다. 기존 소유자 예외, PRIVATE·ACADEMY 의미, 현재 학원 소속, 공유 카드의 카드 계정 자격과 각 변형의 게시 규칙, 전역 양방향 차단 우선순위를 유지합니다. 현재 공개된 IN_PROGRESS 또는 AMOUNT_REACHED 위시를 포기하면 같은 sharedCardId의 PROGRESS 카드를 ABANDONMENT 카드 하나로 원자적으로 교체하고 contentUpdatedAt을 한 번만 갱신합니다. 그 포기 요청의 멱등 재생은 다른 카드나 추가 정렬 갱신을 만들지 않습니다. ABANDONMENT의 progressPercent는 포기 직전 고정된 적립액에서 한 번 계산한 공개 값이며 현재 0원 배정이나 정확한 과거 금액은 반환하지 않습니다. 포기 카드는 추천 후보나 대표 위시가 아닙니다. 언팔로우·차단 후 다음 조회부터 제한된 카드를 숨기며 직접 조회는 SHARED_CARD_NOT_FOUND 경계를 유지합니다. ownerId 조건은 SQL LIMIT와 keyset pagination 전에 적용합니다. 대상이 없거나 다른 학원·탈퇴·차단 상태이거나 현재 볼 수 있는 카드가 없으면 이유를 구별하지 않고 items: [], nextCursor: null인 빈 페이지를 반환합니다. 모든 페이지에서 현재 조회자와 소유자의 학원 소속, 열린 카드 계정 자격, 공개 상태, 삭제 여부와 양방향 차단을 다시 평가합니다. 새 불투명 커서는 기존 relationship_cursor_key의 HMAC으로 서명하고 형식 version, operation=listAcademySharedCards, viewerId, academyId, ownerId 또는 명시적 무필터 표식, 마지막 contentUpdatedAt/sharedCardId 튜플을 묶습니다. 형식 오류·변조·미지원 버전·구형 무서명 커서 또는 작업·조회자·학원·작성자·필터 유무가 다른 커서는 400 MALFORMED_REQUEST이며 cursor를 제거하고 첫 페이지부터 다시 조회해야 합니다. 같은 문맥의 유효한 cursor는 유효한 limit 변경을 허용합니다. 권한을 커서에 저장해 재사용하지 않습니다. 안정된 데이터는 중복·누락 없이 순회하지만 동시 콘텐츠 변경이나 완료·포기 카드 교체에 대한 스냅샷 보장은 없습니다. 학생 단건 조회와 목록 사이에도 원자적 스냅샷을 보장하지 않습니다."
+      description: "조회할 때마다 학원 소속, 위시 visibility, 방향성 팔로우 관계, 양방향 차단을 다시 평가하고 ownerId를 생략하면 소유자 본인은 제외합니다. ownerId를 명시하면 해당 학생의 허용된 카드만 반환하며, 본인을 지정하면 현재 공개 중인 자기 카드도 조회합니다. PRIVATE 카드는 포함하지 않습니다. photoId, object key, 과거 signed URL은 이 권한 검사를 대신하지 않습니다. PRIVATE 위시는 카드를 생성하지 않으며 비공개 또는 과거 비공개 상태에서 포기한 위시는 소유자가 FOLLOWERS 또는 ACADEMY로 명시적으로 공개할 때까지 카드를 만들지 않습니다. 첨부 사진이 하나라도 있으면 x-wish-photo-delivery-policy에 따라 모든 항목의 유효한 완전한 비공개 URL 세트를 확보한 뒤에만 전체 페이지를 반환하며 유효한 완전한 URL 세트 확보 실패는 부분 페이지나 거짓 null 없이 503입니다. 임시 정렬은 contentUpdatedAt DESC, sharedCardId DESC 순입니다. 현재는 정렬 매개변수를 지원하지 않습니다. 이 임시 정책에서는 콘텐츠 또는 게시 상태가 바뀔 때만 카드 순서가 달라집니다. ownerId 없는 첫 페이지는 x-feed-ranking-v1에 따라 Python 추천을 한 번만 적용한 ranked segment 뒤에 전체 latest traversal을 이어 붙이며 ownerId가 있으면 기존 latest-only 정렬을 유지합니다. FOLLOWERS는 선택 학원의 현재 viewer → owner 팔로우가 있어야 비소유자에게 공개됩니다. owner → viewer만으로는 공개되지 않으며 상호 팔로우는 필요하지 않습니다. 진행·완료·포기 공유 카드의 목록·상세에 동일하게 적용합니다. 기존 소유자 예외, PRIVATE·ACADEMY 의미, 현재 학원 소속, 공유 카드의 카드 계정 자격과 각 변형의 게시 규칙, 전역 양방향 차단 우선순위를 유지합니다. 현재 공개된 IN_PROGRESS 또는 AMOUNT_REACHED 위시를 포기하면 같은 sharedCardId의 PROGRESS 카드를 ABANDONMENT 카드 하나로 원자적으로 교체하고 contentUpdatedAt을 한 번만 갱신합니다. 그 포기 요청의 멱등 재생은 다른 카드나 추가 정렬 갱신을 만들지 않습니다. ABANDONMENT의 progressPercent는 포기 직전 고정된 적립액에서 한 번 계산한 공개 값이며 현재 0원 배정이나 정확한 과거 금액은 반환하지 않습니다. 포기 카드는 추천 후보나 대표 위시가 아닙니다. 언팔로우·차단 후 다음 조회부터 제한된 카드를 숨기며 직접 조회는 SHARED_CARD_NOT_FOUND 경계를 유지합니다. ownerId 조건은 SQL LIMIT와 keyset pagination 전에 적용합니다. 대상이 없거나 다른 학원·탈퇴·차단 상태이거나 현재 볼 수 있는 카드가 없으면 이유를 구별하지 않고 items: [], nextCursor: null인 빈 페이지를 반환합니다. 모든 페이지에서 현재 조회자와 소유자의 학원 소속, 열린 카드 계정 자격, 공개 상태, 삭제 여부와 양방향 차단을 다시 평가합니다. 새 불투명 커서는 기존 relationship_cursor_key의 HMAC으로 서명하고 형식 version, operation=listAcademySharedCards, viewerId, academyId, ownerId 또는 명시적 무필터 표식, 마지막 contentUpdatedAt/sharedCardId 튜플을 묶습니다. 형식 오류·변조·미지원 버전·구형 무서명 커서 또는 작업·조회자·학원·작성자·필터 유무가 다른 커서는 400 MALFORMED_REQUEST이며 cursor를 제거하고 첫 페이지부터 다시 조회해야 합니다. 같은 문맥의 유효한 cursor는 유효한 limit 변경을 허용합니다. 권한을 커서에 저장해 재사용하지 않습니다. 안정된 데이터는 중복·누락 없이 순회하지만 동시 콘텐츠 변경이나 완료·포기 카드 교체에 대한 스냅샷 보장은 없습니다. 학생 단건 조회와 목록 사이에도 원자적 스냅샷을 보장하지 않습니다."
       security: [{SyntheticBearer: []}]
       parameters:
         - $ref: '#/components/parameters/Cursor'
@@ -2112,7 +2177,7 @@ paths:
       tags: [Shared Cards]
       operationId: getAcademySharedCard
       summary: "현재 볼 수 있는 공유 카드 조회"
-      description: "소유자는 자신의 카드가 현재 공개 상태라면 조회할 수 있습니다. 다른 호출자는 현재 학원 소속, 위시 visibility, 방향성 팔로우 관계와 양방향 차단을 매번 다시 통과해야 하며 photoId나 과거 signed URL은 권한을 부여하지 않습니다. 사진이 있으면 새 5분 비공개 URL 세 개를 모두 발급한 뒤 반환하고 signing 실패는 거짓 null 없이 503입니다. 이미 발급된 URL은 접근이 철회되어도 최대 기존 5분 만료까지만 유효할 수 있고 새 URL은 발급하지 않습니다. 그 밖의 리소스 부재나 공개 범위 조건 위반은 모두 숨깁니다. FOLLOWERS는 선택 학원의 현재 viewer → owner 팔로우가 있어야 비소유자에게 공개됩니다. owner → viewer만으로는 공개되지 않으며 상호 팔로우는 필요하지 않습니다. 진행·완료·포기 공유 카드의 목록·상세에 동일하게 적용합니다. 기존 소유자 예외, PRIVATE·ACADEMY 의미, 현재 학원 소속, 공유 카드의 카드 계정 자격과 각 변형의 게시 규칙, 전역 양방향 차단 우선순위를 유지합니다. 공개된 진행 카드를 포기하면 같은 sharedCardId의 ABANDONMENT 카드로 원자적으로 교체하며 공개 progressPercent는 포기 직전 고정된 적립액에서 한 번 계산됩니다. 정확한 과거 금액, 포기 뒤 현재 0원 배정, 위시·계정 식별자는 이 응답에 포함하지 않습니다. 비공개 또는 과거 비공개 포기 위시는 명시적으로 공개되기 전까지 조회할 카드가 없고, 삭제하거나 PRIVATE로 바꾸면 카드를 제거합니다. 언팔로우·차단 후 다음 조회부터 제한된 카드를 숨기며 직접 조회는 SHARED_CARD_NOT_FOUND 경계를 유지합니다."
+      description: "소유자는 자신의 카드가 현재 공개 상태라면 조회할 수 있습니다. 다른 호출자는 현재 학원 소속, 위시 visibility, 방향성 팔로우 관계와 양방향 차단을 매번 다시 통과해야 하며 photoId나 과거 signed URL은 권한을 부여하지 않습니다. 사진이 있으면 x-wish-photo-delivery-policy에 따라 유효한 완전한 비공개 URL 세트를 확보한 뒤 반환하고 유효한 완전한 URL 세트 확보 실패는 거짓 null 없이 503입니다. 이미 발급된 URL은 접근이 철회되어도 최대 기존 5분 만료까지만 유효할 수 있고 새 API 응답에서 캐시를 통해 이전 사진을 되살리거나 새 URL을 발급하지 않습니다. 그 밖의 리소스 부재나 공개 범위 조건 위반은 모두 숨깁니다. FOLLOWERS는 선택 학원의 현재 viewer → owner 팔로우가 있어야 비소유자에게 공개됩니다. owner → viewer만으로는 공개되지 않으며 상호 팔로우는 필요하지 않습니다. 진행·완료·포기 공유 카드의 목록·상세에 동일하게 적용합니다. 기존 소유자 예외, PRIVATE·ACADEMY 의미, 현재 학원 소속, 공유 카드의 카드 계정 자격과 각 변형의 게시 규칙, 전역 양방향 차단 우선순위를 유지합니다. 공개된 진행 카드를 포기하면 같은 sharedCardId의 ABANDONMENT 카드로 원자적으로 교체하며 공개 progressPercent는 포기 직전 고정된 적립액에서 한 번 계산됩니다. 정확한 과거 금액, 포기 뒤 현재 0원 배정, 위시·계정 식별자는 이 응답에 포함하지 않습니다. 비공개 또는 과거 비공개 포기 위시는 명시적으로 공개되기 전까지 조회할 카드가 없고, 삭제하거나 PRIVATE로 바꾸면 카드를 제거합니다. 언팔로우·차단 후 다음 조회부터 제한된 카드를 숨기며 직접 조회는 SHARED_CARD_NOT_FOUND 경계를 유지합니다."
       security: [{SyntheticBearer: []}]
       responses:
         '200':
@@ -2581,7 +2646,7 @@ components:
         type: string
   headers:
     IdempotencyReplayed:
-      description: "동일한 요청의 종결 성공 domain 결과가 재생되는 경우에만 true입니다. ACTIVE_PHOTO는 최초 결과의 정확한 photoId만 유지하고 ephemeral signed URL을 새로 발급하며, NO_PHOTO는 이후 현재 attachment와 무관하게 null을 유지합니다. PHOTO_REVOKED의 409 WISH_PHOTO_EXPIRED 또는 URL 발급 실패의 503 PHOTO_DELIVERY_UNAVAILABLE에는 이 header를 보내지 않습니다."
+      description: "동일한 요청의 종결 성공 domain 결과가 재생되는 경우에만 true입니다. ACTIVE_PHOTO는 최초 결과의 정확한 photoId만 유지하고 x-wish-photo-delivery-policy에 따라 ephemeral signed URL과 원래 expiresAt을 함께 재사용하거나 새 발급하며, NO_PHOTO는 이후 현재 attachment와 무관하게 null을 유지합니다. PHOTO_REVOKED의 409 WISH_PHOTO_EXPIRED 또는 유효한 완전한 URL 세트 확보 실패의 503 PHOTO_DELIVERY_UNAVAILABLE에는 이 header를 보내지 않습니다."
       schema: {type: boolean}
     CacheControlNoStore:
       description: "짧은 수명의 비공개 signed URL이 포함될 수 있으므로 JSON 응답을 저장하지 않습니다."
@@ -2593,13 +2658,17 @@ components:
       schema: {type: integer, minimum: 1}
   responses:
     WishMutationSuccess:
-      description: "위시 변경이 완료되었습니다. 동일 요청 재생은 최초 domain snapshot identity·상태·event identity·occurrence time·version을 유지합니다. 최초 사진 상태가 NO_PHOTO이면 이후 현재 attachment를 조회하거나 대체하지 않고 photo null을 반환합니다. ACTIVE_PHOTO이면 인증 학생 소유이고 최초 snapshot의 정확한 위시에 ATTACHED인 같은 photoId를 재검증한 뒤 새 5분 URL만 발급합니다. PHOTO_REVOKED이면 이 성공 응답 대신 409 WISH_PHOTO_EXPIRED를 반환하고, 유효한 ACTIVE_PHOTO의 URL 발급만 실패하면 이 성공 응답 대신 503 PHOTO_DELIVERY_UNAVAILABLE을 반환합니다. Idempotency-Replayed는 성공 재생에만 true이고, 사진 응답 capability는 state-changing command가 commit하기 전에 발급되어야 합니다."
+      description: "위시 변경이 완료되었습니다. 신규 성공과 재생 모두 x-wish-photo-delivery-policy를 적용합니다. 동일 요청 재생은 최초 domain snapshot identity·상태·event identity·occurrence time·version을 유지합니다. 최초 사진 상태가 NO_PHOTO이면 이후 현재 attachment를 조회하거나 대체하지 않고 photo null을 반환합니다. ACTIVE_PHOTO이면 인증 학생 소유이고 최초 snapshot의 정확한 위시에 ATTACHED인 같은 photoId를 재검증한 뒤 x-wish-photo-delivery-policy에 따른 유효한 완전한 URL 세트만 제공합니다. PHOTO_REVOKED이면 이 성공 응답 대신 409 WISH_PHOTO_EXPIRED를 반환하고, 유효한 ACTIVE_PHOTO의 유효한 완전한 URL 세트 확보가 실패하면 이 성공 응답 대신 503 PHOTO_DELIVERY_UNAVAILABLE을 반환합니다. Idempotency-Replayed는 성공 재생에만 true이고, 사진 응답 capability는 state-changing command가 commit하기 전에 발급되어야 합니다."
       headers:
         Idempotency-Replayed: {$ref: '#/components/headers/IdempotencyReplayed'}
         Cache-Control: {$ref: '#/components/headers/CacheControlNoStore'}
       content:
         application/json:
           schema: {$ref: '#/components/schemas/WishMutationResult'}
+          examples:
+            completedWish: {$ref: '#/components/examples/WishCompletedReached'}
+            completedUnderTargetWish: {$ref: '#/components/examples/WishCompletedUnderTarget'}
+            completedZeroAllocationWish: {$ref: '#/components/examples/WishCompletedZeroAllocation'}
     MalformedRequest:
       description: "MALFORMED_REQUEST — 잘못된 형식의 JSON, 경로, 쿼리, 커서 또는 필수 동시성 구조(누락되거나 정수가 아닌 필수 버전 포함)."
       x-error-codes: [MALFORMED_REQUEST]
@@ -2645,7 +2714,7 @@ components:
         application/json:
           schema: {$ref: '#/components/schemas/ErrorEnvelope'}
     WeeklyRecapQueryUnavailable:
-      description: "RECAP_QUERY_UNAVAILABLE는 저장 조회·트랜잭션 실패, PHOTO_DELIVERY_UNAVAILABLE는 현재 첨부 사진 URL·variant·서명 실패, PHOTO_PROCESSING_UNAVAILABLE는 첨부 사진 런타임 비활성입니다. 모두 retryable 503이며 전체 주간 조회가 실패합니다. 사진 오류를 photo null, story 생략 또는 부분 200으로 변환하지 않습니다."
+      description: "RECAP_QUERY_UNAVAILABLE는 저장 조회·트랜잭션 실패, PHOTO_DELIVERY_UNAVAILABLE는 x-wish-photo-delivery-policy에 따른 현재 첨부 사진의 유효한 완전한 URL 세트 확보 실패, PHOTO_PROCESSING_UNAVAILABLE는 첨부 사진 런타임 비활성입니다. 모두 retryable 503이며 전체 주간 조회가 실패합니다. 사진 오류를 photo null, story 생략 또는 부분 200으로 변환하지 않습니다."
       x-error-codes: [RECAP_QUERY_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE, PHOTO_PROCESSING_UNAVAILABLE]
       headers:
         Cache-Control: {$ref: '#/components/headers/CacheControlNoStore'}
@@ -2826,7 +2895,7 @@ components:
         application/json:
           schema: {$ref: '#/components/schemas/ErrorEnvelope'}
     PhotoUploadUnavailable:
-      description: "PHOTO_PROCESSING_UNAVAILABLE — 새 업로드의 필수 변환, 안전성 검사, 비공개 저장 또는 영속화 의존성을 일시적으로 사용할 수 없습니다. attachable identity 없이 부분 레코드와 객체를 보상 정리하며 terminal receipt를 생성하지 않아 같은 key와 콘텐츠를 재시도할 수 있습니다. PHOTO_DELIVERY_UNAVAILABLE — 보존 중인 유효한 ACTIVE_SUCCESS 재생에 필요한 새 5분 비공개 URL을 모두 발급할 수 없습니다. 부분 representation을 반환하거나 receipt를 변경·삭제하지 않습니다. 두 오류 모두 retryable true이며 사진 바이트, digest, photoId, receipt, URL, path, 안전성·provider 정보를 노출하지 않습니다."
+      description: "PHOTO_PROCESSING_UNAVAILABLE — 새 업로드의 필수 변환, 안전성 검사, 비공개 저장 또는 영속화 의존성을 일시적으로 사용할 수 없습니다. attachable identity 없이 부분 레코드와 객체를 보상 정리하며 terminal receipt를 생성하지 않아 같은 key와 콘텐츠를 재시도할 수 있습니다. PHOTO_DELIVERY_UNAVAILABLE — 보존 중인 유효한 ACTIVE_SUCCESS 재생에 필요한 x-wish-photo-delivery-policy에 따른 유효한 완전한 비공개 URL 세트를 확보할 수 없습니다. 부분 representation을 반환하거나 receipt를 변경·삭제하지 않습니다. 두 오류 모두 retryable true이며 사진 바이트, digest, photoId, receipt, URL, path, 안전성·provider 정보를 노출하지 않습니다."
       x-error-codes: [PHOTO_PROCESSING_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE]
       content:
         application/json:
@@ -2835,7 +2904,7 @@ components:
             processing-unavailable: {$ref: '#/components/examples/PhotoProcessingUnavailable'}
             replay-delivery-unavailable: {$ref: '#/components/examples/PhotoDeliveryUnavailableOnReplay'}
     PhotoDeliveryUnavailable:
-      description: "PHOTO_DELIVERY_UNAVAILABLE — 기존 사진 또는 일치하는 Wish mutation 재생의 유효한 ACTIVE_PHOTO에 필요한 새 5분 비공개 URL을 모두 발급할 수 없습니다. 이 오류는 retryable true이고 receipt의 ACTIVE_PHOTO 또는 NO_PHOTO 상태를 바꾸지 않으며, 부분 Wish·transfer representation, 현재 사진 대체, 거짓 null, photoId, URL 또는 Idempotency-Replayed를 반환하지 않습니다."
+      description: "PHOTO_DELIVERY_UNAVAILABLE — 기존 사진 또는 일치하는 Wish mutation 재생의 유효한 ACTIVE_PHOTO에 필요한 x-wish-photo-delivery-policy에 따른 유효한 완전한 비공개 URL 세트를 확보할 수 없습니다. 이 오류는 retryable true이고 receipt의 ACTIVE_PHOTO 또는 NO_PHOTO 상태를 바꾸지 않으며, 부분 Wish·transfer representation, 현재 사진 대체, 거짓 null, photoId, URL 또는 Idempotency-Replayed를 반환하지 않습니다."
       x-error-codes: [PHOTO_DELIVERY_UNAVAILABLE]
       content:
         application/json:
@@ -2911,7 +2980,7 @@ components:
           examples:
             balance-sync-failed: {$ref: '#/components/examples/BalanceSyncFailed'}
     BalanceSyncOrPhotoDeliveryUnavailable:
-      description: "BALANCE_SYNC_FAILED 또는 PHOTO_DELIVERY_UNAVAILABLE — 외부 잔액 조회가 실패했거나 기존 사진의 새 5분 비공개 URL을 모두 발급할 수 없습니다. 두 경우 모두 위시 변경은 commit되지 않습니다."
+      description: "BALANCE_SYNC_FAILED 또는 PHOTO_DELIVERY_UNAVAILABLE — 외부 잔액 조회가 실패했거나 기존 사진의 x-wish-photo-delivery-policy에 따른 유효한 완전한 비공개 URL 세트를 확보할 수 없습니다. 두 경우 모두 위시 변경은 commit되지 않습니다."
       x-error-codes: [BALANCE_SYNC_FAILED, PHOTO_DELIVERY_UNAVAILABLE]
       content:
         application/json:
@@ -3024,7 +3093,7 @@ components:
           examples:
             expired-v2: {$ref: '#/components/examples/FeedRecommendationCursorExpired'}
     FeedPageUnavailable:
-      description: "RECOMMENDATION_CONTEXT_UNAVAILABLE 또는 PHOTO_DELIVERY_UNAVAILABLE — durable feed context 생성·전이를 안전하게 commit할 수 없거나 현재 허용된 카드의 새 비공개 사진 URL 전체를 발급할 수 없습니다. 부분 페이지를 반환하거나 입력 cursor를 소비하지 않으며 latest fallback으로 바꾸지 않습니다."
+      description: "RECOMMENDATION_CONTEXT_UNAVAILABLE 또는 PHOTO_DELIVERY_UNAVAILABLE — durable feed context 생성·전이를 안전하게 commit할 수 없거나 현재 허용된 카드의 x-wish-photo-delivery-policy에 따른 유효한 완전한 비공개 사진 URL 세트를 확보할 수 없습니다. 부분 페이지를 반환하거나 입력 cursor를 소비하지 않으며 latest fallback으로 바꾸지 않습니다."
       x-error-codes: [RECOMMENDATION_CONTEXT_UNAVAILABLE, PHOTO_DELIVERY_UNAVAILABLE]
       headers:
         Cache-Control: {$ref: '#/components/headers/CacheControlNoStore'}
@@ -5219,7 +5288,7 @@ components:
         completedAt: {$ref: '#/components/schemas/UtcInstant', description: "명시적 위시 완료 시각이며 RFC 3339 UTC Z 형식입니다."}
         actualDurationSeconds: {type: integer, format: int64, minimum: 0, description: "max(0, Duration.between(createdAt, completedAt).getSeconds())이며 달력 날짜와 독립적입니다."}
         photo:
-          description: "권한 확인 뒤 현재 ATTACHED WishPhoto의 비공개 URL을 새로 발급합니다. ATTACHED 사진이 없을 때만 null이며 런타임·서명 실패는 전체 조회를 실패시킵니다."
+          description: "권한 확인 뒤 현재 ATTACHED WishPhoto의 비공개 URL을 x-wish-photo-delivery-policy에 따라 재사용하거나 새 발급합니다. ATTACHED 사진이 없을 때만 null이며 런타임·유효한 완전한 URL 세트 확보 실패는 전체 조회를 실패시킵니다."
           oneOf:
             - {$ref: '#/components/schemas/WishPhoto'}
             - {type: "null"}
@@ -5518,7 +5587,7 @@ components:
       properties:
         id: {$ref: '#/components/schemas/Uuid', description: "Opaque 사진 identity입니다. 이를 아는 것만으로 읽기나 첨부 소유권이 생기지 않습니다."}
         variants: {$ref: '#/components/schemas/WishPhotoVariants', description: "같은 private 사진의 360, 720, 1080 정사각형 JPEG signed URL 세 개입니다."}
-        expiresAt: {type: string, format: date-time, pattern: 'Z$', description: "세 signed URL이 함께 만료되는 RFC 3339 UTC Z 시점이며 발급 시각에서 정확히 5분 뒤입니다."}
+        expiresAt: {type: string, format: date-time, pattern: 'Z$', description: "세 signed URL의 실제 공통 만료인 RFC 3339 UTC Z 시점입니다. x-wish-photo-delivery-policy에 따라 새 발급 시 정수 초로 절삭한 발급 기준 시각부터 정확히 300초 뒤이고 재사용 시 원래 expiresAt을 보존합니다. 매 응답부터 새 5분 수명을 보장하지 않습니다."}
     Wish:
       type: object
       additionalProperties: false
@@ -5545,7 +5614,7 @@ components:
         state: {$ref: '#/components/schemas/WishState', description: "수명 주기 상태입니다. 목표 미만은 IN_PROGRESS, 목표에 도달했지만 명시적으로 완료하기 전은 AMOUNT_REACHED, 완료 후는 COMPLETED, 포기 후는 ABANDONED입니다."}
         visibility: {$ref: '#/components/schemas/WishVisibility', description: "요청된 게시 범위 PRIVATE, FOLLOWERS 또는 ACADEMY; 현재 관계 및 차단 확인으로 인해 공유 카드가 더 숨겨질 수 있습니다."}
         photo:
-          description: "현재 첨부 사진의 새 5분 비공개 URL 세트이며 사진이 없으면 null입니다. signed URL은 영속 domain snapshot이나 멱등 receipt에 저장하지 않습니다."
+          description: "x-wish-photo-delivery-policy에 따른 현재 첨부 사진의 유효한 완전한 비공개 URL 세트이며 사진이 없으면 null입니다. signed URL은 영속 domain snapshot이나 멱등 receipt에 저장하지 않습니다."
           oneOf: [{$ref: '#/components/schemas/WishPhoto'}, {type: 'null'}]
         balanceAdjustmentInProgress: {type: boolean, description: "이 위시의 카드 잔액 계정에 응답 스냅샷 기준 OPEN 잔액 조정 건이 있을 때만 true입니다. 이 값은 파생 값이며 위시나 공유 카드에 저장되지 않습니다. 목록·상세 응답은 조회 시점 값을, 변경 응답은 변경이 커밋된 후의 값을 반영합니다. 잔액 조정 건을 열거나 해결해도 위시의 version이나 updatedAt은 증가하지 않습니다. 이 프로젝션은 이 boolean 값만 노출하며 부족액, adjustmentCaseId, observationId, 이벤트 링크 또는 계정 이력은 절대 노출하지 않습니다."}
         createdAt: {$ref: '#/components/schemas/UtcInstant', description: "위시가 생성된 RFC 3339 UTC Z 시점입니다."}
@@ -6013,7 +6082,7 @@ components:
           maximum: 100
           description: "내림 정수 나눗셈으로 계산합니다. 목표 미도달 진행률은 최대 99이고 목표에 도달했을 때만 100을 반환합니다."
         photo:
-          description: "현재 권한 검사 뒤 발급된 5분 비공개 사진 URL 세트이며 첨부 사진이 없으면 null입니다."
+          description: "현재 권한 검사 뒤 x-wish-photo-delivery-policy에 따라 재사용하거나 새 발급한 비공개 사진 URL 세트이며 첨부 사진이 없으면 null입니다."
           oneOf: [{$ref: '#/components/schemas/WishPhoto'}, {type: 'null'}]
         startDate: {type: [string, 'null'], format: date, description: "저장된 위시 시작 달력 날짜 LocalDate를 YYYY-MM-DD 또는 null로 직접 투영합니다. 필드는 항상 존재하며 미지정은 null입니다. 생성 시각이나 오늘 날짜로 보충하거나 시간대를 변환하지 않습니다."}
         targetDate: {type: [string, 'null'], format: date, description: "저장된 위시 목표 달력 날짜 LocalDate를 YYYY-MM-DD 또는 null로 직접 투영합니다. 필드는 항상 존재하며 미지정은 null입니다. 생성 시각이나 오늘 날짜로 보충하거나 시간대를 변환하지 않습니다."}
@@ -6034,7 +6103,7 @@ components:
         targetAmount: {$ref: '#/components/schemas/KrwPositive', description: "게시된 양의 정수 KRW 목표 금액입니다. 소유자의 정확한 과거 위시 잔액은 노출하지 않습니다."}
         progressPercent: {type: integer, const: 100, description: "완료 카드 변형에서는 항상 100입니다."}
         photo:
-          description: "현재 권한 검사 뒤 발급된 5분 비공개 사진 URL 세트이며 첨부 사진이 없으면 null입니다. 완료 이후 사진은 보존되지만 변경할 수 없습니다."
+          description: "현재 권한 검사 뒤 x-wish-photo-delivery-policy에 따라 재사용하거나 새 발급한 비공개 사진 URL 세트이며 첨부 사진이 없으면 null입니다. 완료 이후 사진은 보존되지만 변경할 수 없습니다."
           oneOf: [{$ref: '#/components/schemas/WishPhoto'}, {type: 'null'}]
         startDate: {type: [string, 'null'], format: date, description: "저장된 위시 시작 달력 날짜 LocalDate를 YYYY-MM-DD 또는 null로 직접 투영합니다. 필드는 항상 존재하며 미지정은 null입니다. 생성 시각이나 오늘 날짜로 보충하거나 시간대를 변환하지 않습니다."}
         targetDate: {type: [string, 'null'], format: date, description: "저장된 위시 목표 달력 날짜 LocalDate를 YYYY-MM-DD 또는 null로 직접 투영합니다. 필드는 항상 존재하며 미지정은 null입니다. 생성 시각이나 오늘 날짜로 보충하거나 시간대를 변환하지 않습니다."}
@@ -6060,7 +6129,7 @@ components:
           maximum: 100
           description: "포기 직전에 불변으로 캡처한 적립액과 targetAmount에서 floor(abandonmentAmount * 100 / targetAmount)로 한 번 계산한 정수입니다. 캡처 금액이 0이면 0이며 null이나 생략으로 바꾸지 않습니다. 100은 캡처 금액이 targetAmount와 같을 때만 반환합니다. 정확한 KRW 금액과 현재 배정 금액은 노출하지 않습니다."
         photo:
-          description: "현재 권한 검사 뒤 발급된 5분 비공개 사진 URL 세트이며 첨부 사진이 없으면 null입니다. 사진 식별자, object key, 과거 signed URL은 노출하지 않습니다."
+          description: "현재 권한 검사 뒤 x-wish-photo-delivery-policy에 따라 재사용하거나 새 발급한 비공개 사진 URL 세트이며 첨부 사진이 없으면 null입니다. 사진 식별자, object key, 과거 signed URL은 노출하지 않습니다."
           oneOf: [{$ref: '#/components/schemas/WishPhoto'}, {type: 'null'}]
         startDate: {type: [string, 'null'], format: date, description: "저장된 위시 시작 달력 날짜 LocalDate를 YYYY-MM-DD 또는 null로 직접 투영합니다. 필드는 항상 존재하며 미지정은 null입니다. 생성 시각이나 오늘 날짜로 보충하거나 시간대를 변환하지 않습니다."}
         targetDate: {type: [string, 'null'], format: date, description: "저장된 위시 목표 달력 날짜 LocalDate를 YYYY-MM-DD 또는 null로 직접 투영합니다. 필드는 항상 존재하며 미지정은 null입니다. 생성 시각이나 오늘 날짜로 보충하거나 시간대를 변환하지 않습니다."}
@@ -8566,6 +8635,7 @@ components:
         lastRefreshStatus: FAILED
         lastRefreshedAt: '2026-08-16T02:00:00Z'
     WishPhotoUploaded:
+      x-signing-base: "2026-08-31T12:00:00Z"
       summary: "처리와 비공개 저장을 완료한 Pending 위시 사진"
       x-schema-ref: '#/components/schemas/WishPhoto'
       value:
@@ -8577,7 +8647,9 @@ components:
         expiresAt: '2026-08-31T12:05:00Z'
     WishPhotoActiveReplay:
       summary: "보존 중인 활성 사진의 같은 콘텐츠 재생"
-      description: "같은 소유자·Idempotency-Key와 정확히 같은 photo 파트 바이트를 보내면 처리를 반복하지 않고 원래 photoId와 새 5분 URL을 반환합니다."
+      description: "같은 소유자·Idempotency-Key와 정확히 같은 photo 파트 바이트를 보내면 처리를 반복하지 않고 원래 photoId와 x-wish-photo-delivery-policy에 따른 URL 세트를 반환합니다."
+      x-evaluated-at: "2026-08-31T12:04:00Z"
+      x-reused-from-example: WishPhotoUploaded
       x-schema-ref: '#/components/schemas/WishPhoto'
       x-request-headers:
         Idempotency-Key: wish-photo-2026-09-01
@@ -8588,10 +8660,10 @@ components:
       value:
         id: 9a8b7c6d-5e4f-4321-9876-1234567890ab
         variants:
-          small: https://storage.example.invalid/signed/new-small
-          medium: https://storage.example.invalid/signed/new-medium
-          large: https://storage.example.invalid/signed/new-large
-        expiresAt: '2026-09-01T12:05:00Z'
+          small: https://storage.example.invalid/signed/wish-photo-small
+          medium: https://storage.example.invalid/signed/wish-photo-medium
+          large: https://storage.example.invalid/signed/wish-photo-large
+        expiresAt: '2026-08-31T12:05:00Z'
     CreateWishWithPhoto:
       summary: "Pending 사진을 원자적으로 첨부하는 위시 생성"
       x-schema-ref: '#/components/schemas/CreateWishRequest'
@@ -8661,7 +8733,7 @@ components:
           details: {}
     PhotoDeliveryUnavailableOnReplay:
       summary: "활성 사진 재생 URL 발급 일시 사용 불가"
-      description: "유효한 ACTIVE_SUCCESS receipt는 변경하거나 삭제하지 않고 새 5분 URL 발급만 실패합니다."
+      description: "유효한 ACTIVE_SUCCESS receipt는 변경하거나 삭제하지 않고 x-wish-photo-delivery-policy에 따른 유효한 완전한 URL 세트 확보만 실패합니다."
       x-schema-ref: '#/components/schemas/ErrorEnvelope'
       value:
         error:
@@ -8703,7 +8775,7 @@ components:
         eventId: null
     IdempotentReplay:
       summary: "멱등 재생"
-      description: "최초 성공 domain snapshot을 Idempotency-Replayed true와 함께 반환합니다. abandonmentAmount, startDate, targetDate, balanceAdjustmentInProgress와 closedAt은 현재 조회 시점 값이 아니라 최초 결과에 캡처된 값을 사용하지만 ephemeral photo signed URL은 receipt에 저장하지 않고 재생할 때 새로 발급합니다."
+      description: "최초 성공 domain snapshot을 Idempotency-Replayed true와 함께 반환합니다. abandonmentAmount, startDate, targetDate, balanceAdjustmentInProgress와 closedAt은 현재 조회 시점 값이 아니라 최초 결과에 캡처된 값을 사용하지만 ephemeral photo signed URL은 receipt에 저장하지 않고 재생할 때 x-wish-photo-delivery-policy에 따라 URL과 원래 expiresAt을 함께 재사용하거나 새 발급합니다."
       x-schema-ref: '#/components/schemas/WishMutationResult'
       x-response-headers:
         Idempotency-Replayed: true
@@ -8730,7 +8802,9 @@ components:
         eventId: c88a568c-38a8-4767-a88a-caf3dad22976
     WishMutationActivePhotoReplay:
       summary: "원래 ACTIVE_PHOTO identity를 유지하는 Wish 변경 재생"
-      description: "현재 attachment로 대체하지 않고 최초 성공에 캡처된 정확한 photoId를 재검증하여 새 5분 URL만 발급합니다."
+      description: "현재 attachment로 대체하지 않고 최초 성공에 캡처된 정확한 photoId를 재검증하여 x-wish-photo-delivery-policy에 따른 유효한 완전한 URL 세트만 제공합니다."
+      x-evaluated-at: "2026-08-31T12:04:30Z"
+      x-reused-from-example: WishPhotoUploaded
       x-schema-ref: '#/components/schemas/WishMutationResult'
       x-private-photo-replay-state: {kind: ACTIVE_PHOTO, photoId: 9a8b7c6d-5e4f-4321-9876-1234567890ab}
       x-response-headers:
@@ -8751,10 +8825,10 @@ components:
           photo:
             id: 9a8b7c6d-5e4f-4321-9876-1234567890ab
             variants:
-              small: https://storage.example.invalid/signed/replay-small
-              medium: https://storage.example.invalid/signed/replay-medium
-              large: https://storage.example.invalid/signed/replay-large
-            expiresAt: '2026-09-01T12:05:00Z'
+              small: https://storage.example.invalid/signed/wish-photo-small
+              medium: https://storage.example.invalid/signed/wish-photo-medium
+              large: https://storage.example.invalid/signed/wish-photo-large
+            expiresAt: '2026-08-31T12:05:00Z'
           balanceAdjustmentInProgress: false
           createdAt: '2026-08-16T02:10:00Z'
           updatedAt: '2026-08-16T02:20:00Z'
@@ -8826,6 +8900,87 @@ components:
           traceId: tr_wish_transfer_photo_revoked_001
           fieldErrors: []
           details: {}
+    WishCompletedReached:
+      summary: "목표 금액에 도달한 위시 사용완료"
+      description: "완료 직전 상태는 AMOUNT_REACHED, 목표 금액은 500000원, 배정액은 500000원입니다. WISH_COMPLETION_RETURN 이벤트 하나로 완료 직전 배정액 전체를 반환합니다."
+      x-schema-ref: '#/components/schemas/WishMutationResult'
+      x-before: {state: AMOUNT_REACHED, targetAmount: 500000, amount: 500000, version: 2}
+      x-request-value: {expectedVersion: 2}
+      value:
+        wish:
+          id: 22222222-2222-2222-2222-222222222222
+          cardBalanceAccountId: 11111111-1111-1111-1111-111111111111
+          purpose: Graduation trip
+          targetAmount: 500000
+          amount: 0
+          abandonmentAmount: null
+          startDate: '2026-09-01'
+          targetDate: '2027-02-28'
+          state: COMPLETED
+          visibility: PRIVATE
+          photo: null
+          balanceAdjustmentInProgress: false
+          createdAt: '2026-08-17T02:30:00Z'
+          updatedAt: '2026-09-01T09:00:00Z'
+          completedAt: '2026-09-01T09:00:00Z'
+          closedAt: '2026-09-01T09:00:00Z'
+          actualDurationSeconds: 1319400
+          version: 3
+        eventId: 33333333-3333-3333-3333-333333333333
+    WishCompletedUnderTarget:
+      summary: "목표 금액 미달 위시 사용완료"
+      description: "완료 직전 상태는 IN_PROGRESS, 목표 금액은 500000원, 배정액은 125000원입니다. WISH_COMPLETION_RETURN 이벤트 하나로 완료 직전 배정액 전체를 반환합니다."
+      x-schema-ref: '#/components/schemas/WishMutationResult'
+      x-before: {state: IN_PROGRESS, targetAmount: 500000, amount: 125000, version: 2}
+      x-request-value: {expectedVersion: 2}
+      value:
+        wish:
+          id: 22222222-2222-2222-2222-222222222222
+          cardBalanceAccountId: 11111111-1111-1111-1111-111111111111
+          purpose: Graduation trip
+          targetAmount: 500000
+          amount: 0
+          abandonmentAmount: null
+          startDate: '2026-09-01'
+          targetDate: '2027-02-28'
+          state: COMPLETED
+          visibility: PRIVATE
+          photo: null
+          balanceAdjustmentInProgress: false
+          createdAt: '2026-08-17T02:30:00Z'
+          updatedAt: '2026-09-01T09:00:00Z'
+          completedAt: '2026-09-01T09:00:00Z'
+          closedAt: '2026-09-01T09:00:00Z'
+          actualDurationSeconds: 1319400
+          version: 3
+        eventId: 33333333-3333-3333-3333-333333333333
+    WishCompletedZeroAllocation:
+      summary: "배정액 0원 위시 사용완료"
+      description: "완료 직전 상태는 IN_PROGRESS, 목표 금액은 500000원, 배정액은 0원입니다. 원장 이벤트, 위시 원장 효과, 계정 원장 순번 증가 없이 완료하며 eventId는 null입니다."
+      x-schema-ref: '#/components/schemas/WishMutationResult'
+      x-before: {state: IN_PROGRESS, targetAmount: 500000, amount: 0, version: 2}
+      x-request-value: {expectedVersion: 2}
+      value:
+        wish:
+          id: 22222222-2222-2222-2222-222222222222
+          cardBalanceAccountId: 11111111-1111-1111-1111-111111111111
+          purpose: Graduation trip
+          targetAmount: 500000
+          amount: 0
+          abandonmentAmount: null
+          startDate: '2026-09-01'
+          targetDate: '2027-02-28'
+          state: COMPLETED
+          visibility: PRIVATE
+          photo: null
+          balanceAdjustmentInProgress: false
+          createdAt: '2026-08-17T02:30:00Z'
+          updatedAt: '2026-09-01T09:00:00Z'
+          completedAt: '2026-09-01T09:00:00Z'
+          closedAt: '2026-09-01T09:00:00Z'
+          actualDurationSeconds: 1319400
+          version: 3
+        eventId: null
     WishAbandonedFunded:
       summary: "자금이 있던 위시 포기"
       description: "포기 직전 470000원은 불변 역사 금액으로 남고 현재 할당액은 0원이 되며, 기존의 0이 아닌 반환 원장 이벤트를 식별합니다."
